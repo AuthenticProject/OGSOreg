@@ -28,6 +28,7 @@ import { accountService, LOCAL_DEV_SUPER_ADMIN_PASSWORD } from '../src/services/
 import { studentRepository } from '../src/services/studentRepository'
 import { processAndValidateRows } from '../src/services/validationEngine'
 import { mapStudentsToMoodleExport } from '../src/services/moodle/moodleExportMapper'
+import { useImportStore } from '../src/stores/importStore'
 import {
   INITIAL_ACCOUNT_ROSTER,
   SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD,
@@ -443,6 +444,41 @@ async function runTestSuite() {
   assert(
     uniqueUsernames.size === 21,
     '20. Initial account roster defines exactly 21 unique usernames without collision'
+  )
+
+  // -------------------------------------------------------------
+  // Test 21: Registration Workflow Reset on Account Switch (e.g. Gontor 2 -> Gontor 5)
+  // -------------------------------------------------------------
+  console.log('Testing Registration Reset on Account Switch...')
+  const store = useImportStore.getState()
+  
+  // Simulate Gontor 2 active session and staging data
+  store.setAccessControl({
+    username: 'gontor2',
+    userRole: 'campus_admin',
+    assignedCampus: 'Gontor 2',
+  })
+  store.setCurrentStep(2)
+  store.addManualRow({
+    nama_lengkap: 'Santri Gontor 2',
+    nisn: '1234567890',
+    kampus: 'Gontor 2',
+    jenjang: 'SMA',
+  })
+  assert(
+    useImportStore.getState().stagedRows.length === 1 && useImportStore.getState().currentStep === 2,
+    '21a. Gontor 2 has active staged participant and is on step 2'
+  )
+
+  // Switch account to Gontor 5
+  store.setAccessControl({
+    username: 'gontor5',
+    userRole: 'campus_admin',
+    assignedCampus: 'Gontor 5',
+  })
+  assert(
+    useImportStore.getState().stagedRows.length === 0 && useImportStore.getState().currentStep === 1,
+    '21b. Switching to Gontor 5 completely resets import state to step 1 and clears staged rows'
   )
 
   // Summary

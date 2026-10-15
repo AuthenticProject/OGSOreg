@@ -42,10 +42,10 @@ interface ImportState {
   parseError: string | null
   selectedCompetition: Competition | null
   exportResult: ExportResultSummary | null
-  accessControl: { userRole?: string; assignedCampus?: string | null } | null
+  accessControl: { username?: string; userRole?: string; assignedCampus?: string | null } | null
 
   // Actions
-  setAccessControl: (ctx: { userRole?: string; assignedCampus?: string | null } | null) => void
+  setAccessControl: (ctx: { username?: string; userRole?: string; assignedCampus?: string | null } | null) => void
   setCurrentStep: (step: number) => void
   handleFileUpload: (file: File) => Promise<void>
   updateColumnMapping: (excelHeader: string, targetField: string | null) => void
@@ -100,7 +100,14 @@ export const useImportStore = create<ImportState>((set, get) => ({
   exportResult: null,
   accessControl: null,
 
-  setAccessControl: (ctx) => set({ accessControl: ctx }),
+  setAccessControl: (ctx) => {
+    const prev = get().accessControl
+    // If campus or user changed, reset all import registration state from the beginning!
+    if (prev && (prev.assignedCampus !== ctx?.assignedCampus || prev.username !== ctx?.username)) {
+      get().resetImport()
+    }
+    set({ accessControl: ctx })
+  },
   setCurrentStep: (step: number) => set({ currentStep: step }),
 
   handleFileUpload: async (file: File) => {

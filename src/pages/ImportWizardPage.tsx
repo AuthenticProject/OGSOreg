@@ -31,6 +31,7 @@ export const ImportWizardPage: React.FC = () => {
     lastAccountRef.current = currentAccount
 
     setAccessControl({
+      username: appProfile?.username,
       userRole: isSuperAdmin ? 'super_admin' : 'campus_admin',
       assignedCampus,
     })
