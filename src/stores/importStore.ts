@@ -42,8 +42,10 @@ interface ImportState {
   parseError: string | null
   selectedCompetition: Competition | null
   exportResult: ExportResultSummary | null
+  accessControl: { userRole?: string; assignedCampus?: string | null } | null
 
   // Actions
+  setAccessControl: (ctx: { userRole?: string; assignedCampus?: string | null } | null) => void
   setCurrentStep: (step: number) => void
   handleFileUpload: (file: File) => Promise<void>
   updateColumnMapping: (excelHeader: string, targetField: string | null) => void
@@ -96,7 +98,9 @@ export const useImportStore = create<ImportState>((set, get) => ({
   parseError: null,
   selectedCompetition: null,
   exportResult: null,
+  accessControl: null,
 
+  setAccessControl: (ctx) => set({ accessControl: ctx }),
   setCurrentStep: (step: number) => set({ currentStep: step }),
 
   handleFileUpload: async (file: File) => {
@@ -167,7 +171,8 @@ export const useImportStore = create<ImportState>((set, get) => ({
 
     const { stagedRows, stats } = processAndValidateRows(
       workbookData.rawParticipantRows,
-      columnMappings
+      columnMappings,
+      get().accessControl || undefined
     )
 
     set({
@@ -178,7 +183,7 @@ export const useImportStore = create<ImportState>((set, get) => ({
   },
 
   addManualRow: (customData?: Partial<StagedParticipantRow>) => {
-    const { stagedRows } = get()
+    const { stagedRows, accessControl } = get()
     const newIndex = stagedRows.length + 1
     const newRow: StagedParticipantRow = {
       _rowId: `manual-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -193,6 +198,7 @@ export const useImportStore = create<ImportState>((set, get) => ({
       lastname: customData?.lastname || '',
       email: customData?.email || '',
       jenjang: customData?.jenjang || 'Kelas 1',
+      kampus: customData?.kampus || accessControl?.assignedCampus || '',
 
       no: String(newIndex),
       full_name: [customData?.firstname, customData?.lastname].filter(Boolean).join(' '),
@@ -205,7 +211,10 @@ export const useImportStore = create<ImportState>((set, get) => ({
     }
 
     const updated = [...stagedRows, newRow]
-    const { stagedRows: validatedRows, stats } = validateAllStagedRows(updated)
+    const { stagedRows: validatedRows, stats } = validateAllStagedRows(
+      updated,
+      get().accessControl || undefined
+    )
 
     set({
       stagedRows: validatedRows,
@@ -291,7 +300,7 @@ export const useImportStore = create<ImportState>((set, get) => ({
       })
 
       const combined = [...stagedRows, ...newRows]
-      const { stagedRows: validatedRows, stats } = validateAllStagedRows(combined)
+      const { stagedRows: validatedRows, stats } = validateAllStagedRows(combined, get().accessControl || undefined)
 
       set({
         stagedRows: validatedRows,
@@ -339,7 +348,7 @@ export const useImportStore = create<ImportState>((set, get) => ({
     })
 
     // Re-validate the entire batch so duplicate states update immediately
-    const { stagedRows: validatedRows, stats } = validateAllStagedRows(updatedRows)
+    const { stagedRows: validatedRows, stats } = validateAllStagedRows(updatedRows, get().accessControl || undefined)
 
     set({
       stagedRows: validatedRows,
@@ -350,7 +359,7 @@ export const useImportStore = create<ImportState>((set, get) => ({
   deleteSelectedRows: () => {
     const { stagedRows, selectedRowIds } = get()
     const remaining = stagedRows.filter((r) => !selectedRowIds.includes(r._rowId))
-    const { stagedRows: validatedRows, stats } = validateAllStagedRows(remaining)
+    const { stagedRows: validatedRows, stats } = validateAllStagedRows(remaining, get().accessControl || undefined)
 
     set({
       stagedRows: validatedRows,
@@ -362,7 +371,7 @@ export const useImportStore = create<ImportState>((set, get) => ({
   deleteSingleRow: (rowId: string) => {
     const { stagedRows, selectedRowIds } = get()
     const remaining = stagedRows.filter((r) => r._rowId !== rowId)
-    const { stagedRows: validatedRows, stats } = validateAllStagedRows(remaining)
+    const { stagedRows: validatedRows, stats } = validateAllStagedRows(remaining, get().accessControl || undefined)
 
     set({
       stagedRows: validatedRows,
@@ -396,12 +405,12 @@ export const useImportStore = create<ImportState>((set, get) => ({
 
   setSelectedCompetition: (comp: Competition | null) => set({ selectedCompetition: comp }),
   setStagedRows: (rows: StagedParticipantRow[]) => {
-    const { stagedRows: validatedRows, stats } = validateAllStagedRows(rows)
+    const { stagedRows: validatedRows, stats } = validateAllStagedRows(rows, get().accessControl || undefined)
     set({ stagedRows: validatedRows, stats })
   },
 
   saveStagedToStudentsDirectory: async (institutionId: string, createdBy?: string) => {
-    const { stagedRows, uploadedFile } = get()
+    const { stagedRows, uploadedFile, accessControl } = get()
     const validRows = stagedRows.filter((r) => r._status !== 'ERROR')
 
     // Determine primary source
@@ -428,7 +437,8 @@ export const useImportStore = create<ImportState>((set, get) => ({
       records,
       institutionId,
       createdBy || 'system',
-      source
+      source,
+      accessControl || undefined
     )
 
     return {

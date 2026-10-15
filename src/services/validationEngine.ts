@@ -20,7 +20,8 @@ import type { ColumnMappingItem, StagedParticipantRow, ImportStatistics } from '
  */
 export function processAndValidateRows(
   rawRows: Record<string, unknown>[],
-  mappings: ColumnMappingItem[]
+  mappings: ColumnMappingItem[],
+  accessControl?: { userRole?: string; assignedCampus?: string | null }
 ): { stagedRows: StagedParticipantRow[]; stats: ImportStatistics } {
   // Map targetField -> excelHeader
   const fieldToHeaderMap: Record<string, string> = {}
@@ -109,11 +110,12 @@ export function processAndValidateRows(
   })
 
   // 2. Perform duplicate detection & Zod validation
-  return validateAllStagedRows(rows)
+  return validateAllStagedRows(rows, accessControl)
 }
 
 export function validateAllStagedRows(
-  rows: StagedParticipantRow[]
+  rows: StagedParticipantRow[],
+  accessControl?: { userRole?: string; assignedCampus?: string | null }
 ): { stagedRows: StagedParticipantRow[]; stats: ImportStatistics } {
   // Track occurrences for duplicate detection
   const usernameOccurrences = new Map<string, number[]>()
@@ -194,6 +196,8 @@ export function validateAllStagedRows(
         errors['kampus'] = 'Kampus wajib diisi (pilih salah satu dari 20 Kampus Gontor).'
       } else if (!isValidKampus(r.kampus)) {
         errors['kampus'] = `Kampus '${r.kampus}' tidak valid. Harus salah satu dari 20 pilihan Kampus Gontor resmi.`
+      } else if (accessControl?.assignedCampus && r.kampus.trim() !== accessControl.assignedCampus) {
+        errors['kampus'] = `Akses Ditolak: Anda hanya berwenang mengimpor data santri untuk ${accessControl.assignedCampus}. Santri dengan kampus '${r.kampus}' ditolak.`
       }
 
       // 2. Duplicate Username Check

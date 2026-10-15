@@ -51,7 +51,7 @@ import { MOODLE_JENJANG_OPTIONS } from '../types/excel'
 
 export const StudentsPage: React.FC = () => {
   const navigate = useNavigate()
-  const { institution, user } = useAuth()
+  const { institution, user, isSuperAdmin, assignedCampus } = useAuth()
   const institutionId = institution?.id || 'a0000000-0000-0000-0000-000000000001'
 
   // State
@@ -116,11 +116,13 @@ export const StudentsPage: React.FC = () => {
     setIsLoading(true)
     setErrorMsg(null)
     try {
+      const effectiveKampus = !isSuperAdmin && assignedCampus ? assignedCampus : kampusFilter
       const res = await studentRepository.getStudents({
         institutionId,
         search,
         jenjang: jenjangFilter,
-        kampus: kampusFilter,
+        kampus: effectiveKampus,
+        assignedCampus: !isSuperAdmin ? assignedCampus : undefined,
         sync_status: syncStatusFilter,
         source: sourceFilter,
         sortBy,
@@ -131,7 +133,10 @@ export const StudentsPage: React.FC = () => {
       setStudents(res.data)
       setTotalCount(res.total)
 
-      const s = await studentRepository.getStats(institutionId)
+      const s = await studentRepository.getStats(
+        institutionId,
+        !isSuperAdmin ? assignedCampus : undefined
+      )
       setStats(s)
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : 'Gagal memuat data santri.')
@@ -196,7 +201,7 @@ export const StudentsPage: React.FC = () => {
       lastname: '',
       email: '',
       jenjang: 'Kelas 1',
-      kampus: 'Gontor 1',
+      kampus: !isSuperAdmin && assignedCampus ? assignedCampus : 'Gontor 1',
     })
     setFormErrors({})
     setIsAddModalOpen(true)
@@ -211,7 +216,7 @@ export const StudentsPage: React.FC = () => {
       lastname: student.lastname || '',
       email: student.email,
       jenjang: student.jenjang,
-      kampus: student.kampus || '',
+      kampus: student.kampus || (!isSuperAdmin && assignedCampus ? assignedCampus : ''),
     })
     setFormErrors({})
   }
@@ -221,8 +226,11 @@ export const StudentsPage: React.FC = () => {
     e.preventDefault()
     setFormErrors({})
 
+    const targetKampus = !isSuperAdmin && assignedCampus ? assignedCampus : formData.kampus
+
     const validation = newStudentSchema.safeParse({
       ...formData,
+      kampus: targetKampus,
       institution_id: institutionId,
       created_by: user?.id || 'system',
       source: 'manual',
@@ -240,13 +248,19 @@ export const StudentsPage: React.FC = () => {
     }
 
     setIsSubmitting(true)
-    const res = await studentRepository.saveStudent({
-      ...formData,
-      institution_id: institutionId,
-      created_by: user?.id || 'system',
-      source: 'manual',
-      sync_status: 'local_only',
-    })
+    const res = await studentRepository.saveStudent(
+      {
+        ...formData,
+        kampus: targetKampus,
+        institution_id: institutionId,
+        created_by: user?.id || 'system',
+        source: 'manual',
+        sync_status: 'local_only',
+      },
+      institutionId,
+      user?.id,
+      { userRole: isSuperAdmin ? 'super_admin' : 'campus_admin', assignedCampus }
+    )
     setIsSubmitting(false)
 
     if (!res.success) {
@@ -266,8 +280,11 @@ export const StudentsPage: React.FC = () => {
     if (!editingStudent) return
     setFormErrors({})
 
+    const targetKampus = !isSuperAdmin && assignedCampus ? assignedCampus : formData.kampus
+
     const validation = studentSchema.safeParse({
       ...formData,
+      kampus: targetKampus,
       institution_id: institutionId,
       source: editingStudent.source,
       sync_status: editingStudent.sync_status,
@@ -288,8 +305,9 @@ export const StudentsPage: React.FC = () => {
     setIsSubmitting(true)
     const res = await studentRepository.updateStudent(
       editingStudent.id,
-      formData,
-      institutionId
+      { ...formData, kampus: targetKampus },
+      institutionId,
+      { userRole: isSuperAdmin ? 'super_admin' : 'campus_admin', assignedCampus }
     )
     setIsSubmitting(false)
 
@@ -308,10 +326,17 @@ export const StudentsPage: React.FC = () => {
   const handleConfirmDelete = async () => {
     if (!deletingStudent) return
     setIsSubmitting(true)
-    await studentRepository.deleteStudent(deletingStudent.id, institutionId)
+    const ok = await studentRepository.deleteStudent(deletingStudent.id, institutionId, {
+      userRole: isSuperAdmin ? 'super_admin' : 'campus_admin',
+      assignedCampus,
+    })
     setIsSubmitting(false)
     setDeletingStudent(null)
-    setActionFeedback(`Santri '${deletingStudent.full_name}' telah dihapus dari direktori lokal.`)
+    if (ok) {
+      setActionFeedback(`Santri '${deletingStudent.full_name}' telah dihapus dari direktori lokal.`)
+    } else {
+      setActionFeedback(`Akses Ditolak: Anda tidak memiliki wewenang menghapus santri dari kampus lain.`)
+    }
     setTimeout(() => setActionFeedback(null), 4000)
     loadStudents()
   }
@@ -320,7 +345,10 @@ export const StudentsPage: React.FC = () => {
   const handleConfirmBulkDelete = async () => {
     if (selectedIds.length === 0) return
     setIsSubmitting(true)
-    const count = await studentRepository.bulkDeleteStudents(selectedIds, institutionId)
+    const count = await studentRepository.bulkDeleteStudents(selectedIds, institutionId, {
+      userRole: isSuperAdmin ? 'super_admin' : 'campus_admin',
+      assignedCampus,
+    })
     setIsSubmitting(false)
     setIsBulkDeleteModalOpen(false)
     setSelectedIds([])
@@ -341,17 +369,22 @@ export const StudentsPage: React.FC = () => {
   const handleOpenExportFiltered = async () => {
     setIsLoading(true)
     try {
+      const effectiveKampus = !isSuperAdmin && assignedCampus ? assignedCampus : kampusFilter
       const res = await studentRepository.getStudents({
         institutionId,
         search,
         jenjang: jenjangFilter,
-        kampus: kampusFilter,
+        kampus: effectiveKampus,
         sync_status: syncStatusFilter,
         source: sourceFilter,
         sortBy,
         sortOrder,
         page: 1,
         pageSize: 10000,
+        accessControl: {
+          userRole: isSuperAdmin ? 'super_admin' : 'campus_admin',
+          assignedCampus,
+        },
       })
       setMoodleExportStudents(res.data)
       const hasFilter =
@@ -862,31 +895,38 @@ export const StudentsPage: React.FC = () => {
             </select>
 
             {/* Filter Kampus */}
-            <select
-              value={kampusFilter}
-              onChange={(e) => {
-                setKampusFilter(e.target.value)
-                setCurrentPage(1)
-              }}
-              className="text-xs px-2.5 py-2 rounded-lg border border-border bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-maroon"
-            >
-              <option value="all">Semua Kampus (20)</option>
-              <option value="incomplete">⚠️ Belum Diisi (Incomplete)</option>
-              <optgroup label="Kampus Putra (Gontor 1–12)">
-                {KAMPUS_OPTIONS.filter((k) => !k.includes('Putri')).map((k) => (
-                  <option key={k} value={k}>
-                    {k}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="Kampus Putri (Gontor Putri 1–8)">
-                {KAMPUS_OPTIONS.filter((k) => k.includes('Putri')).map((k) => (
-                  <option key={k} value={k}>
-                    {k}
-                  </option>
-                ))}
-              </optgroup>
-            </select>
+            {isSuperAdmin ? (
+              <select
+                value={kampusFilter}
+                onChange={(e) => {
+                  setKampusFilter(e.target.value)
+                  setCurrentPage(1)
+                }}
+                className="text-xs px-2.5 py-2 rounded-lg border border-border bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+              >
+                <option value="all">Semua Kampus (20)</option>
+                <option value="incomplete">⚠️ Belum Diisi (Incomplete)</option>
+                <optgroup label="Kampus Putra (Gontor 1–12)">
+                  {KAMPUS_OPTIONS.filter((k) => !k.includes('Putri')).map((k) => (
+                    <option key={k} value={k}>
+                      {k}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Kampus Putri (Gontor Putri 1–8)">
+                  {KAMPUS_OPTIONS.filter((k) => k.includes('Putri')).map((k) => (
+                    <option key={k} value={k}>
+                      {k}
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+            ) : (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 text-xs font-semibold text-emerald-800">
+                <Building className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Kampus: {assignedCampus || 'Ditentukan'} (Terkunci)</span>
+              </div>
+            )}
 
             {/* Filter Sync Status */}
             <select

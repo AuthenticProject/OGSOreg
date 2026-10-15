@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Menu, Bell, HelpCircle, User, LogOut } from 'lucide-react'
+import { Menu, Bell, HelpCircle, User, LogOut, ShieldCheck, MapPin } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
 interface HeaderProps {
@@ -9,15 +9,22 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const navigate = useNavigate()
-  const { profile, institution, isConfigured, signOut } = useAuth()
+  const { appProfile, isSuperAdmin, assignedCampus, signOut } = useAuth()
 
   const handleSignOut = async () => {
     await signOut()
     navigate('/login')
   }
 
+  // Display label required by specification:
+  // Super Admin: "Super Admin — Seluruh Kampus"
+  // Campus Admin: "Admin — Gontor 1" (or appropriate assigned campus)
+  const roleCampusBadgeText = isSuperAdmin
+    ? 'Super Admin — Seluruh Kampus'
+    : `Admin — ${assignedCampus || 'Kampus'}`
+
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-4 sm:px-6 bg-white/95 backdrop-blur-md border-b border-border shadow-subtle">
+    <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-4 sm:px-6 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
       {/* Left: Mobile Toggle & Context */}
       <div className="flex items-center gap-3">
         <button
@@ -28,10 +35,21 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="hidden sm:flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" />
-            {isConfigured ? 'Supabase Backend Terhubung' : 'Mode Offline / Preview'}
+        {/* Official Role & Campus Status Badge */}
+        <div className="flex items-center gap-2">
+          <span
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-colors ${
+              isSuperAdmin
+                ? 'bg-[#DCFCE7] text-[#166534] border-[#BBF7D0]'
+                : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            }`}
+          >
+            {isSuperAdmin ? (
+              <ShieldCheck className="w-3.5 h-3.5 text-[#166534]" />
+            ) : (
+              <MapPin className="w-3.5 h-3.5 text-[#22C55E]" />
+            )}
+            <span>{roleCampusBadgeText}</span>
           </span>
         </div>
       </div>
@@ -56,16 +74,16 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
         <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block" />
 
         {/* User Account Capsule */}
-        <div className="flex items-center gap-2.5 pl-1 py-1 pr-2 rounded-full border border-border bg-slate-50 hover:bg-slate-100 transition-colors">
+        <div className="flex items-center gap-2.5 pl-1 py-1 pr-2.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors">
           <div className="w-7 h-7 rounded-full bg-[#166534] text-white flex items-center justify-center font-bold text-xs shadow-sm">
             <User className="w-3.5 h-3.5" />
           </div>
           <div className="hidden md:block text-left text-xs pr-1">
-            <p className="font-semibold text-slate-900 leading-tight">
-              {profile?.full_name ? profile.full_name.split(' ')[0] : 'Admin'}
+            <p className="font-bold text-[#0F172A] leading-tight">
+              {appProfile?.username || 'admin'}
             </p>
-            <p className="text-[11px] text-muted-foreground leading-tight truncate max-w-[120px]">
-              {institution?.name || 'SMA Darussalam'}
+            <p className="text-[11px] text-slate-500 leading-tight truncate max-w-[140px]">
+              {appProfile?.display_name || 'Super Admin OGSOreg'}
             </p>
           </div>
         </div>

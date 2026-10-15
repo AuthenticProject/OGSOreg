@@ -14,8 +14,19 @@ import { StagedDataGrid } from '../components/excel-pipeline/StagedDataGrid'
 import { MoodleExportStep } from '../components/excel-pipeline/MoodleExportStep'
 import { ExportResultsSummary } from '../components/excel-pipeline/ExportResultsSummary'
 import { useImportStore } from '../stores/importStore'
+import { useAuth } from '../context/AuthContext'
 
 export const ImportWizardPage: React.FC = () => {
+  const { isSuperAdmin, assignedCampus } = useAuth()
+  const setAccessControl = useImportStore((s) => s.setAccessControl)
+
+  React.useEffect(() => {
+    setAccessControl({
+      userRole: isSuperAdmin ? 'super_admin' : 'campus_admin',
+      assignedCampus,
+    })
+  }, [isSuperAdmin, assignedCampus, setAccessControl])
+
   const {
     currentStep,
     setCurrentStep,

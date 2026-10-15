@@ -4,8 +4,6 @@ import {
   LayoutDashboard,
   Layers,
   Users,
-  GraduationCap,
-  Building2,
   FileSpreadsheet,
   Download,
   Settings,
@@ -13,8 +11,10 @@ import {
   ShieldCheck,
   Sparkles,
   FileText,
+  UserCog,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { useAuth } from '../../context/AuthContext'
 
 interface SidebarProps {
   isOpen: boolean
@@ -26,6 +26,7 @@ interface NavItem {
   href: string
   icon: React.ComponentType<{ className?: string }>
   badge?: string
+  superAdminOnly?: boolean
 }
 
 const navItems: NavItem[] = [
@@ -55,7 +56,6 @@ const navItems: NavItem[] = [
     title: 'Laporan',
     href: '/reports',
     icon: FileText,
-    badge: 'Baru',
   },
   {
     title: 'Export Data',
@@ -63,14 +63,11 @@ const navItems: NavItem[] = [
     icon: Download,
   },
   {
-    title: 'Guru Pembimbing',
-    href: '/teachers',
-    icon: GraduationCap,
-  },
-  {
-    title: 'Sekolah Mitra',
-    href: '/schools',
-    icon: Building2,
+    title: 'Manajemen Pengguna',
+    href: '/users',
+    icon: UserCog,
+    badge: 'Super Admin',
+    superAdminOnly: true,
   },
   {
     title: 'Pengaturan',
@@ -80,6 +77,16 @@ const navItems: NavItem[] = [
 ]
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+  const { isSuperAdmin, appProfile } = useAuth()
+
+  // Filter items: Show Manajemen Pengguna only to Super Admin
+  const visibleNavItems = navItems.filter((item) => {
+    if (item.superAdminOnly) {
+      return isSuperAdmin
+    }
+    return true
+  })
+
   return (
     <>
       {/* Mobile Backdrop */}
@@ -135,7 +142,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             Menu Utama
           </div>
 
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const Icon = item.icon
             return (
               <NavLink
@@ -190,15 +197,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
         {/* Institutional Account Info Card */}
         <div className="p-3 border-t border-white/10 bg-[#0B2F19]">
-          <div className="p-3 rounded-lg bg-black/20 border border-white/5 space-y-2">
+          <div className="p-3 rounded-lg bg-black/20 border border-white/5 space-y-1.5">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-[#22C55E] shrink-0" />
               <p className="text-xs font-semibold text-emerald-100 truncate">
-                Panitia OGSO Gontor
+                {appProfile?.display_name || 'Panitia OGSO Gontor'}
               </p>
             </div>
-            <p className="text-[11px] text-emerald-300/60 leading-tight">
-              Tahun Ajaran 2026/2027 • LMS Moodle
+            <p className="text-[11px] text-emerald-300/70 leading-tight">
+              {isSuperAdmin
+                ? 'Hak Akses: Seluruh 20 Kampus'
+                : `Kontingen: ${appProfile?.campus_id || 'Kampus'}`}
             </p>
           </div>
         </div>

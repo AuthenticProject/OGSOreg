@@ -31,6 +31,7 @@ import {
 } from '../../services/moodle/moodleCourseMapping'
 import { MoodleCourseMappingModal } from './MoodleCourseMappingModal'
 import { studentRepository } from '../../services/studentRepository'
+import { useAuth } from '../../context/AuthContext'
 
 export interface MoodleExportModalProps {
   isOpen: boolean
@@ -55,6 +56,7 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
   onExportSuccess,
   onExportComplete,
 }) => {
+  const { isSuperAdmin, assignedCampus } = useAuth()
   const [password, setPassword] = useState(DEFAULT_INITIAL_PASSWORD)
   const [showPasswordText, setShowPasswordText] = useState(false)
   const [isMappingModalOpen, setIsMappingModalOpen] = useState(false)
@@ -73,14 +75,25 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
     })
   }, [students, password, courseConfig])
 
+  // Campus Isolation Validation
+  const unauthorizedCrossCampusCount = useMemo(() => {
+    if (isSuperAdmin || !assignedCampus) return 0
+    return students.filter((s) => s.kampus && s.kampus !== assignedCampus).length
+  }, [students, isSuperAdmin, assignedCampus])
+
   if (!isOpen) return null
 
   const hasBlockingErrors =
     summary.invalidStudents > 0 ||
     summary.duplicateUsernames > 0 ||
-    summary.unmappedClasses > 0
+    summary.unmappedClasses > 0 ||
+    unauthorizedCrossCampusCount > 0
 
   const handleDownloadCsv = () => {
+    if (unauthorizedCrossCampusCount > 0) {
+      alert(`Akses Ditolak: Anda hanya diizinkan mengekspor data santri dari kampus ${assignedCampus}.`)
+      return
+    }
     setIsDownloading(true)
     try {
       const filename = `OGSOreg_Moodle_Users_${new Date().toISOString().slice(0, 10)}.csv`
@@ -104,6 +117,10 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
   }
 
   const handleDownloadExcel = async () => {
+    if (unauthorizedCrossCampusCount > 0) {
+      alert(`Akses Ditolak: Anda hanya diizinkan mengekspor data santri dari kampus ${assignedCampus}.`)
+      return
+    }
     setIsDownloading(true)
     try {
       const filename = `OGSOreg_Moodle_Users_${new Date().toISOString().slice(0, 10)}.xlsx`

@@ -175,6 +175,8 @@ class StudentRepository {
           searchTerm?: string
           jenjang?: string
           kampus?: string
+          assignedCampus?: string | null
+          accessControl?: { userRole?: string; assignedCampus?: string | null }
           sync_status?: string
           syncStatus?: string
           source?: string
@@ -205,6 +207,7 @@ class StudentRepository {
     const searchTerm = (rawParams.search || rawParams.searchTerm || '').trim()
     const jenjang = rawParams.jenjang
     const kampus = rawParams.kampus
+    const assignedCampus = rawParams.assignedCampus || rawParams.accessControl?.assignedCampus
     const syncStatus = rawParams.sync_status || rawParams.syncStatus
     const source = rawParams.source
     const sortBy = rawParams.sortBy || 'created_at'
@@ -230,7 +233,9 @@ class StudentRepository {
         if (jenjang && jenjang !== 'all' && jenjang !== 'ALL') {
           query = query.eq('jenjang', jenjang)
         }
-        if (kampus && kampus !== 'all' && kampus !== 'ALL') {
+        if (assignedCampus) {
+          query = query.eq('kampus', assignedCampus)
+        } else if (kampus && kampus !== 'all' && kampus !== 'ALL') {
           if (kampus === 'incomplete' || kampus === 'belum_diisi') {
             query = query.or('kampus.is.null,kampus.eq.')
           } else {
@@ -273,6 +278,12 @@ class StudentRepository {
 
     // Local Persistence Adapter logic
     list = [...this.getRawStore(institutionId)]
+
+    // Campus Isolation: If user is assigned to a specific campus, restrict results
+    if (assignedCampus) {
+      list = list.filter((s) => s.kampus === assignedCampus)
+    }
+
     const totalAll = list.length
 
     // 1. Search Filter (matches name, username, email, kampus)
@@ -372,10 +383,22 @@ class StudentRepository {
   async saveStudent(
     input: Partial<StudentInput>,
     institutionIdParam?: string,
-    createdByParam?: string
+    createdByParam?: string,
+    accessControl?: { userRole?: string; assignedCampus?: string | null }
   ): Promise<{ success: boolean; student?: Student; error?: string }> {
     const institutionId = institutionIdParam || input.institution_id || ''
     const createdBy = createdByParam || input.created_by || 'system'
+
+    // Campus isolation check for Campus Admin
+    if (accessControl?.assignedCampus) {
+      if (input.kampus && input.kampus !== accessControl.assignedCampus) {
+        return {
+          success: false,
+          error: `Akses Ditolak: Anda hanya berwenang menambahkan santri untuk ${accessControl.assignedCampus}.`,
+        }
+      }
+      input.kampus = accessControl.assignedCampus
+    }
 
     const parseResult = studentSchema.safeParse({
       ...input,
@@ -449,7 +472,8 @@ class StudentRepository {
   async updateStudent(
     id: string,
     updates: Partial<StudentInput>,
-    institutionId: string
+    institutionId: string,
+    accessControl?: { userRole?: string; assignedCampus?: string | null }
   ): Promise<{ success: boolean; student?: Student; error?: string }> {
     const currentStudents = this.getRawStore(institutionId)
     const existingIndex = currentStudents.findIndex((s) => s.id === id)
@@ -458,6 +482,22 @@ class StudentRepository {
     }
 
     const existing = currentStudents[existingIndex]
+
+    // Campus isolation check for Campus Admin
+    if (accessControl?.assignedCampus) {
+      if (existing.kampus && existing.kampus !== accessControl.assignedCampus) {
+        return {
+          success: false,
+          error: `Akses Ditolak: Anda tidak memiliki izin mengedit santri dari ${existing.kampus}.`,
+        }
+      }
+      if (updates.kampus && updates.kampus !== accessControl.assignedCampus) {
+        return {
+          success: false,
+          error: `Akses Ditolak: Anda tidak dapat mengubah kampus santri ke ${updates.kampus}.`,
+        }
+      }
+    }
     const merged = {
       username: updates.username !== undefined ? updates.username : existing.username,
       firstname: updates.firstname !== undefined ? updates.firstname : existing.firstname,
@@ -534,7 +574,21 @@ class StudentRepository {
     return { success: true, student: updatedStudent, ...(updatedStudent as any) }
   }
 
-  async deleteStudent(id: string, institutionId: string): Promise<boolean> {
+  async deleteStudent(
+    id: string,
+    institutionId: string,
+    accessControl?: { userRole?: string; assignedCampus?: string | null }
+  ): Promise<boolean> {
+    const currentStudents = this.getRawStore(institutionId)
+    const target = currentStudents.find((s) => s.id === id)
+
+    // Campus isolation check for Campus Admin
+    if (accessControl?.assignedCampus && target) {
+      if (target.kampus && target.kampus !== accessControl.assignedCampus) {
+        return false // Unauthorized deletion blocked
+      }
+    }
+
     if (isSupabaseConfigured()) {
       try {
         await supabase.from('students').delete().eq('id', id)
@@ -543,25 +597,40 @@ class StudentRepository {
       }
     }
 
-    const currentStudents = this.getRawStore(institutionId)
     const filtered = currentStudents.filter((s) => s.id !== id)
     this.setRawStore(institutionId, filtered)
     return true
   }
 
-  async bulkDeleteStudents(ids: string[], institutionId: string): Promise<number> {
+  async bulkDeleteStudents(
+    ids: string[],
+    institutionId: string,
+    accessControl?: { userRole?: string; assignedCampus?: string | null }
+  ): Promise<number> {
     if (ids.length === 0) return 0
+
+    let currentStudents = this.getRawStore(institutionId)
+    let eligibleIds = ids
+
+    // Campus isolation check for Campus Admin
+    if (accessControl?.assignedCampus) {
+      eligibleIds = ids.filter((id) => {
+        const student = currentStudents.find((s) => s.id === id)
+        return student && student.kampus === accessControl.assignedCampus
+      })
+    }
+
+    if (eligibleIds.length === 0) return 0
 
     if (isSupabaseConfigured()) {
       try {
-        await supabase.from('students').delete().in('id', ids)
+        await supabase.from('students').delete().in('id', eligibleIds)
       } catch {
         // Fall back
       }
     }
 
-    const currentStudents = this.getRawStore(institutionId)
-    const filtered = currentStudents.filter((s) => !ids.includes(s.id))
+    const filtered = currentStudents.filter((s) => !eligibleIds.includes(s.id))
     const deletedCount = currentStudents.length - filtered.length
     this.setRawStore(institutionId, filtered)
     return deletedCount
@@ -575,7 +644,8 @@ class StudentRepository {
     records: Partial<StudentInput>[],
     institutionId: string,
     createdBy: string,
-    source: StudentSource
+    source: StudentSource,
+    accessControl?: { userRole?: string; assignedCampus?: string | null }
   ): Promise<{
     savedCount: number
     duplicatesCount: number
@@ -583,6 +653,23 @@ class StudentRepository {
     savedStudents: Student[]
     duplicateDetails: string[]
   }> {
+    // Campus isolation check for Campus Admin
+    if (accessControl?.assignedCampus) {
+      const unauthorized = records.filter(
+        (r) => r.kampus && r.kampus.trim() !== '' && r.kampus !== accessControl.assignedCampus
+      )
+      if (unauthorized.length > 0) {
+        return {
+          savedCount: 0,
+          duplicatesCount: 0,
+          errorsCount: unauthorized.length,
+          savedStudents: [],
+          duplicateDetails: [
+            `Akses Ditolak: Ditemukan ${unauthorized.length} santri dengan kampus di luar wewenang ${accessControl.assignedCampus}.`,
+          ],
+        }
+      }
+    }
     const currentStudents = this.getRawStore(institutionId)
     const existingUsernames = new Set(currentStudents.map((s) => s.username.toLowerCase()))
     const existingEmails = new Set(currentStudents.map((s) => s.email.toLowerCase()))
@@ -679,8 +766,11 @@ class StudentRepository {
     }
   }
 
-  async getStats(institutionId: string): Promise<StudentStats> {
-    const list = this.getRawStore(institutionId)
+  async getStats(institutionId: string, assignedCampus?: string | null): Promise<StudentStats> {
+    let list = this.getRawStore(institutionId)
+    if (assignedCampus) {
+      list = list.filter((s) => s.kampus === assignedCampus)
+    }
 
     const byJenjang: Record<StudentJenjang, number> = {
       'Kelas 1': 0,

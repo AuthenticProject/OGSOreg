@@ -57,3 +57,6 @@ export interface DashboardStats {
   totalSchools: number
   needReviewCount: number
 }
+
+export * from './auth'
+

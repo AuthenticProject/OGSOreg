@@ -75,4 +75,6 @@ export interface StudentFilterParams {
   sortOrder?: 'asc' | 'desc'
   page?: number
   pageSize?: number
+  assignedCampus?: string | null
+  accessControl?: { userRole?: string; assignedCampus?: string | null }
 }

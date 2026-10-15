@@ -2,26 +2,31 @@ import React, { useState } from 'react'
 import { Outlet, Navigate } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
+import { ForcePasswordChangeModal } from '../auth/ForcePasswordChangeModal'
 import { useAuth } from '../../context/AuthContext'
 
 export const AppShell: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { profile, isLoading } = useAuth()
+  const { appProfile, profile, isLoading } = useAuth()
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
-        <div className="w-8 h-8 border-4 border-brand-maroon border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] text-slate-500">
+        <div className="w-8 h-8 border-4 border-[#166534] border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
 
-  if (!profile) {
+  // If neither appProfile nor profile is present, navigate to login
+  if (!appProfile && !profile) {
     return <Navigate to="/login" replace />
   }
 
   return (
-    <div className="min-h-screen flex bg-background text-foreground">
+    <div className="min-h-screen flex bg-[#F8FAFC] text-[#0F172A]">
+      {/* Mandatory First-Login Password Change Modal */}
+      <ForcePasswordChangeModal />
+
       {/* Sidebar (Desktop persistent, Mobile off-canvas) */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
