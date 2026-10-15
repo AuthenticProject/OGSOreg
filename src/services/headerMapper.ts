@@ -1,0 +1,230 @@
+import type { ColumnMappingItem } from '../types/excel'
+
+export interface TargetFieldDef {
+  key: string
+  label: string
+  isRequired: boolean
+  description: string
+  aliases: string[]
+}
+
+/**
+ * Standard Moodle bulk registration fields (New workflow)
+ */
+export const MOODLE_TARGET_FIELDS: TargetFieldDef[] = [
+  {
+    key: 'username',
+    label: 'Username',
+    isRequired: true,
+    description: 'Username akun Moodle peserta (unik)',
+    aliases: ['username', 'user name', 'id pengguna', 'id peserta', 'user', 'nisn'],
+  },
+  {
+    key: 'firstname',
+    label: 'Nama Depan',
+    isRequired: true,
+    description: 'Nama depan siswa (wajib diisi)',
+    aliases: ['nama depan', 'first name', 'firstname', 'nama awal'],
+  },
+  {
+    key: 'lastname',
+    label: 'Nama Belakang',
+    isRequired: true,
+    description: 'Nama belakang / marga siswa (wajib diisi)',
+    aliases: ['nama belakang', 'last name', 'lastname', 'nama akhir', 'marga'],
+  },
+  {
+    key: 'email',
+    label: 'Email',
+    isRequired: true,
+    description: 'Alamat email aktif peserta',
+    aliases: ['email', 'alamat email', 'e-mail', 'surel', 'email peserta'],
+  },
+  {
+    key: 'jenjang',
+    label: 'Jenjang (Kelas 1–5)',
+    isRequired: true,
+    description: 'Tingkat kelas siswa: Kelas 1, Kelas 2, Kelas 3, Kelas 4, Kelas 5',
+    aliases: ['jenjang', 'tingkat', 'kelas peserta', 'jenjang kelas', 'level'],
+  },
+  {
+    key: 'kampus',
+    label: 'Kampus (Gontor)',
+    isRequired: true,
+    description: 'Salah satu dari 20 pilihan Kampus Gontor resmi (Gontor 1–12, Gontor Putri 1–8)',
+    aliases: ['kampus', 'campus', 'lokasi kampus', 'kampus gontor', 'cabang kampus', 'kampus cabang', 'pesantren'],
+  },
+]
+
+/**
+ * Legacy fields for Phase 3/4 backward compatibility
+ */
+export const LEGACY_PARTICIPANT_TARGET_FIELDS: TargetFieldDef[] = [
+  {
+    key: 'no',
+    label: 'No',
+    isRequired: false,
+    description: 'Nomor urut peserta',
+    aliases: ['no', 'nomor', 'no.', 'no urut'],
+  },
+  {
+    key: 'full_name',
+    label: 'Nama Lengkap Peserta',
+    isRequired: true,
+    description: 'Nama lengkap siswa peserta lomba',
+    aliases: ['nama lengkap', 'nama peserta', 'nama', 'nama siswa', 'peserta'],
+  },
+  {
+    key: 'nisn',
+    label: 'NISN (10 Digit)',
+    isRequired: true,
+    description: 'Nomor Induk Siswa Nasional (10 angka)',
+    aliases: ['nisn', 'no nisn', 'nomor nisn', 'nisn siswa'],
+  },
+  {
+    key: 'gender',
+    label: 'Jenis Kelamin (L/P)',
+    isRequired: true,
+    description: 'Kode jenis kelamin L atau P',
+    aliases: ['jenis kelamin', 'jk', 'gender', 'l/p', 'jenis kelamin (l/p)'],
+  },
+  {
+    key: 'grade_level',
+    label: 'Kelas / Jenjang',
+    isRequired: true,
+    description: 'Tingkat kelas siswa (contoh: 7, 8, 9, 10)',
+    aliases: ['kelas', 'tingkat', 'grade', 'kelas/jenjang'],
+  },
+  {
+    key: 'school_name',
+    label: 'Asal Sekolah',
+    isRequired: true,
+    description: 'Nama sekolah, madrasah, atau pesantren',
+    aliases: ['asal sekolah', 'sekolah', 'nama sekolah', 'nama madrasah', 'pesantren', 'institusi'],
+  },
+  {
+    key: 'npsn',
+    label: 'NPSN Sekolah',
+    isRequired: false,
+    description: 'Nomor Pokok Sekolah Nasional (8 digit)',
+    aliases: ['npsn', 'no npsn', 'nomor npsn'],
+  },
+  {
+    key: 'competition_category',
+    label: 'Kategori Lomba',
+    isRequired: true,
+    description: 'Mata pelajaran / bidang kompetisi yang diikuti',
+    aliases: ['kategori', 'kategori lomba', 'bidang', 'mata pelajaran', 'cabang lomba', 'mapel'],
+  },
+  {
+    key: 'teacher_name',
+    label: 'Nama Guru Pembimbing',
+    isRequired: true,
+    description: 'Nama lengkap guru atau pendamping siswa',
+    aliases: ['nama guru pembimbing', 'guru pembimbing', 'nama pembimbing', 'pembimbing', 'guru pendamping', 'nama guru'],
+  },
+  {
+    key: 'teacher_phone',
+    label: 'No. HP Guru',
+    isRequired: false,
+    description: 'Nomor WhatsApp atau kontak guru',
+    aliases: ['no hp guru', 'no hp pembimbing', 'telepon guru', 'wa guru', 'no telepon guru'],
+  },
+  {
+    key: 'teacher_email',
+    label: 'Email Guru',
+    isRequired: false,
+    description: 'Alamat email aktif guru pembimbing',
+    aliases: ['email guru', 'email pembimbing', 'alamat email guru'],
+  },
+]
+
+/**
+ * Union target fields for mapping inspection
+ */
+export const PARTICIPANT_TARGET_FIELDS: TargetFieldDef[] = [
+  ...MOODLE_TARGET_FIELDS,
+  ...LEGACY_PARTICIPANT_TARGET_FIELDS.filter((f) => !MOODLE_TARGET_FIELDS.some((m) => m.key === f.key)),
+]
+
+export function cleanHeaderString(header: string): string {
+  return header
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s\/\(\)]/g, '')
+    .replace(/\s+/g, ' ')
+}
+
+export function detectHeaderSchema(headers: string[]): 'MOODLE' | 'LEGACY' {
+  const cleaned = headers.map(cleanHeaderString)
+  const isMoodle = cleaned.some((h) =>
+    ['username', 'nama depan', 'firstname', 'nama belakang', 'lastname', 'email'].includes(h)
+  )
+  const isLegacy = cleaned.some((h) =>
+    ['nisn', 'asal sekolah', 'sekolah', 'guru pembimbing', 'kategori lomba'].includes(h)
+  )
+
+  if (isMoodle && !isLegacy) return 'MOODLE'
+  if (isLegacy && !isMoodle) return 'LEGACY'
+  return isMoodle ? 'MOODLE' : 'LEGACY'
+}
+
+export function autoMapHeaders(
+  excelHeaders: string[],
+  sampleRows?: Record<string, unknown>[]
+): ColumnMappingItem[] {
+  const usedTargetKeys = new Set<string>()
+  const schema = detectHeaderSchema(excelHeaders)
+  const targetFieldDefs = schema === 'MOODLE'
+    ? [...MOODLE_TARGET_FIELDS, ...LEGACY_PARTICIPANT_TARGET_FIELDS]
+    : [...LEGACY_PARTICIPANT_TARGET_FIELDS, ...MOODLE_TARGET_FIELDS]
+
+  return excelHeaders.map((rawHeader) => {
+    const cleaned = cleanHeaderString(rawHeader)
+    let matchedField: TargetFieldDef | null = null
+    let confidence: 'exact' | 'alias' | 'unmapped' = 'unmapped'
+
+    // 1. Try exact match against label or key
+    matchedField = targetFieldDefs.find(
+      (f) =>
+        !usedTargetKeys.has(f.key) &&
+        (cleanHeaderString(f.label) === cleaned || cleanHeaderString(f.key) === cleaned)
+    ) || null
+
+    if (matchedField) {
+      confidence = 'exact'
+    } else {
+      // 2. Try aliases
+      matchedField = targetFieldDefs.find(
+        (f) =>
+          !usedTargetKeys.has(f.key) &&
+          f.aliases.some((alias) => cleanHeaderString(alias) === cleaned)
+      ) || null
+
+      if (matchedField) {
+        confidence = 'alias'
+      }
+    }
+
+    if (matchedField) {
+      usedTargetKeys.add(matchedField.key)
+    }
+
+    // Grab sample value if available
+    let sampleValue = ''
+    if (sampleRows && sampleRows.length > 0) {
+      const firstVal = sampleRows[0][rawHeader]
+      if (firstVal !== undefined && firstVal !== null) {
+        sampleValue = String(firstVal).slice(0, 30)
+      }
+    }
+
+    return {
+      excelHeader: rawHeader,
+      targetField: matchedField ? matchedField.key : null,
+      confidence,
+      isRequired: matchedField ? matchedField.isRequired : false,
+      sampleValue,
+    }
+  })
+}
