@@ -3,14 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { Sparkles, Lock, User, ArrowRight, AlertCircle, Eye, EyeOff } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { useAuth } from '../context/AuthContext'
-import { SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD } from '../types/auth'
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate()
   const { loginWithUsername, isConfigured } = useAuth()
 
-  const [username, setUsername] = useState('admin')
-  const [password, setPassword] = useState('OGSOreg_SuperAdmin2026!')
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -32,12 +31,6 @@ export const LoginPage: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleSelectQuickAccount = (uname: string, pwd: string) => {
-    setUsername(uname)
-    setPassword(pwd)
-    setErrorMsg(null)
   }
 
   return (
@@ -124,42 +117,6 @@ export const LoginPage: React.FC = () => {
               Masuk ke Portal
             </Button>
           </form>
-
-          {/* Quick Account Switcher for QA and Multi-Campus Testing */}
-          <div className="pt-4 border-t border-slate-100 space-y-2.5">
-            <p className="text-center text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-              Uji Coba Cepat 21 Akun Resmi
-            </p>
-            <div className="grid grid-cols-3 gap-1.5 text-[11px]">
-              <button
-                type="button"
-                onClick={() => handleSelectQuickAccount('admin', 'OGSOreg_SuperAdmin2026!')}
-                className="p-1.5 rounded-lg border border-[#BBF7D0] bg-[#DCFCE7] text-[#166534] font-bold hover:bg-emerald-200 transition-colors truncate"
-                title="Super Admin - Akses 20 Kampus"
-              >
-                Super Admin
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectQuickAccount('gontor1', SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD)}
-                className="p-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 font-medium hover:bg-slate-100 transition-colors truncate"
-                title="Gontor 1 (Putra)"
-              >
-                Gontor 1
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectQuickAccount('gontorputri1', SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD)}
-                className="p-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 font-medium hover:bg-slate-100 transition-colors truncate"
-                title="Gontor Putri 1"
-              >
-                Gontor Putri 1
-              </button>
-            </div>
-            <p className="text-center text-[10px] text-slate-400">
-              Semua 20 admin kampus menggunakan sandi awal: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-600">OGSO2026</code>
-            </p>
-          </div>
         </div>
       </div>
     </div>
