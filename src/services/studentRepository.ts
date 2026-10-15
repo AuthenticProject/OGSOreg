@@ -12,100 +12,6 @@ import type {
 
 const LOCAL_STORAGE_KEY = 'ogsoreg_students_directory_v1'
 
-// Initial seed data for offline / development demonstration
-const INITIAL_DEMO_STUDENTS: Student[] = [
-  {
-    id: 'std-demo-001',
-    username: 'ahmad_faiz',
-    firstname: 'Ahmad',
-    lastname: 'Faiz Al-Ghifari',
-    full_name: 'Ahmad Faiz Al-Ghifari',
-    email: 'ahmad.faiz@darussalam.sch.id',
-    jenjang: 'Kelas 1',
-    kampus: 'Gontor 1',
-    institution_id: 'a0000000-0000-0000-0000-000000000001',
-    created_by: '00000000-0000-0000-0000-000000000001',
-    created_at: '2026-10-10T08:30:00Z',
-    updated_at: '2026-10-10T08:30:00Z',
-    source: 'excel',
-    sync_status: 'exported',
-    moodle_user_id: null,
-    last_synced_at: null,
-  },
-  {
-    id: 'std-demo-002',
-    username: 'siti_rahma',
-    firstname: 'Siti',
-    lastname: 'Rahmawati',
-    full_name: 'Siti Rahmawati',
-    email: 'siti.rahma@darussalam.sch.id',
-    jenjang: 'Kelas 2',
-    kampus: 'Gontor Putri 1',
-    institution_id: 'a0000000-0000-0000-0000-000000000001',
-    created_by: '00000000-0000-0000-0000-000000000001',
-    created_at: '2026-10-11T09:15:00Z',
-    updated_at: '2026-10-11T09:15:00Z',
-    source: 'csv',
-    sync_status: 'local_only',
-    moodle_user_id: null,
-    last_synced_at: null,
-  },
-  {
-    id: 'std-demo-003',
-    username: 'budi_santoso',
-    firstname: 'Budi',
-    lastname: 'Santoso',
-    full_name: 'Budi Santoso',
-    email: 'budi.santoso@darussalam.sch.id',
-    jenjang: 'Kelas 3',
-    kampus: 'Gontor 2',
-    institution_id: 'a0000000-0000-0000-0000-000000000001',
-    created_by: '00000000-0000-0000-0000-000000000001',
-    created_at: '2026-10-12T10:00:00Z',
-    updated_at: '2026-10-12T10:00:00Z',
-    source: 'manual',
-    sync_status: 'local_only',
-    moodle_user_id: null,
-    last_synced_at: null,
-  },
-  {
-    id: 'std-demo-004',
-    username: 'dewi_lestari',
-    firstname: 'Dewi',
-    lastname: 'Lestari',
-    full_name: 'Dewi Lestari',
-    email: 'dewi.lestari@darussalam.sch.id',
-    jenjang: 'Kelas 4',
-    kampus: 'Gontor Putri 2',
-    institution_id: 'a0000000-0000-0000-0000-000000000001',
-    created_by: '00000000-0000-0000-0000-000000000001',
-    created_at: '2026-10-13T11:20:00Z',
-    updated_at: '2026-10-13T11:20:00Z',
-    source: 'paste',
-    sync_status: 'exported',
-    moodle_user_id: null,
-    last_synced_at: null,
-  },
-  {
-    id: 'std-demo-005',
-    username: 'rizky_pratama',
-    firstname: 'Rizky',
-    lastname: 'Pratama',
-    full_name: 'Rizky Pratama',
-    email: 'rizky.pratama@darussalam.sch.id',
-    jenjang: 'Kelas 5',
-    kampus: 'Gontor 3',
-    institution_id: 'a0000000-0000-0000-0000-000000000001',
-    created_by: '00000000-0000-0000-0000-000000000001',
-    created_at: '2026-10-14T14:45:00Z',
-    updated_at: '2026-10-14T14:45:00Z',
-    source: 'excel',
-    sync_status: 'synced',
-    moodle_user_id: '1042',
-    last_synced_at: '2026-10-14T16:00:00Z',
-  },
-]
-
 class StudentRepository {
   private inMemoryStore: Map<string, Student[]> = new Map()
 
@@ -120,19 +26,20 @@ class StudentRepository {
         if (stored) {
           const parsed = JSON.parse(stored) as Record<string, Student[]>
           Object.entries(parsed).forEach(([instId, students]) => {
-            this.inMemoryStore.set(instId, students)
+            // Filter out any legacy dummy demo students
+            const cleanStudents = (students || []).filter((s) => !s.id.startsWith('std-demo-'))
+            this.inMemoryStore.set(instId, cleanStudents)
           })
+          this.persistLocalStorage()
         } else {
-          // Seed initial demo institution
-          this.inMemoryStore.set('a0000000-0000-0000-0000-000000000001', [...INITIAL_DEMO_STUDENTS])
+          this.inMemoryStore.set('a0000000-0000-0000-0000-000000000001', [])
           this.persistLocalStorage()
         }
       } catch {
-        // Fallback in-memory
-        this.inMemoryStore.set('a0000000-0000-0000-0000-000000000001', [...INITIAL_DEMO_STUDENTS])
+        this.inMemoryStore.set('a0000000-0000-0000-0000-000000000001', [])
       }
     } else {
-      this.inMemoryStore.set('a0000000-0000-0000-0000-000000000001', [...INITIAL_DEMO_STUDENTS])
+      this.inMemoryStore.set('a0000000-0000-0000-0000-000000000001', [])
     }
   }
 
