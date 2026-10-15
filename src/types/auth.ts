@@ -27,10 +27,9 @@ export interface InitialAccountConfig {
 }
 
 /**
- * Shared temporary initial password for 20 Campus Admin accounts.
- * Must be changed upon first login.
+ * Shared initial password for 20 Campus Admin accounts.
  */
-export const SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD = 'OGSOreg_Kampus2026!'
+export const SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD = 'OGSO2026'
 
 /**
  * The 21 official initial OGSOreg accounts roster:

@@ -157,7 +157,7 @@ export const LoginPage: React.FC = () => {
               </button>
             </div>
             <p className="text-center text-[10px] text-slate-400">
-              Semua 20 admin kampus menggunakan sandi sementara: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-600">OGSOreg_Kampus2026!</code>
+              Semua 20 admin kampus menggunakan sandi awal: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-600">OGSO2026</code>
             </p>
           </div>
         </div>

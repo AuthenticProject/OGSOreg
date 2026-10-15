@@ -139,8 +139,8 @@ async function runTestSuite() {
     campusAdminLogin.success &&
       campusAdminLogin.profile?.role === 'campus_admin' &&
       campusAdminLogin.profile?.campus_id === 'Gontor 1' &&
-      campusAdminLogin.profile?.must_change_password === true,
-    '2. Campus Admin login succeeds with campus_admin role, Gontor 1 assignment & must_change_password=true'
+      campusAdminLogin.profile?.must_change_password === false,
+    '2. Campus Admin login succeeds with campus_admin role, Gontor 1 assignment & password OGSO2026'
   )
 
   // -------------------------------------------------------------

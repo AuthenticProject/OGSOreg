@@ -34,7 +34,7 @@ function initializeDefaultLocalProfiles(): { profiles: AppUserProfile[]; passwor
     role: acc.role,
     campus_id: acc.campus_id,
     is_active: true,
-    must_change_password: acc.role === 'campus_admin', // Campus admins must change password on first login
+    must_change_password: false, // Per user instruction: ga harus ubah password pas pertama login
     last_login_at: null,
     created_at: now,
     updated_at: now,
