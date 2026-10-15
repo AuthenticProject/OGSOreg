@@ -17,15 +17,24 @@ import { useImportStore } from '../stores/importStore'
 import { useAuth } from '../context/AuthContext'
 
 export const ImportWizardPage: React.FC = () => {
-  const { isSuperAdmin, assignedCampus } = useAuth()
+  const { isSuperAdmin, assignedCampus, appProfile } = useAuth()
   const setAccessControl = useImportStore((s) => s.setAccessControl)
+  const resetImport = useImportStore((s) => s.resetImport)
+  const lastAccountRef = React.useRef<string | null>(null)
 
   React.useEffect(() => {
+    const currentAccount = appProfile ? `${appProfile.username}:${assignedCampus || 'all'}` : null
+    if (lastAccountRef.current !== null && lastAccountRef.current !== currentAccount) {
+      // Different account detected (e.g. Gontor 2 -> Gontor 5): restart registration from beginning
+      resetImport()
+    }
+    lastAccountRef.current = currentAccount
+
     setAccessControl({
       userRole: isSuperAdmin ? 'super_admin' : 'campus_admin',
       assignedCampus,
     })
-  }, [isSuperAdmin, assignedCampus, setAccessControl])
+  }, [isSuperAdmin, assignedCampus, appProfile, setAccessControl, resetImport])
 
   const {
     currentStep,
@@ -33,7 +42,6 @@ export const ImportWizardPage: React.FC = () => {
     uploadedFile,
     stagedRows,
     stats,
-    resetImport,
   } = useImportStore()
 
   const hasErrors = stats.error > 0 || stats.duplicate > 0

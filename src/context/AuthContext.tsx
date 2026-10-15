@@ -7,6 +7,7 @@ import {
   DEMO_DEV_PROFILE,
 } from '../services/authService'
 import { accountService } from '../services/accountService'
+import { useImportStore } from '../stores/importStore'
 import type { Profile, Institution } from '../types/database'
 import type { AppUserProfile } from '../types/auth'
 import type { StudentKampus } from '../types/campus'
@@ -134,6 +135,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false)
 
     if (result.success && result.profile) {
+      // Clear any previous staged import data so new account starts from Step 1
+      useImportStore.getState().reset()
+
       setAppProfile(result.profile)
       // Also sync legacy profile for backward compatibility
       setProfile({
@@ -185,6 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Sign out
   const signOut = async () => {
     setIsLoading(true)
+    useImportStore.getState().reset()
     await accountService.loginWithUsername('', '') // Clear state
     setAppProfile(null)
     setProfile(null)

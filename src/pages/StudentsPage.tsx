@@ -145,9 +145,17 @@ export const StudentsPage: React.FC = () => {
     }
   }
 
+  // Reset page and selection when account/campus switches
+  useEffect(() => {
+    setCurrentPage(1)
+    setSelectedIds([])
+  }, [assignedCampus])
+
   useEffect(() => {
     loadStudents()
   }, [
+    assignedCampus,
+    isSuperAdmin,
     institutionId,
     jenjangFilter,
     kampusFilter,
