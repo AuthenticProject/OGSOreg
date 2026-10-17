@@ -17,6 +17,7 @@ import { isJenjangKelasMatch, getAllowedClassesForJenjang } from '../types/stude
 import type { ColumnMappingItem, StagedParticipantRow, ImportStatistics } from '../types/excel'
 import { studentRepository } from './studentRepository'
 import { customFieldService } from './customFieldService'
+import { cleanHeaderString } from './headerMapper'
 
 /**
  * Transforms raw excel rows according to column mappings and performs
@@ -91,6 +92,35 @@ export function processAndValidateRows(
         const val = raw[m.excelHeader]
         if (val !== undefined && val !== null && String(val).trim() !== '') {
           custom_fields[fieldKey] = normalizeString(val)
+        }
+      }
+    })
+
+    // Auto-fallback unmapped active custom fields from raw columns if available
+    const activeCFs = customFieldService.getActiveFieldsSync()
+    activeCFs.forEach((cf) => {
+      if (!custom_fields[cf.key]) {
+        const rawKeys = Object.keys(raw)
+        const cleanLabel = cleanHeaderString(cf.label)
+        const cleanKey = cleanHeaderString(cf.key)
+
+        for (const rk of rawKeys) {
+          const cRk = cleanHeaderString(rk)
+          const isMatch =
+            cRk === cleanLabel ||
+            cRk === cleanKey ||
+            (cleanKey.includes('stambuk') && cRk.includes('stambuk')) ||
+            (cleanLabel.includes('stambuk') && cRk.includes('stambuk')) ||
+            (cleanKey.includes('daerah') && (cRk.includes('daerah') || cRk.includes('konsulat'))) ||
+            (cleanLabel.includes('daerah') && (cRk.includes('daerah') || cRk.includes('konsulat')))
+
+          if (isMatch) {
+            const candidate = raw[rk]
+            if (candidate !== undefined && candidate !== null && String(candidate).trim() !== '') {
+              custom_fields[cf.key] = normalizeString(candidate)
+              break
+            }
+          }
         }
       }
     })

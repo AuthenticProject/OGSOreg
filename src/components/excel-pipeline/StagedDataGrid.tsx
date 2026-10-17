@@ -17,6 +17,7 @@ import {
   Copy,
   Plus,
   Search,
+  X,
 } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { useImportStore } from '../../stores/importStore'
@@ -234,6 +235,7 @@ export const StagedDataGrid: React.FC = () => {
   }, [])
 
   const [pageSize, setPageSize] = useState(25)
+  const [selectedErrorRow, setSelectedErrorRow] = useState<StagedParticipantRow | null>(null)
 
   // Filter & Search data
   const filteredData = useMemo(() => {
@@ -348,17 +350,44 @@ export const StagedDataGrid: React.FC = () => {
             )
           }
 
+          const errList = Object.entries(row.original._errors)
+          const errCount = errList.length
+
           return (
-            <span
-              title={Object.values(row.original._errors).join('\n')}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-50 text-rose-800 border border-rose-200"
-            >
-              <AlertCircle className="w-3 h-3 text-rose-600" />
-              Error
-            </span>
+            <div className="relative group/status inline-block">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setSelectedErrorRow(row.original)
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-rose-100 hover:bg-rose-200 text-rose-900 border border-rose-300 transition-colors shadow-2xs cursor-pointer"
+                title="Klik untuk melihat rincian penyebab error"
+              >
+                <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                <span>Error {errCount > 0 ? `(${errCount})` : ''}</span>
+              </button>
+
+              {errCount > 0 && (
+                <div className="absolute left-0 top-full mt-1 z-50 hidden group-hover/status:block w-72 p-2.5 rounded-lg bg-slate-900 text-white shadow-xl border border-slate-700 pointer-events-none text-left whitespace-normal">
+                  <p className="text-[11px] font-bold text-rose-300 mb-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3 text-rose-400" />
+                    Rincian Error (Baris #{row.original._rowIndex}):
+                  </p>
+                  <div className="space-y-1 text-[10px] text-slate-200">
+                    {errList.map(([fKey, msg]) => (
+                      <div key={fKey} className="border-t border-slate-800 pt-1">
+                        <span className="font-semibold text-rose-400 uppercase">{fKey.replace(/^custom_/, '')}:</span>{' '}
+                        <span>{msg}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           )
         },
-        size: 90,
+        size: 95,
       },
       {
         accessorKey: 'username',
@@ -635,22 +664,56 @@ export const StagedDataGrid: React.FC = () => {
           <tbody className="divide-y divide-slate-100">
             {table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className={`hover:bg-slate-50/70 transition-colors ${
-                    row.original._status === 'ERROR'
-                      ? 'bg-rose-50/25'
-                      : row.original._status === 'WARNING'
-                      ? 'bg-amber-50/20'
-                      : ''
-                  }`}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-3.5 py-2.5 text-xs text-slate-800">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
+                <React.Fragment key={row.id}>
+                  <tr
+                    className={`hover:bg-slate-50/70 transition-colors ${
+                      row.original._status === 'ERROR'
+                        ? 'bg-rose-50/30'
+                        : row.original._status === 'WARNING'
+                        ? 'bg-amber-50/20'
+                        : ''
+                    }`}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="px-3.5 py-2.5 text-xs text-slate-800">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                  {row.original._status === 'ERROR' && Object.keys(row.original._errors).length > 0 && (
+                    <tr className="bg-rose-50/90 border-b-2 border-rose-300">
+                      <td colSpan={columns.length} className="px-4 py-2.5">
+                        <div className="flex items-start gap-2.5 text-xs text-rose-950">
+                          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                          <div className="flex-1 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-rose-950 text-xs">
+                                Rincian Masalah Baris #{row.original._rowIndex} ({row.original.firstname || row.original.username || 'Peserta'}):
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedErrorRow(row.original)}
+                                className="text-[11px] font-semibold text-rose-700 hover:text-rose-900 underline cursor-pointer"
+                              >
+                                Buka Rincian Lengkap
+                              </button>
+                            </div>
+                            <div className="flex flex-wrap gap-2 text-[11px]">
+                              {Object.entries(row.original._errors).map(([field, msg]) => (
+                                <div key={field} className="inline-flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-md border border-rose-300 shadow-2xs">
+                                  <span className="font-bold text-rose-700 uppercase text-[10px] tracking-wide">
+                                    {field.replace(/^custom_/, '')}:
+                                  </span>
+                                  <span className="text-slate-800">{msg}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))
             ) : (
               <tr>
@@ -689,6 +752,49 @@ export const StagedDataGrid: React.FC = () => {
             >
               <ChevronRight className="w-4 h-4" />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ERROR DETAIL MODAL */}
+      {selectedErrorRow && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl max-w-lg w-full border border-border shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-rose-50/80">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-rose-600" />
+                <h3 className="text-sm font-bold text-foreground">
+                  Rincian Error — Baris #{selectedErrorRow._rowIndex} ({selectedErrorRow.firstname || selectedErrorRow.username || 'Peserta'})
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedErrorRow(null)}
+                className="p-1 rounded-lg hover:bg-slate-200 text-slate-500 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-3">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Berikut adalah daftar masalah validasi yang terdeteksi pada baris ini. Klik sel terkait langsung pada tabel untuk memperbaikinya:
+              </p>
+              <div className="space-y-2">
+                {Object.entries(selectedErrorRow._errors).map(([field, msg]) => (
+                  <div key={field} className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs">
+                    <p className="font-bold text-rose-800 uppercase tracking-wide text-[10px]">
+                      Kolom: {field.replace(/^custom_/, '')}
+                    </p>
+                    <p className="text-slate-800 mt-1 font-medium">{msg}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center justify-end px-5 py-3 border-t border-border bg-slate-50">
+              <Button variant="primary" size="sm" onClick={() => setSelectedErrorRow(null)}>
+                Tutup & Perbaiki
+              </Button>
+            </div>
           </div>
         </div>
       )}

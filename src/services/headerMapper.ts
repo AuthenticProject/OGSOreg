@@ -220,19 +220,36 @@ export const PARTICIPANT_TARGET_FIELDS: TargetFieldDef[] = [
  */
 export function getCustomTargetFields(customFields?: CustomFieldDefinition[]): TargetFieldDef[] {
   const fields = customFields || customFieldService.getActiveFieldsSync()
-  return fields.map((f) => ({
-    key: `custom_${f.key}`,
-    label: f.label,
-    isRequired: f.is_required,
-    description: `Bidang Kustom: ${f.label} (${f.field_type})`,
-    aliases: [
-      f.label.toLowerCase(),
-      f.key.toLowerCase(),
-      `custom_${f.key.toLowerCase()}`,
-      f.label.toLowerCase().replace(/[^a-z0-9]/g, ''),
-      f.key.toLowerCase().replace(/[^a-z0-9]/g, ''),
-    ],
-  }))
+  return fields.map((f) => {
+    const extraAliases: string[] = []
+    const lowerKey = f.key.toLowerCase()
+    const lowerLabel = f.label.toLowerCase()
+
+    if (lowerKey.includes('stambuk') || lowerLabel.includes('stambuk')) {
+      extraAliases.push('stambuk', 'no stambuk', 'no. stambuk', 'nomor stambuk', 'no.stambuk', 'stambuk santri', 'stbk')
+    }
+    if (lowerKey.includes('daerah') || lowerLabel.includes('daerah') || lowerKey.includes('konsulat') || lowerLabel.includes('konsulat')) {
+      extraAliases.push('daerah', 'asal daerah', 'daerah asal', 'konsulat', 'asal konsulat', 'konsulat ponorogo', 'konsulat/daerah')
+    }
+    if (lowerKey.includes('induk') || lowerLabel.includes('induk')) {
+      extraAliases.push('nomor induk', 'no induk', 'no. induk', 'nomor induk santri', 'nis')
+    }
+
+    return {
+      key: `custom_${f.key}`,
+      label: f.label,
+      isRequired: f.is_required,
+      description: `Bidang Kustom: ${f.label} (${f.field_type})`,
+      aliases: [
+        lowerLabel,
+        lowerKey,
+        `custom_${lowerKey}`,
+        lowerLabel.replace(/[^a-z0-9]/g, ''),
+        lowerKey.replace(/[^a-z0-9]/g, ''),
+        ...extraAliases,
+      ],
+    }
+  })
 }
 
 export function getAllParticipantTargetFields(customFields?: CustomFieldDefinition[]): TargetFieldDef[] {
@@ -348,6 +365,10 @@ export function autoMapHeaders(
           matchedField = targetFieldDefs.find((f) => f.key === 'kelas') || null
         } else if (!usedTargetKeys.has('kampus') && (cleaned.includes('kampus') || cleaned.includes('cabang'))) {
           matchedField = targetFieldDefs.find((f) => f.key === 'kampus') || null
+        } else if (cleaned.includes('stambuk')) {
+          matchedField = targetFieldDefs.find((f) => !usedTargetKeys.has(f.key) && (f.key.includes('stambuk') || f.label.toLowerCase().includes('stambuk'))) || null
+        } else if (cleaned.includes('daerah') || cleaned.includes('konsulat')) {
+          matchedField = targetFieldDefs.find((f) => !usedTargetKeys.has(f.key) && (f.key.includes('daerah') || f.label.toLowerCase().includes('daerah') || f.label.toLowerCase().includes('konsulat'))) || null
         }
 
         if (matchedField) {
