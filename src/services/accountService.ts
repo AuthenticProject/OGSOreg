@@ -178,37 +178,39 @@ class AccountService {
             }
           }
 
+          const targetEmail =
+            target.auth_email || target.user_email || target.email || `${username}@ogso.gontor.ac.id`
+
           const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
-            email: target.user_email,
+            email: targetEmail,
             password,
           })
 
-          if (authErr) {
-            this.recordFailedAttempt(username)
-            return { success: false, error: 'Nama pengguna atau kata sandi tidak valid.' }
-          }
+          if (!authErr && authData.user) {
+            this.clearFailedAttempts(username)
 
-          this.clearFailedAttempts(username)
-
-          // Fetch full profile
-          const { data: profileData } = await supabase
-            .from('user_profiles')
-            .select('*')
-            .eq('auth_user_id', authData.user?.id)
-            .single()
-
-          if (profileData) {
-            // Update last_login_at
-            await supabase
+            // Fetch full profile from user_profiles
+            const { data: profileData } = await supabase
               .from('user_profiles')
-              .update({ last_login_at: new Date().toISOString() })
-              .eq('id', profileData.id)
+              .select('*')
+              .eq('auth_user_id', authData.user.id)
+              .single()
 
-            return {
-              success: true,
-              profile: profileData as AppUserProfile,
-              mustChangePassword: profileData.must_change_password,
+            if (profileData) {
+              // Update last_login_at
+              await supabase
+                .from('user_profiles')
+                .update({ last_login_at: new Date().toISOString() })
+                .eq('id', profileData.id)
+
+              return {
+                success: true,
+                profile: profileData as AppUserProfile,
+                mustChangePassword: profileData.must_change_password,
+              }
             }
+          } else {
+            console.warn('Supabase auth sign in returned error:', authErr?.message)
           }
         }
       } catch (err) {
