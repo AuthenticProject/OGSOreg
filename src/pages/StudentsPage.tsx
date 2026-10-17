@@ -28,6 +28,7 @@ import {
   Building,
   Database,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatCard } from '../components/ui/StatCard'
@@ -89,6 +90,7 @@ export const StudentsPage: React.FC = () => {
 
   // Async States
   const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [actionFeedback, setActionFeedback] = useState<string | null>(null)
 
@@ -159,6 +161,23 @@ export const StudentsPage: React.FC = () => {
       setErrorMsg(err instanceof Error ? err.message : 'Gagal memuat data santri.')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // Manual refresh / sync without full page reload
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await studentRepository.syncWithSupabase()
+      await loadStudents()
+      setActionFeedback('Data santri berhasil disegarkan dan disinkronkan dengan database cloud.')
+      setTimeout(() => setActionFeedback(null), 3500)
+    } catch {
+      await loadStudents()
+      setActionFeedback('Data santri berhasil dimuat ulang.')
+      setTimeout(() => setActionFeedback(null), 3000)
+    } finally {
+      setIsRefreshing(false)
     }
   }
 
@@ -823,6 +842,17 @@ export const StudentsPage: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
+              disabled={isRefreshing || isLoading}
+              onClick={handleManualRefresh}
+              leftIcon={<RefreshCw className={`w-4 h-4 mr-1.5 text-blue-600 ${isRefreshing ? 'animate-spin' : ''}`} />}
+              className="border-blue-200 text-blue-700 hover:bg-blue-50 font-semibold cursor-pointer"
+              title="Sinkronkan & segarkan data santri dari database cloud tanpa reload halaman"
+            >
+              {isRefreshing ? 'Menyegarkan...' : 'Segarkan Data'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleExportAllExcel}
               leftIcon={<Download className="w-4 h-4 mr-1.5 text-emerald-700" />}
             >
@@ -1078,11 +1108,22 @@ export const StudentsPage: React.FC = () => {
               onClick={() => {
                 setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))
               }}
-              className="flex items-center gap-1.5 px-2.5 py-2 text-xs rounded-lg border border-border bg-white hover:bg-slate-50 text-slate-700"
+              className="flex items-center gap-1.5 px-2.5 py-2 text-xs rounded-lg border border-border bg-white hover:bg-slate-50 text-slate-700 cursor-pointer"
               title="Balik Urutan"
             >
               <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground" />
               <span>{sortOrder === 'desc' ? 'Terbaru' : 'Terlama'}</span>
+            </button>
+
+            {/* Refresh / Segarkan */}
+            <button
+              disabled={isRefreshing || isLoading}
+              onClick={handleManualRefresh}
+              className="flex items-center gap-1.5 px-2.5 py-2 text-xs rounded-lg border border-blue-200 bg-blue-50/60 hover:bg-blue-100 text-blue-700 font-medium transition-colors cursor-pointer disabled:opacity-50"
+              title="Sinkronkan & segarkan data santri dari database cloud tanpa reload halaman"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-blue-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>{isRefreshing ? 'Menyegarkan...' : 'Segarkan'}</span>
             </button>
           </div>
         </div>
