@@ -71,21 +71,24 @@ const EditableCell: React.FC<EditableCellProps> = ({
 
   if (isEditing) {
     return (
-      <input
-        autoFocus
-        type="text"
-        value={tempValue}
-        onChange={(e) => setTempValue(e.target.value)}
-        onBlur={handleBlur}
-        onKeyDown={handleKeyDown}
-        className={`w-full px-2 py-1 text-xs rounded border bg-white focus:outline-none focus:ring-2 ${
-          hasError
-            ? 'border-rose-400 focus:ring-rose-500'
-            : hasWarning
-            ? 'border-amber-400 focus:ring-amber-500'
-            : 'border-brand-maroon focus:ring-brand-maroon'
-        }`}
-      />
+      <div className={`w-full ${widthClass}`}>
+        <input
+          autoFocus
+          type="text"
+          value={tempValue}
+          onChange={(e) => setTempValue(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          className={`w-full px-2 py-1 text-xs rounded border bg-white focus:outline-none focus:ring-2 shadow-inner ${widthClass} ${
+            hasError
+              ? 'border-rose-400 focus:ring-rose-500'
+              : hasWarning
+              ? 'border-amber-400 focus:ring-amber-500'
+              : 'border-[#166534] focus:ring-[#22C55E]'
+          }`}
+        />
+      </div>
     )
   }
 
@@ -156,23 +159,25 @@ const EditableDropdownCell: React.FC<EditableDropdownCellProps> = ({
 
   if (isEditing) {
     return (
-      <select
-        autoFocus
-        value={value || ''}
-        onChange={(e) => {
-          onSave(row._rowId, String(field), e.target.value)
-          setIsEditing(false)
-        }}
-        onBlur={() => setIsEditing(false)}
-        className="w-full px-2 py-1 text-xs rounded border border-[#166534] focus:outline-none focus:ring-2 focus:ring-[#22C55E] bg-white"
-      >
-        <option value="" disabled>-- {placeholder || 'Pilih Opsi'} --</option>
-        {options.map((opt) => (
-          <option key={opt} value={opt}>
-            {opt}
-          </option>
-        ))}
-      </select>
+      <div className={`w-full ${widthClass}`}>
+        <select
+          autoFocus
+          value={value || ''}
+          onChange={(e) => {
+            onSave(row._rowId, String(field), e.target.value)
+            setIsEditing(false)
+          }}
+          onBlur={() => setIsEditing(false)}
+          className={`w-full px-2 py-1 text-xs rounded border border-[#166534] focus:outline-none focus:ring-2 focus:ring-[#22C55E] bg-white ${widthClass}`}
+        >
+          <option value="" disabled>-- {placeholder || 'Pilih Opsi'} --</option>
+          {options.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+      </div>
     )
   }
 
@@ -392,6 +397,7 @@ export const StagedDataGrid: React.FC = () => {
       {
         id: 'stambuk',
         header: 'Stambuk *',
+        size: 130,
         cell: ({ row }) => (
           <EditableCell
             row={row.original}
@@ -406,6 +412,7 @@ export const StagedDataGrid: React.FC = () => {
       {
         accessorKey: 'firstname',
         header: 'Nama Depan *',
+        size: 160,
         cell: ({ row }) => (
           <EditableCell
             row={row.original}
@@ -420,6 +427,7 @@ export const StagedDataGrid: React.FC = () => {
       {
         accessorKey: 'lastname',
         header: 'Nama Belakang *',
+        size: 160,
         cell: ({ row }) => (
           <EditableCell
             row={row.original}
@@ -434,6 +442,7 @@ export const StagedDataGrid: React.FC = () => {
       {
         accessorKey: 'username',
         header: 'Username *',
+        size: 180,
         cell: ({ row }) => {
           const suggestions = row.original._usernameSuggestions
           const hasError = !!row.original._errors['username']
@@ -473,6 +482,7 @@ export const StagedDataGrid: React.FC = () => {
       {
         accessorKey: 'kelas',
         header: 'Kelas *',
+        size: 140,
         cell: ({ row }) => (
           <EditableCell
             row={row.original}
@@ -487,6 +497,7 @@ export const StagedDataGrid: React.FC = () => {
       {
         accessorKey: 'jenjang',
         header: 'Jenjang *',
+        size: 150,
         cell: ({ row }) => (
           <EditableDropdownCell
             row={row.original}
@@ -502,6 +513,7 @@ export const StagedDataGrid: React.FC = () => {
       {
         accessorKey: 'email',
         header: 'Email *',
+        size: 210,
         cell: ({ row }) => (
           <EditableCell
             row={row.original}
@@ -516,6 +528,7 @@ export const StagedDataGrid: React.FC = () => {
       {
         id: 'daerah',
         header: 'Daerah *',
+        size: 150,
         cell: ({ row }) => (
           <EditableCell
             row={row.original}
@@ -530,6 +543,7 @@ export const StagedDataGrid: React.FC = () => {
       {
         accessorKey: 'kampus',
         header: 'Kampus *',
+        size: 170,
         cell: ({ row }) => (
           <EditableDropdownCell
             row={row.original}
@@ -554,6 +568,7 @@ export const StagedDataGrid: React.FC = () => {
         .map((cf) => ({
           id: `custom_${cf.key}`,
           header: `${cf.label}${cf.is_required ? ' *' : ''}`,
+          size: 160,
           cell: ({ row }: { row: { original: StagedParticipantRow } }) => {
             const fieldKey = `custom_${cf.key}`
             const val =
@@ -680,17 +695,20 @@ export const StagedDataGrid: React.FC = () => {
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id} className="border-b border-border bg-slate-50/90">
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="px-3.5 py-3 text-[11px] font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap"
-                    style={{ width: header.getSize() !== 150 ? header.getSize() : undefined }}
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </th>
-                ))}
+                {headerGroup.headers.map((header) => {
+                  const size = header.getSize()
+                  return (
+                    <th
+                      key={header.id}
+                      className="px-3.5 py-3 text-[11px] font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap"
+                      style={{ width: size, minWidth: size }}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </th>
+                  )
+                })}
               </tr>
             ))}
           </thead>
@@ -707,11 +725,18 @@ export const StagedDataGrid: React.FC = () => {
                         : ''
                     }`}
                   >
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-3.5 py-2.5 text-xs text-slate-800">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
+                    {row.getVisibleCells().map((cell) => {
+                      const size = cell.column.getSize()
+                      return (
+                        <td
+                          key={cell.id}
+                          className="px-3.5 py-2.5 text-xs text-slate-800"
+                          style={{ minWidth: size }}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      )
+                    })}
                   </tr>
                   {row.original._status === 'ERROR' && Object.keys(row.original._errors).length > 0 && (
                     <tr className="bg-rose-50/90 border-b-2 border-rose-300">
