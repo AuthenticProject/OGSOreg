@@ -480,8 +480,8 @@ export const StagedDataGrid: React.FC = () => {
             field="kelas"
             value={normalizeKelas(row.original.kelas) || row.original.grade_level || ''}
             onSave={updateCell}
-            placeholder="Contoh: 5-C"
-            widthClass="min-w-[110px] font-medium"
+            placeholder="Contoh: 5-B, 3 int F"
+            widthClass="min-w-[125px] font-medium"
           />
         ),
       },

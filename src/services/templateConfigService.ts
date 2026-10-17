@@ -108,7 +108,7 @@ export const DEFAULT_STANDARD_EXCEL_COLUMNS: ExcelTemplateColumnConfig[] = [
     key: 'kelas',
     label: 'Kelas Santri',
     originalLabel: 'Kelas Santri',
-    description: 'Format penulisan kelas santri: 5-C, 1-B, 2-D, 1-Int-A, 3-S (Tingkat-Huruf)',
+    description: 'Format penulisan kelas santri: 5-B, 3-C atau untuk intensif: 3 int F, 1 int C',
     is_standard: true,
     is_required: true,
     include_in_excel: true,
@@ -153,11 +153,15 @@ class TemplateConfigService {
         if (stored) {
           const parsed = JSON.parse(stored) as ExcelTemplateColumnConfig[]
           if (Array.isArray(parsed) && parsed.length > 0) {
-            // Ensure std_kelas exists in cached columns
-            const hasKelas = parsed.some((c) => c.key === 'kelas')
-            if (!hasKelas) {
+            // Ensure std_kelas exists in cached columns and is strictly text input (isian)
+            const kelasCol = parsed.find((c) => c.key === 'kelas')
+            if (!kelasCol) {
               const defaultKelas = DEFAULT_STANDARD_EXCEL_COLUMNS.find((c) => c.key === 'kelas')!
               parsed.splice(5, 0, defaultKelas)
+            } else {
+              kelasCol.field_type = 'text'
+              kelasCol.options = undefined
+              kelasCol.description = 'Format penulisan kelas santri: 5-B, 3-C atau untuk intensif: 3 int F, 1 int C'
             }
             // Ensure jenjang options are updated to Jenjang 1-5
             const jenjangCol = parsed.find((c) => c.key === 'jenjang')

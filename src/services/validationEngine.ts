@@ -304,7 +304,7 @@ export function validateAllStagedRows(
 
       // Validate Kelas is required
       if (!normKelas || normKelas.trim() === '') {
-        errors['kelas'] = 'Kelas santri wajib diisi (contoh: 5-C, 5-S, 1-B, 1-Int-A).'
+        errors['kelas'] = 'Kelas santri wajib diisi (contoh: 5-B, 3-C atau untuk intensif: 3 int F, 1 int C).'
       }
 
       // Enforce strict Jenjang vs Kelas matching

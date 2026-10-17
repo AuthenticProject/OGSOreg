@@ -118,15 +118,6 @@ export async function buildRegistrationWorkbook(
           errorTitle: 'Pilihan Jenjang Tidak Valid',
           error: 'Pilih salah satu jenjang lomba: Jenjang 1, Jenjang 2, Jenjang 3, Jenjang 4, atau Jenjang 5.',
         }
-      } else if (col.key === 'kelas') {
-        ws.getCell(`${colLetter}${r}`).dataValidation = {
-          type: 'list',
-          allowBlank: !col.is_required,
-          formulae: ['_REFERENSI!$C$1:$C$7'],
-          showErrorMessage: true,
-          errorTitle: 'Pilihan Kelas Tidak Valid',
-          error: 'Pilih salah satu kelas: Kelas 1, Kelas 2, Kelas 1 Int, Kelas 3, Kelas 3 Int, Kelas 4, atau Kelas 5.',
-        }
       } else if (col.key === 'kampus') {
         ws.getCell(`${colLetter}${r}`).dataValidation = {
           type: 'list',
@@ -136,7 +127,7 @@ export async function buildRegistrationWorkbook(
           errorTitle: 'Pilihan Kampus Tidak Valid',
           error: 'Pilih salah satu dari 20 Kampus Gontor resmi (misal: Gontor 1, Gontor Putri 1).',
         }
-      } else if (col.field_type === 'dropdown') {
+      } else if (col.field_type === 'dropdown' && col.key !== 'kelas') {
         const refInfo = dropdownRefMap.get(col.key)
         if (refInfo) {
           ws.getCell(`${colLetter}${r}`).dataValidation = {
@@ -182,7 +173,7 @@ export async function buildRegistrationWorkbook(
       lastname: 'Santoso',
       email: 'budi.santoso@sekolah.sch.id',
       jenjang: 'Jenjang 1',
-      kelas: 'Kelas 1',
+      kelas: '1-B',
       kampus: 'Gontor 1',
     },
     {
@@ -191,7 +182,7 @@ export async function buildRegistrationWorkbook(
       lastname: 'Rahma',
       email: 'siti.rahma@sekolah.sch.id',
       jenjang: 'Jenjang 2',
-      kelas: 'Kelas 2',
+      kelas: '2-C',
       kampus: 'Gontor Putri 1',
     },
     {
@@ -200,7 +191,7 @@ export async function buildRegistrationWorkbook(
       lastname: 'Wijaya',
       email: 'andi.wijaya@sekolah.sch.id',
       jenjang: 'Jenjang 3',
-      kelas: 'Kelas 1 Int',
+      kelas: '1 int C',
       kampus: 'Gontor 2',
     },
     {
@@ -209,7 +200,7 @@ export async function buildRegistrationWorkbook(
       lastname: 'Lestari',
       email: 'dewi.lestari@sekolah.sch.id',
       jenjang: 'Jenjang 4',
-      kelas: 'Kelas 3 Int',
+      kelas: '3 int F',
       kampus: 'Gontor Putri 3',
     },
     {
@@ -218,7 +209,7 @@ export async function buildRegistrationWorkbook(
       lastname: 'Pratama',
       email: 'rizky.pratama@sekolah.sch.id',
       jenjang: 'Jenjang 5',
-      kelas: 'Kelas 5',
+      kelas: '5-B',
       kampus: 'Gontor 3',
     },
   ]
@@ -266,7 +257,7 @@ export async function buildRegistrationWorkbook(
     ['   - Nama Depan    : Nama awal siswa/santri peserta (wajib diisi).'],
     ['   - Nama Belakang : Nama akhir / marga siswa/santri peserta.'],
     ['   - Email         : Alamat email aktif berformat valid (contoh: ahmad@sekolah.sch.id).'],
-    ['   - Kelas Santri  : PILIH DARI DROPDOWN: Kelas 1, Kelas 2, Kelas 1 Int, Kelas 3, Kelas 3 Int, Kelas 4, Kelas 5.'],
+    ['   - Kelas Santri  : ISIAN (Bukan Dropdown). Format wajib: Angka-Abjad (contoh: 5-B, 3-C, 2-B, 4-F) atau untuk kelas intensif: Angka int Abjad (contoh: 3 int F, 1 int C).'],
     ['   - Jenjang Lomba : PILIH DARI DROPDOWN: Jenjang 1, Jenjang 2, Jenjang 3, Jenjang 4, Jenjang 5.'],
     ['   - Kampus        : PILIH DARI DROPDOWN: 20 Pilihan Kampus Gontor Resmi (Gontor 1–12, Gontor Putri 1–8).'],
     [''],

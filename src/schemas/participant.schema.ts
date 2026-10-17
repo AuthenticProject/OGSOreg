@@ -67,7 +67,7 @@ const baseMoodleParticipantObject = z.object({
     .trim()
     .optional()
     .refine((val) => !val || isValidKelasFormat(val), {
-      message: 'Format kelas tidak valid (contoh: 5-C, 5-S, 1-B, 1-Int-A).',
+      message: 'Format kelas tidak valid (contoh: 5-B, 3-C atau untuk intensif: 3 int F, 1 int C).',
     }),
   kampus: z
     .string()
@@ -102,9 +102,9 @@ export const moodleParticipantWithKampusSchema = baseMoodleParticipantObject
     kelas: z
       .string({ required_error: 'Kelas santri wajib diisi.' })
       .trim()
-      .min(1, 'Kelas santri wajib diisi (contoh: 5-C, 5-S, 1-B).')
+      .min(1, 'Kelas santri wajib diisi (contoh: 5-B, 3-C atau untuk intensif: 3 int F, 1 int C).')
       .refine((val) => isValidKelasFormat(val), {
-        message: 'Format kelas tidak valid (contoh: 5-C, 5-S, 1-B, 1-Int-A).',
+        message: 'Format kelas tidak valid (contoh: 5-B, 3-C atau untuk intensif: 3 int F, 1 int C).',
       }),
     kampus: z
       .string()

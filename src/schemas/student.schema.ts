@@ -1,12 +1,10 @@
 import { z } from 'zod'
 import {
   STUDENT_JENJANG_OPTIONS,
-  STUDENT_KELAS_OPTIONS,
   isJenjangKelasMatch,
   getAllowedClassesForJenjang,
   isValidKelasFormat,
   type StudentJenjang,
-  type StudentKelas,
 } from '../types/student'
 import { KAMPUS_OPTIONS, type StudentKampus } from '../types/campus'
 
@@ -47,7 +45,7 @@ const baseStudentObject = z.object({
     .string()
     .optional()
     .refine((val) => !val || isValidKelasFormat(val), {
-      message: 'Format kelas tidak valid (contoh format yang benar: 5-C, 5-S, 1-B, 1-Int-A).',
+      message: 'Format kelas tidak valid (contoh: 5-B, 3-C atau untuk intensif: 3 int F, 1 int C).',
     }),
   kampus: z
     .string()
@@ -89,11 +87,11 @@ export const studentSchema = baseStudentObject.superRefine((data, ctx) => {
 export const newStudentSchema = baseStudentObject
   .extend({
     kelas: z
-      .string({ required_error: 'Kelas santri wajib dipilih.' })
+      .string({ required_error: 'Kelas santri wajib diisi.' })
       .trim()
-      .min(1, 'Kelas santri wajib dipilih.')
-      .refine((val) => STUDENT_KELAS_OPTIONS.includes(val as StudentKelas), {
-        message: 'Kelas harus salah satu dari: Kelas 1, Kelas 2, Kelas 1 Int, Kelas 3, Kelas 3 Int, Kelas 4, Kelas 5.',
+      .min(1, 'Kelas santri wajib diisi (contoh: 5-B, 3-C atau untuk intensif: 3 int F, 1 int C).')
+      .refine((val) => isValidKelasFormat(val), {
+        message: 'Format kelas tidak valid (contoh: 5-B, 3-C atau untuk intensif: 3 int F, 1 int C).',
       }),
     kampus: z
       .string({ required_error: 'Kampus wajib dipilih.' })

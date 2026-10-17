@@ -54,6 +54,7 @@ import type {
 } from '../types/student'
 import { getExpectedJenjangForKelas } from '../types/student'
 import { MOODLE_JENJANG_OPTIONS, MOODLE_KELAS_OPTIONS } from '../types/excel'
+import { normalizeKelas } from '../services/dataNormalizer'
 
 export const StudentsPage: React.FC = () => {
   const navigate = useNavigate()
@@ -1640,7 +1641,10 @@ export const StudentsPage: React.FC = () => {
                     <label className="block font-semibold text-slate-700 mb-1">
                       Kelas Santri <span className="text-rose-500">*</span>
                     </label>
-                    <select
+                    <input
+                      type="text"
+                      required
+                      placeholder="Contoh: 5-B, 3 int F"
                       value={formData.kelas}
                       onChange={(e) => {
                         const newKelas = e.target.value as StudentKelas
@@ -1651,14 +1655,19 @@ export const StudentsPage: React.FC = () => {
                           jenjang: autoJenjang || formData.jenjang,
                         })
                       }}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-maroon"
-                    >
-                      {MOODLE_KELAS_OPTIONS.map((k) => (
-                        <option key={k} value={k}>
-                          {k}
-                        </option>
-                      ))}
-                    </select>
+                      onBlur={() => {
+                        if (formData.kelas) {
+                          const norm = normalizeKelas(formData.kelas) as StudentKelas
+                          const autoJenjang = getExpectedJenjangForKelas(norm)
+                          setFormData({
+                            ...formData,
+                            kelas: norm,
+                            jenjang: autoJenjang || formData.jenjang,
+                          })
+                        }
+                      }}
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-maroon font-medium"
+                    />
                     {formErrors.kelas && (
                       <p className="text-rose-600 text-[11px] mt-0.5">{formErrors.kelas}</p>
                     )}
@@ -1940,7 +1949,10 @@ export const StudentsPage: React.FC = () => {
                     <label className="block font-semibold text-slate-700 mb-1">
                       Kelas Santri <span className="text-rose-500">*</span>
                     </label>
-                    <select
+                    <input
+                      type="text"
+                      required
+                      placeholder="Contoh: 5-B, 3 int F"
                       value={formData.kelas}
                       onChange={(e) => {
                         const newKelas = e.target.value as StudentKelas
@@ -1951,14 +1963,19 @@ export const StudentsPage: React.FC = () => {
                           jenjang: autoJenjang || formData.jenjang,
                         })
                       }}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-maroon"
-                    >
-                      {MOODLE_KELAS_OPTIONS.map((k) => (
-                        <option key={k} value={k}>
-                          {k}
-                        </option>
-                      ))}
-                    </select>
+                      onBlur={() => {
+                        if (formData.kelas) {
+                          const norm = normalizeKelas(formData.kelas) as StudentKelas
+                          const autoJenjang = getExpectedJenjangForKelas(norm)
+                          setFormData({
+                            ...formData,
+                            kelas: norm,
+                            jenjang: autoJenjang || formData.jenjang,
+                          })
+                        }
+                      }}
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-maroon font-medium"
+                    />
                     {formErrors.kelas && (
                       <p className="text-rose-600 text-[11px] mt-0.5">{formErrors.kelas}</p>
                     )}

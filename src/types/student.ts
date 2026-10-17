@@ -54,22 +54,40 @@ export function getAllowedClassesForJenjang(jenjang: string): StudentKelas[] {
 
 /**
  * Mengekstrak tingkat kelas dasar (Kelas 1 - Kelas 5, Kelas 1 Int, Kelas 3 Int)
- * dari format penulisan kelas santri (misal: 5-C -> Kelas 5, 5-S -> Kelas 5, 1-B -> Kelas 1, 1-Int-C -> Kelas 1 Int).
+ * dari format penulisan kelas santri (misal: 5-B -> Kelas 5, 3-C -> Kelas 3, 3 int F -> Kelas 3 Int, 1 int C -> Kelas 1 Int, 3xE -> Kelas 3 Int).
  */
 export function extractGradeLevelFromKelas(kelas: string): StudentKelas | null {
   if (!kelas) return null
   const clean = kelas.trim().toLowerCase()
 
-  // 1. Cek 1 Intensif (contoh: 1-int-c, 1-int, 1 int c, 1 intensif)
-  if (clean.includes('1-int') || clean.includes('1 int') || clean.includes('1int') || clean.includes('1 intensif')) {
+  // 1. Cek 1 Intensif (contoh: 1 int c, 1-int-c, 1-int, 1 int, 1 intensif, 1xc, 1xe, 1x c, 1 x c, 1x)
+  if (
+    clean.includes('1-int') ||
+    clean.includes('1 int') ||
+    clean.includes('1int') ||
+    clean.includes('1 intensif') ||
+    /\b1\s*x\b/i.test(clean) ||
+    /^1\s*x\s*[a-z]?$/i.test(clean) ||
+    /^1x/i.test(clean)
+  ) {
     return 'Kelas 1 Int'
   }
-  // 2. Cek 3 Intensif (contoh: 3-int-c, 3-int, 3 int c, 3 intensif)
-  if (clean.includes('3-int') || clean.includes('3 int') || clean.includes('3int') || clean.includes('3 intensif')) {
+
+  // 2. Cek 3 Intensif (contoh: 3 int f, 3-int-f, 3-int, 3 int, 3 intensif, 3xf, 3xe, 3xE, 3x e, 3 x e, 3x)
+  if (
+    clean.includes('3-int') ||
+    clean.includes('3 int') ||
+    clean.includes('3int') ||
+    clean.includes('3 intensif') ||
+    /\b3\s*x\b/i.test(clean) ||
+    /^3\s*x\s*[a-z]?$/i.test(clean) ||
+    /^3x/i.test(clean)
+  ) {
     return 'Kelas 3 Int'
   }
-  // 3. Cek digit 1-5 (contoh: 5-c, 5-s, kelas 5, 5)
-  const m = clean.match(/^(?:kelas\s*)?([1-5])/i)
+
+  // 3. Cek regular 1-5 (contoh: 5-b, 5-c, 4f, 4-f, 2b, 2-b, 5-s, kelas 5, 5)
+  const m = clean.match(/^(?:kelas\s*|k\s*)?([1-5])/i)
   if (m) {
     return `Kelas ${m[1]}` as StudentKelas
   }
@@ -80,8 +98,12 @@ export function isValidKelasFormat(val: string): boolean {
   if (!val) return false
   const clean = val.trim()
   return (
-    /^(?:[1-5]-[A-Z]|(?:1|3)-Int(?:-[A-Z])?|Kelas\s*[1-5](?:\s*Int)?|[1-5])$/i.test(clean) ||
-    /^(?:kelas\s*)?(?:[1-5]\s*-?\s*[a-z]|[1-5])$/i.test(clean)
+    /^[1-5]-[A-Z]$/i.test(clean) ||
+    /^(?:1|3)\s*int(?:\s*[A-Z])?$/i.test(clean) ||
+    /^(?:1|3)\s*x(?:\s*[a-z])?$/i.test(clean) ||
+    /^(?:1|3)-Int(?:-[A-Z])?$/i.test(clean) ||
+    /^(?:kelas\s*)?(?:1|3)\s*(?:int|intensif|x)(?:\s*-?\s*[a-z])?$/i.test(clean) ||
+    /^(?:kelas\s*)?[1-5](?:\s*-?\s*[a-z])?$/i.test(clean)
   )
 }
 
