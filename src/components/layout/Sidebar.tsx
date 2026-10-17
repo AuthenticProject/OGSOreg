@@ -1,18 +1,25 @@
-import React from 'react'
-import { NavLink } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
-  Layers,
-  Users,
   FileSpreadsheet,
-  Download,
-  Settings,
-  X,
-  ShieldCheck,
-  Sparkles,
-  FileText,
-  UserCog,
+  Users,
+  Layers,
   Sliders,
+  FileCode,
+  Inbox,
+  Calendar,
+  BookOpen,
+  Archive,
+  UserCog,
+  UserCheck,
+  Settings,
+  ChevronDown,
+  ChevronRight,
+  Sparkles,
+  ShieldCheck,
+  X,
+  Award,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useAuth } from '../../context/AuthContext'
@@ -22,7 +29,7 @@ interface SidebarProps {
   onClose: () => void
 }
 
-interface NavItem {
+interface SubMenuItem {
   title: string
   href: string
   icon: React.ComponentType<{ className?: string }>
@@ -30,71 +37,170 @@ interface NavItem {
   superAdminOnly?: boolean
 }
 
-const navItems: NavItem[] = [
-  {
-    title: 'Dasbor',
-    href: '/dashboard',
-    icon: LayoutDashboard,
-  },
-  {
-    title: 'Pendaftaran Kolektif',
-    href: '/imports',
-    icon: FileSpreadsheet,
-  },
-  {
-    title: 'Siswa Saya',
-    href: '/students',
-    icon: Users,
-    badge: 'Santri',
-  },
-  {
-    title: 'Riwayat',
-    href: '/batches',
-    icon: Layers,
-  },
-  {
-    title: 'Laporan',
-    href: '/reports',
-    icon: FileText,
-  },
-  {
-    title: 'Ekspor Moodle LMS',
-    href: '/exports',
-    icon: Download,
-    badge: 'Super Admin',
-    superAdminOnly: true,
-  },
-  {
-    title: 'Atur Template & Moodle',
-    href: '/custom-fields',
-    icon: Sliders,
-    badge: 'Super Admin',
-    superAdminOnly: true,
-  },
-  {
-    title: 'Manajemen Pengguna',
-    href: '/users',
-    icon: UserCog,
-    badge: 'Super Admin',
-    superAdminOnly: true,
-  },
-  {
-    title: 'Pengaturan',
-    href: '/settings',
-    icon: Settings,
-  },
-]
+interface MenuSection {
+  id: string
+  title: string
+  icon: React.ComponentType<{ className?: string }>
+  subItems: SubMenuItem[]
+  superAdminOnly?: boolean
+}
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { isSuperAdmin, appProfile } = useAuth()
+  const location = useLocation()
 
-  // Filter items: Show Manajemen Pengguna only to Super Admin
-  const visibleNavItems = navItems.filter((item) => {
-    if (item.superAdminOnly) {
-      return isSuperAdmin
-    }
-    return true
+  // Track expanded state for the 4 expandable menus
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({
+    pendaftaran: true,
+    participant: true,
+    materi: false,
+    pengaturan: false,
   })
+
+  // Auto-expand menu section matching the current URL
+  useEffect(() => {
+    const path = location.pathname
+
+    if (
+      path.startsWith('/pendaftaran') ||
+      path === '/imports' ||
+      path === '/students' ||
+      path === '/batches' ||
+      path === '/custom-fields' ||
+      path === '/reports' ||
+      path === '/exports'
+    ) {
+      setExpanded((prev) => ({ ...prev, pendaftaran: true }))
+    } else if (path.startsWith('/participant')) {
+      setExpanded((prev) => ({ ...prev, participant: true }))
+    } else if (path.startsWith('/materi')) {
+      setExpanded((prev) => ({ ...prev, materi: true }))
+    } else if (
+      path.startsWith('/pengaturan') ||
+      path === '/users' ||
+      path === '/settings'
+    ) {
+      setExpanded((prev) => ({ ...prev, pengaturan: true }))
+    }
+  }, [location.pathname, location.search])
+
+  const toggleSection = (id: string) => {
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }))
+  }
+
+  // Define the Approved 4 Expandable Main Menus
+  const menuSections: MenuSection[] = [
+    {
+      id: 'pendaftaran',
+      title: 'PENDAFTARAN',
+      icon: FileSpreadsheet,
+      subItems: [
+        {
+          title: 'Pendaftaran Kolektif',
+          href: '/imports',
+          icon: FileSpreadsheet,
+        },
+        {
+          title: 'Pendaftaran Masuk',
+          href: '/pendaftaran/masuk',
+          icon: Inbox,
+          badge: 'Super Admin',
+          superAdminOnly: true,
+        },
+        {
+          title: 'Siswa Saya',
+          href: '/students',
+          icon: Users,
+          badge: 'Santri',
+        },
+        {
+          title: 'Riwayat Pendaftaran',
+          href: '/batches',
+          icon: Layers,
+        },
+        {
+          title: 'Pengaturan Kolom',
+          href: '/custom-fields?tab=excel',
+          icon: Sliders,
+          badge: 'Super Admin',
+          superAdminOnly: true,
+        },
+        {
+          title: 'Mapping CSV Moodle',
+          href: '/custom-fields?tab=moodle',
+          icon: FileCode,
+          badge: 'Super Admin',
+          superAdminOnly: true,
+        },
+      ],
+    },
+    {
+      id: 'participant',
+      title: 'PARTICIPANT',
+      icon: Award,
+      subItems: [
+        {
+          title: 'Periode',
+          href: '/participant/periode',
+          icon: Calendar,
+        },
+      ],
+    },
+    {
+      id: 'materi',
+      title: 'MATERI',
+      icon: BookOpen,
+      subItems: [
+        {
+          title: 'Silabus',
+          href: '/materi/silabus',
+          icon: BookOpen,
+        },
+        {
+          title: 'Bank Soal',
+          href: '/materi/bank-soal',
+          icon: Archive,
+        },
+      ],
+    },
+    {
+      id: 'pengaturan',
+      title: 'PENGATURAN',
+      icon: Settings,
+      subItems: [
+        {
+          title: 'Manajemen Pengguna',
+          href: '/users',
+          icon: UserCog,
+          badge: 'Super Admin',
+          superAdminOnly: true,
+        },
+        {
+          title: 'Pengaturan Akun',
+          href: '/pengaturan/akun',
+          icon: UserCheck,
+        },
+        {
+          title: 'Pengaturan Umum',
+          href: '/settings',
+          icon: Settings,
+          badge: 'Super Admin',
+          superAdminOnly: true,
+        },
+      ],
+    },
+  ]
+
+  const isRouteActive = (href: string) => {
+    const [pathPart, queryPart] = href.split('?')
+    if (queryPart) {
+      return (
+        location.pathname === pathPart &&
+        location.search.includes(queryPart)
+      )
+    }
+    return location.pathname === pathPart || (pathPart !== '/dashboard' && location.pathname.startsWith(pathPart + '/'))
+  }
 
   return (
     <>
@@ -115,7 +221,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         )}
       >
         {/* Brand Header */}
-        <div className="flex items-center justify-between h-16 px-5 border-b border-white/10 bg-[#0B2F19]">
+        <div className="flex items-center justify-between h-16 px-5 border-b border-white/10 bg-[#0B2F19] shrink-0">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-[#22C55E] to-[#166534] text-white font-black shadow-md">
               <Sparkles className="w-5 h-5 text-white" />
@@ -145,67 +251,143 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Navigation Items */}
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-          <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-emerald-300/70">
-            Menu Utama
+        {/* Scrollable Navigation Tree */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-3 custom-scrollbar">
+          {/* STANDALONE: DASBOR */}
+          <div>
+            <NavLink
+              to="/dashboard"
+              onClick={() => {
+                if (window.innerWidth < 1024) onClose()
+              }}
+              className={({ isActive }) =>
+                cn(
+                  'group relative flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150',
+                  isActive
+                    ? 'bg-[#22C55E]/20 text-white shadow-inner border border-[#22C55E]/30'
+                    : 'text-emerald-100/85 hover:bg-white/10 hover:text-white'
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <div className="flex items-center gap-3">
+                    {isActive && (
+                      <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#22C55E] rounded-r-full" />
+                    )}
+                    <LayoutDashboard
+                      className={cn(
+                        'w-4 h-4 transition-transform group-hover:scale-105',
+                        isActive ? 'text-[#22C55E]' : 'text-emerald-200/70 group-hover:text-white'
+                      )}
+                    />
+                    <span>DASBOR</span>
+                  </div>
+                </>
+              )}
+            </NavLink>
           </div>
 
-          {visibleNavItems.map((item) => {
-            const Icon = item.icon
-            return (
-              <NavLink
-                key={item.href}
-                to={item.href}
-                onClick={() => {
-                  if (window.innerWidth < 1024) onClose()
-                }}
-                className={({ isActive }) =>
-                  cn(
-                    'group relative flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
-                    isActive
-                      ? 'bg-white/15 text-white font-semibold shadow-inner'
-                      : 'text-emerald-100/75 hover:bg-white/10 hover:text-white'
-                  )
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <div className="flex items-center gap-3">
-                      {/* Active indicator bar */}
-                      {isActive && (
-                        <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#22C55E] rounded-r-full" />
-                      )}
-                      <Icon
-                        className={cn(
-                          'w-4 h-4 transition-transform group-hover:scale-105',
-                          isActive ? 'text-[#22C55E]' : 'text-emerald-200/70 group-hover:text-white'
-                        )}
-                      />
-                      <span>{item.title}</span>
-                    </div>
+          <div className="h-px bg-white/10 my-2" />
 
-                    {item.badge && (
-                      <span
-                        className={cn(
-                          'text-[10px] font-bold px-1.5 py-0.5 rounded-full',
-                          isActive
-                            ? 'bg-[#22C55E] text-slate-950'
-                            : 'bg-white/10 text-emerald-200 group-hover:bg-white/20'
-                        )}
-                      >
-                        {item.badge}
-                      </span>
+          {/* 4 EXPANDABLE MAIN MENUS */}
+          {menuSections.map((section) => {
+            const visibleSubItems = section.subItems.filter(
+              (item) => !item.superAdminOnly || isSuperAdmin
+            )
+
+            if (visibleSubItems.length === 0) return null
+
+            const isExpanded = expanded[section.id]
+            const SectionIcon = section.icon
+            const hasActiveChild = visibleSubItems.some((sub) => isRouteActive(sub.href))
+
+            return (
+              <div key={section.id} className="space-y-1">
+                {/* Expandable Section Header */}
+                <button
+                  type="button"
+                  onClick={() => toggleSection(section.id)}
+                  className={cn(
+                    'w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold tracking-wider uppercase transition-colors select-none text-left',
+                    hasActiveChild
+                      ? 'text-[#22C55E]'
+                      : 'text-emerald-300/70 hover:text-white hover:bg-white/5'
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <SectionIcon className="w-3.5 h-3.5 opacity-80" />
+                    <span>{section.title}</span>
+                  </div>
+                  <div className="text-emerald-300/60">
+                    {isExpanded ? (
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    ) : (
+                      <ChevronRight className="w-3.5 h-3.5" />
                     )}
-                  </>
+                  </div>
+                </button>
+
+                {/* Submenu Items List */}
+                {isExpanded && (
+                  <div className="pl-3 ml-2 border-l border-white/10 space-y-0.5 pt-0.5">
+                    {visibleSubItems.map((sub) => {
+                      const SubIcon = sub.icon
+                      const active = isRouteActive(sub.href)
+
+                      return (
+                        <NavLink
+                          key={sub.href}
+                          to={sub.href}
+                          onClick={() => {
+                            if (window.innerWidth < 1024) onClose()
+                          }}
+                          className={cn(
+                            'group relative flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition-all duration-150',
+                            active
+                              ? 'bg-white/15 text-white font-semibold shadow-inner'
+                              : 'text-emerald-100/75 hover:bg-white/10 hover:text-white'
+                          )}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            {active && (
+                              <span className="absolute left-0 top-1 bottom-1 w-0.5 bg-[#22C55E] rounded-r-full" />
+                            )}
+                            <SubIcon
+                              className={cn(
+                                'w-3.5 h-3.5 shrink-0 transition-transform group-hover:scale-105',
+                                active
+                                  ? 'text-[#22C55E]'
+                                  : 'text-emerald-300/60 group-hover:text-white'
+                              )}
+                            />
+                            <span className="truncate">{sub.title}</span>
+                          </div>
+
+                          {sub.badge && (
+                            <span
+                              className={cn(
+                                'text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ml-1',
+                                active
+                                  ? 'bg-[#22C55E] text-slate-950'
+                                  : 'bg-white/10 text-emerald-200 group-hover:bg-white/20'
+                              )}
+                            >
+                              {sub.badge}
+                            </span>
+                          )}
+                        </NavLink>
+                      )
+                    })}
+                  </div>
                 )}
-              </NavLink>
+              </div>
             )
           })}
         </div>
 
         {/* Institutional Account Info Card */}
-        <div className="p-3 border-t border-white/10 bg-[#0B2F19]">
+        <div className="p-3 border-t border-white/10 bg-[#0B2F19] shrink-0">
           <div className="p-3 rounded-lg bg-black/20 border border-white/5 space-y-1.5">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-[#22C55E] shrink-0" />

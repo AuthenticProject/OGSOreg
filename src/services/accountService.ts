@@ -663,6 +663,44 @@ class AccountService {
   }
 
   /**
+   * Updates an existing user profile (display name, email, etc.)
+   */
+  async updateUserProfile(
+    userId: string,
+    updates: Partial<Pick<AppUserProfile, 'display_name' | 'email' | 'campus_id' | 'is_active'>>
+  ): Promise<{ success: boolean; user?: AppUserProfile; error?: string }> {
+    const profile = this.inMemoryProfiles.find((p) => p.id === userId)
+    if (!profile) {
+      return { success: false, error: 'Pengguna tidak ditemukan.' }
+    }
+
+    if (updates.display_name !== undefined) profile.display_name = updates.display_name
+    if (updates.email !== undefined) profile.email = updates.email
+    if (updates.campus_id !== undefined) profile.campus_id = updates.campus_id
+    if (updates.is_active !== undefined) profile.is_active = updates.is_active
+    profile.updated_at = new Date().toISOString()
+
+    this.persistStore()
+
+    if (isSupabaseConfigured() && profile.auth_user_id) {
+      try {
+        await supabase
+          .from('user_profiles')
+          .update({
+            display_name: profile.display_name,
+            email: profile.email,
+            updated_at: profile.updated_at,
+          })
+          .eq('id', profile.id)
+      } catch (err) {
+        console.warn('Supabase profile update sync skipped:', err)
+      }
+    }
+
+    return { success: true, user: { ...profile } }
+  }
+
+  /**
    * Resets in-memory storage to clean initial state (useful for test suites).
    */
   resetStoreForTesting() {
