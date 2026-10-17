@@ -15,7 +15,7 @@ export interface ExcelTemplateColumnConfig {
   display_order: number
 }
 
-const LOCAL_STORAGE_KEY = 'ogsoreg_excel_template_columns_v2'
+const LOCAL_STORAGE_KEY = 'ogsoreg_excel_template_columns_v4'
 
 export const DEFAULT_STANDARD_EXCEL_COLUMNS: ExcelTemplateColumnConfig[] = [
   {
@@ -81,14 +81,14 @@ export const DEFAULT_STANDARD_EXCEL_COLUMNS: ExcelTemplateColumnConfig[] = [
   {
     id: 'std_jenjang',
     key: 'jenjang',
-    label: 'Jenjang Santri',
-    originalLabel: 'Jenjang Santri',
-    description: 'Pilihan dropdown: Kelas 1, 2, 3, 4, 5',
+    label: 'Jenjang Lomba',
+    originalLabel: 'Jenjang Lomba',
+    description: 'Pilihan dropdown: Jenjang 1, Jenjang 2, Jenjang 3, Jenjang 4, Jenjang 5',
     is_standard: true,
     is_required: true,
     include_in_excel: true,
     field_type: 'dropdown',
-    options: ['Kelas 1', 'Kelas 2', 'Kelas 3', 'Kelas 4', 'Kelas 5'],
+    options: ['Jenjang 1', 'Jenjang 2', 'Jenjang 3', 'Jenjang 4', 'Jenjang 5'],
     display_order: 5,
   },
   {
@@ -102,6 +102,18 @@ export const DEFAULT_STANDARD_EXCEL_COLUMNS: ExcelTemplateColumnConfig[] = [
     include_in_excel: true,
     field_type: 'dropdown',
     display_order: 6,
+  },
+  {
+    id: 'std_kelas',
+    key: 'kelas',
+    label: 'Kelas Santri',
+    originalLabel: 'Kelas Santri',
+    description: 'Format penulisan kelas santri: 5-C, 1-B, 2-D, 1-Int-A, 3-S (Tingkat-Huruf)',
+    is_standard: true,
+    is_required: true,
+    include_in_excel: true,
+    field_type: 'text',
+    display_order: 7,
   },
 ]
 
@@ -141,6 +153,21 @@ class TemplateConfigService {
         if (stored) {
           const parsed = JSON.parse(stored) as ExcelTemplateColumnConfig[]
           if (Array.isArray(parsed) && parsed.length > 0) {
+            // Ensure std_kelas exists in cached columns
+            const hasKelas = parsed.some((c) => c.key === 'kelas')
+            if (!hasKelas) {
+              const defaultKelas = DEFAULT_STANDARD_EXCEL_COLUMNS.find((c) => c.key === 'kelas')!
+              parsed.splice(5, 0, defaultKelas)
+            }
+            // Ensure jenjang options are updated to Jenjang 1-5
+            const jenjangCol = parsed.find((c) => c.key === 'jenjang')
+            if (jenjangCol) {
+              jenjangCol.options = ['Jenjang 1', 'Jenjang 2', 'Jenjang 3', 'Jenjang 4', 'Jenjang 5']
+              jenjangCol.label = jenjangCol.label || 'Jenjang Lomba'
+            }
+            parsed.forEach((c, idx) => {
+              c.display_order = idx
+            })
             this.cache = parsed
             this.syncWithCustomFields()
             return

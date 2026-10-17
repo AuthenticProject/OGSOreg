@@ -24,6 +24,7 @@ import { MOODLE_JENJANG_OPTIONS, type StagedParticipantRow } from '../../types/e
 import { KAMPUS_OPTIONS } from '../../types/campus'
 import { customFieldService } from '../../services/customFieldService'
 import type { CustomFieldDefinition } from '../../types/customField'
+import { normalizeJenjang, normalizeKelas } from '../../services/dataNormalizer'
 
 // Editable Cell for Text Fields
 interface EditableCellProps {
@@ -103,7 +104,13 @@ const EditableCell: React.FC<EditableCellProps> = ({
       }`}
     >
       <span className="truncate">
-        {value ? value : <span className="text-slate-400 italic">{placeholder}</span>}
+        {value ? (
+          value
+        ) : hasError ? (
+          <span className="text-rose-500/80 italic font-normal text-[11px]">[Kosong - Wajib Diisi]</span>
+        ) : (
+          <span className="text-slate-400 italic font-normal text-[11px]">{placeholder || '[Kosong]'}</span>
+        )}
       </span>
 
       {hasError ? (
@@ -179,7 +186,13 @@ const EditableDropdownCell: React.FC<EditableDropdownCellProps> = ({
       }`}
     >
       <span className="truncate font-medium">
-        {value ? value : <span className="text-slate-400 italic">{placeholder || '- Pilih -'}</span>}
+        {value ? (
+          value
+        ) : hasError ? (
+          <span className="text-rose-500/80 italic font-normal text-[11px]">[Belum Dipilih]</span>
+        ) : (
+          <span className="text-slate-400 italic font-normal text-[11px]">{placeholder || '- Pilih -'}</span>
+        )}
       </span>
       <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 shrink-0 ml-1" />
 
@@ -360,7 +373,7 @@ export const StagedDataGrid: React.FC = () => {
                 field="username"
                 value={row.original.username || row.original.nisn || ''}
                 onSave={updateCell}
-                placeholder="Username..."
+                placeholder="Wajib diisi"
                 widthClass="min-w-[140px] font-mono text-xs"
               />
               {hasError && suggestions && suggestions.length > 0 && (
@@ -423,7 +436,7 @@ export const StagedDataGrid: React.FC = () => {
             field="email"
             value={row.original.email || row.original.teacher_email || ''}
             onSave={updateCell}
-            placeholder="user@domain.com"
+            placeholder="Wajib diisi"
             widthClass="min-w-[180px] font-mono"
           />
         ),
@@ -435,11 +448,11 @@ export const StagedDataGrid: React.FC = () => {
           <EditableDropdownCell
             row={row.original}
             field="jenjang"
-            value={row.original.jenjang || row.original.grade_level || 'Kelas 1'}
+            value={normalizeJenjang(row.original.jenjang) || 'Jenjang 1'}
             options={MOODLE_JENJANG_OPTIONS}
             onSave={updateCell}
             placeholder="Pilih Jenjang"
-            widthClass="min-w-[120px]"
+            widthClass="min-w-[125px]"
           />
         ),
       },
@@ -458,38 +471,59 @@ export const StagedDataGrid: React.FC = () => {
           />
         ),
       },
-      // Dynamic Custom Fields Columns (Configured by Super Admin)
-      ...activeCustomFields.map((cf) => ({
-        id: `custom_${cf.key}`,
-        header: `${cf.label}${cf.is_required ? ' *' : ''}`,
-        cell: ({ row }: { row: { original: StagedParticipantRow } }) => {
-          const fieldKey = `custom_${cf.key}`
-          const val = row.original.custom_fields?.[cf.key] ?? ''
-          if (cf.field_type === 'dropdown' && cf.options && cf.options.length > 0) {
+      {
+        accessorKey: 'kelas',
+        header: 'Kelas *',
+        cell: ({ row }) => (
+          <EditableCell
+            row={row.original}
+            field="kelas"
+            value={normalizeKelas(row.original.kelas) || row.original.grade_level || ''}
+            onSave={updateCell}
+            placeholder="Contoh: 5-C"
+            widthClass="min-w-[110px] font-medium"
+          />
+        ),
+      },
+      // Dynamic Custom Fields Columns (Configured by Super Admin, excluding standard keys)
+      ...activeCustomFields
+        .filter(
+          (cf) =>
+            !['kelas', 'jenjang', 'kampus', 'username', 'firstname', 'lastname', 'email', 'full_name', 'nisn'].includes(
+              cf.key.toLowerCase()
+            )
+        )
+        .map((cf) => ({
+          id: `custom_${cf.key}`,
+          header: `${cf.label}${cf.is_required ? ' *' : ''}`,
+          cell: ({ row }: { row: { original: StagedParticipantRow } }) => {
+            const fieldKey = `custom_${cf.key}`
+            const val = row.original.custom_fields?.[cf.key] ?? ''
+            if (cf.field_type === 'dropdown' && cf.options && cf.options.length > 0) {
+              return (
+                <EditableDropdownCell
+                  row={row.original}
+                  field={fieldKey}
+                  value={String(val)}
+                  options={cf.options}
+                  onSave={updateCell}
+                  placeholder={`Pilih ${cf.label}`}
+                  widthClass="min-w-[130px]"
+                />
+              )
+            }
             return (
-              <EditableDropdownCell
+              <EditableCell
                 row={row.original}
                 field={fieldKey}
                 value={String(val)}
-                options={cf.options}
                 onSave={updateCell}
-                placeholder={`Pilih ${cf.label}`}
+                placeholder={`${cf.label}...`}
                 widthClass="min-w-[130px]"
               />
             )
-          }
-          return (
-            <EditableCell
-              row={row.original}
-              field={fieldKey}
-              value={String(val)}
-              onSave={updateCell}
-              placeholder={`${cf.label}...`}
-              widthClass="min-w-[130px]"
-            />
-          )
-        },
-      })),
+          },
+        })),
       {
         id: 'actions',
         header: '',
@@ -537,7 +571,7 @@ export const StagedDataGrid: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => addManualRow({ jenjang: 'Kelas 1' })}
+            onClick={() => addManualRow({ jenjang: 'Jenjang 1' })}
             leftIcon={<Plus className="w-4 h-4 mr-1" />}
           >
             Tambah Peserta

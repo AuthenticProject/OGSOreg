@@ -57,7 +57,14 @@ export const MoodleCourseMappingModal: React.FC<MoodleCourseMappingModalProps> =
     if (onSaved) onSaved(def)
   }
 
-  const classes: StudentJenjang[] = ['Kelas 1', 'Kelas 2', 'Kelas 3', 'Kelas 4', 'Kelas 5']
+  const classes: StudentJenjang[] = ['Jenjang 1', 'Jenjang 2', 'Jenjang 3', 'Jenjang 4', 'Jenjang 5']
+  const jenjangDescriptions: Record<StudentJenjang, string> = {
+    'Jenjang 1': 'Untuk Kelas 1',
+    'Jenjang 2': 'Untuk Kelas 2',
+    'Jenjang 3': 'Untuk Kelas 1 Int & 3',
+    'Jenjang 4': 'Untuk Kelas 3 Int & 4',
+    'Jenjang 5': 'Untuk Kelas 5',
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
@@ -143,20 +150,25 @@ export const MoodleCourseMappingModal: React.FC<MoodleCourseMappingModalProps> =
           {/* Jenjang Mapping Fields */}
           <div className="space-y-3">
             <h4 className="font-bold text-slate-700 uppercase tracking-wider text-[11px]">
-              Pemetaan Course 1 (Jenjang Santri)
+              Pemetaan Course 1 (Jenjang Lomba)
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {classes.map((cls) => (
                 <div key={cls} className="p-3 rounded-lg border border-border bg-white space-y-1">
-                  <label className="block font-semibold text-slate-700 text-xs">
-                    {cls} <span className="text-muted-foreground text-[10px] font-normal">(course1)</span>
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="block font-semibold text-slate-700 text-xs">
+                      {cls}
+                    </label>
+                    <span className="text-[10px] text-brand-maroon font-semibold">
+                      {jenjangDescriptions[cls]}
+                    </span>
+                  </div>
                   <input
                     type="text"
                     value={config.jenjangShortnames[cls] || ''}
                     onChange={(e) => handleJenjangChange(cls, e.target.value)}
-                    placeholder="misal: ogso_k1"
+                    placeholder="misal: ogso_j1"
                     className="w-full px-2.5 py-1.5 text-xs font-mono rounded border border-border focus:outline-none focus:ring-1 focus:ring-brand-maroon"
                   />
                 </div>

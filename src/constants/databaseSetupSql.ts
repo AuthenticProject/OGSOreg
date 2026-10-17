@@ -43,7 +43,8 @@ CREATE TABLE IF NOT EXISTS public.students (
     lastname TEXT NOT NULL,
     full_name TEXT NOT NULL,
     email TEXT NOT NULL,
-    jenjang TEXT NOT NULL CHECK (jenjang IN ('Kelas 1', 'Kelas 2', 'Kelas 3', 'Kelas 4', 'Kelas 5')),
+    kelas TEXT CHECK (kelas IN ('Kelas 1', 'Kelas 2', 'Kelas 1 Int', 'Kelas 3', 'Kelas 3 Int', 'Kelas 4', 'Kelas 5')),
+    jenjang TEXT NOT NULL CHECK (jenjang IN ('Jenjang 1', 'Jenjang 2', 'Jenjang 3', 'Jenjang 4', 'Jenjang 5', 'Kelas 1', 'Kelas 2', 'Kelas 3', 'Kelas 4', 'Kelas 5')),
     kampus TEXT,
     institution_id UUID NOT NULL REFERENCES public.institutions(id) ON DELETE CASCADE,
     created_by UUID,
@@ -56,13 +57,15 @@ CREATE TABLE IF NOT EXISTS public.students (
     CONSTRAINT unique_institution_student_username UNIQUE (institution_id, username)
 );
 
--- Ensure dynamic custom fields column exists
+-- Ensure dynamic custom fields & kelas columns exist
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS kelas TEXT;
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS custom_fields JSONB DEFAULT '{}'::jsonb;
 
 -- Indexes for fast query performance
 CREATE INDEX IF NOT EXISTS idx_students_institution_id ON public.students(institution_id);
 CREATE INDEX IF NOT EXISTS idx_students_username ON public.students(username);
 CREATE INDEX IF NOT EXISTS idx_students_email ON public.students(email);
+CREATE INDEX IF NOT EXISTS idx_students_kelas ON public.students(kelas);
 CREATE INDEX IF NOT EXISTS idx_students_jenjang ON public.students(jenjang);
 CREATE INDEX IF NOT EXISTS idx_students_kampus ON public.students(kampus);
 CREATE INDEX IF NOT EXISTS idx_students_sync_status ON public.students(sync_status);

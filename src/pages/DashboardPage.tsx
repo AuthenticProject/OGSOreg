@@ -37,7 +37,16 @@ export const DashboardPage: React.FC = () => {
     synced: 0,
     failed: 0,
     unsynced: 0,
-    byJenjang: { 'Kelas 1': 0, 'Kelas 2': 0, 'Kelas 3': 0, 'Kelas 4': 0, 'Kelas 5': 0 },
+    byJenjang: { 'Jenjang 1': 0, 'Jenjang 2': 0, 'Jenjang 3': 0, 'Jenjang 4': 0, 'Jenjang 5': 0 },
+    byKelas: {
+      'Kelas 1': 0,
+      'Kelas 2': 0,
+      'Kelas 1 Int': 0,
+      'Kelas 3': 0,
+      'Kelas 3 Int': 0,
+      'Kelas 4': 0,
+      'Kelas 5': 0,
+    },
     bySyncStatus: { local_only: 0, exported: 0, synced: 0, enrolled: 0, failed: 0 },
     bySource: { excel: 0, csv: 0, manual: 0, paste: 0 },
     verifiedMoodleCount: 0,
@@ -132,13 +141,13 @@ export const DashboardPage: React.FC = () => {
         />
       </div>
 
-      {/* Total Kelas 1–5 Distribution Panel */}
+      {/* Total Jenjang 1–5 Distribution Panel */}
       <div className="bg-white p-5 rounded-2xl border border-border shadow-subtle space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <GraduationCap className="w-5 h-5 text-[#166534]" />
             <h3 className="text-sm font-bold text-foreground">
-              Total Santri Berdasarkan Jenjang (Kelas 1–5)
+              Total Santri Berdasarkan Jenjang Lomba (Jenjang 1–5)
             </h3>
           </div>
           <button
@@ -156,14 +165,24 @@ export const DashboardPage: React.FC = () => {
               studentStats.total > 0
                 ? Math.round((count / studentStats.total) * 100)
                 : 0
+            const classSublabel: Record<string, string> = {
+              'Jenjang 1': 'Kelas 1',
+              'Jenjang 2': 'Kelas 2',
+              'Jenjang 3': 'Kelas 1 Int & 3',
+              'Jenjang 4': 'Kelas 3 Int & 4',
+              'Jenjang 5': 'Kelas 5',
+            }
             return (
               <div
                 key={j}
                 onClick={() => navigate('/students')}
                 className="p-3.5 rounded-xl border border-border bg-slate-50/60 hover:bg-slate-50 hover:border-[#166534]/30 transition-all cursor-pointer"
               >
-                <span className="text-xs font-semibold text-slate-600">{j}</span>
-                <div className="flex items-baseline justify-between mt-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800">{j}</span>
+                  <span className="text-[10px] text-muted-foreground font-medium">{classSublabel[j] || ''}</span>
+                </div>
+                <div className="flex items-baseline justify-between mt-1.5">
                   <span className="text-xl font-bold text-[#166534]">{count}</span>
                   <span className="text-[11px] font-mono text-muted-foreground">{pct}%</span>
                 </div>

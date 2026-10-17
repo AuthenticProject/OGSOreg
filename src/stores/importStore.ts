@@ -8,6 +8,7 @@ import {
   normalizeUsername,
   normalizeEmail,
   normalizeJenjang,
+  normalizeKelas,
   normalizeKampus,
   normalizeNisn,
   normalizeGender,
@@ -18,7 +19,7 @@ import type { ColumnMappingItem, ImportStatistics, ParsedWorkbookData, StagedPar
 import type { Competition } from '../types/database'
 import { studentRepository } from '../services/studentRepository'
 import { batchRepository } from '../services/supabase/batchRepository'
-import type { StudentSource, StudentJenjang } from '../types/student'
+import type { StudentSource, StudentJenjang, StudentKelas } from '../types/student'
 
 export type FilterStatusType = 'ALL' | 'VALID' | 'WARNING' | 'ERROR' | 'DUPLICATE'
 
@@ -206,14 +207,15 @@ export const useImportStore = create<ImportState>((set, get) => ({
       firstname: customData?.firstname || '',
       lastname: customData?.lastname || '',
       email: customData?.email || '',
-      jenjang: customData?.jenjang || 'Kelas 1',
+      kelas: customData?.kelas || 'Kelas 1',
+      jenjang: customData?.jenjang || 'Jenjang 1',
       kampus: customData?.kampus || accessControl?.assignedCampus || '',
 
       no: String(newIndex),
       full_name: [customData?.firstname, customData?.lastname].filter(Boolean).join(' '),
       nisn: customData?.nisn || '',
       gender: customData?.gender || 'L',
-      grade_level: customData?.jenjang || 'Kelas 1',
+      grade_level: customData?.kelas || 'Kelas 1',
       school_name: customData?.school_name || '',
       competition_category: customData?.competition_category || '',
       teacher_name: customData?.teacher_name || '',
@@ -279,8 +281,25 @@ export const useImportStore = create<ImportState>((set, get) => ({
         const firstname = normalizeString(cols[1] || '')
         const lastname = normalizeString(cols[2] || '')
         const email = normalizeEmail(cols[3] || '')
-        const jenjang = normalizeJenjang(cols[4] || 'Kelas 1')
-        const kampus = normalizeKampus(cols[5] || '')
+        // Check if 7-column or 6-column format
+        let kelas = 'Kelas 1'
+        let jenjang = 'Jenjang 1'
+        let kampus = ''
+        if (cols.length >= 7) {
+          kelas = normalizeKelas(cols[4] || 'Kelas 1')
+          jenjang = normalizeJenjang(cols[5] || 'Jenjang 1')
+          kampus = normalizeKampus(cols[6] || '')
+        } else {
+          // Fallback 6-column format (where 5th col could be jenjang or kelas)
+          const col4 = cols[4] || ''
+          if (col4.toLowerCase().includes('jenjang')) {
+            jenjang = normalizeJenjang(col4)
+          } else {
+            kelas = normalizeKelas(col4)
+            jenjang = normalizeJenjang(col4)
+          }
+          kampus = normalizeKampus(cols[5] || '')
+        }
 
         const rowNum = stagedRows.length + idx + 2
         return {
@@ -295,6 +314,7 @@ export const useImportStore = create<ImportState>((set, get) => ({
           firstname,
           lastname,
           email,
+          kelas,
           jenjang,
           kampus,
 
@@ -358,6 +378,7 @@ export const useImportStore = create<ImportState>((set, get) => ({
     if (field === 'username') cleanVal = normalizeUsername(rawValue)
     else if (field === 'email') cleanVal = normalizeEmail(rawValue)
     else if (field === 'jenjang') cleanVal = normalizeJenjang(rawValue)
+    else if (field === 'kelas') cleanVal = normalizeKelas(rawValue)
     else if (field === 'kampus') cleanVal = normalizeKampus(rawValue)
     else if (field === 'nisn') cleanVal = normalizeNisn(rawValue)
     else if (field === 'gender') cleanVal = normalizeGender(rawValue)
@@ -466,7 +487,8 @@ export const useImportStore = create<ImportState>((set, get) => ({
       firstname: (r.firstname || (r.full_name ? r.full_name.split(' ')[0] : '')).trim(),
       lastname: (r.lastname || (r.full_name ? r.full_name.split(' ').slice(1).join(' ') : '')).trim(),
       email: (r.email || r.teacher_email || '').trim(),
-      jenjang: (r.jenjang || 'Kelas 1') as StudentJenjang,
+      jenjang: (r.jenjang || 'Jenjang 1') as StudentJenjang,
+      kelas: (r.kelas || 'Kelas 1') as StudentKelas,
       kampus: (r.kampus || '').trim(),
       institution_id: institutionId,
       custom_fields: r.custom_fields || {},

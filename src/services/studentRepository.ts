@@ -8,7 +8,9 @@ import type {
   StudentSyncStatus,
   StudentStats,
   StudentJenjang,
+  StudentKelas,
 } from '../types/student'
+import { normalizeJenjang } from './dataNormalizer'
 
 export const CANONICAL_INSTITUTION_ID = 'a0000000-0000-0000-0000-000000000001'
 const LOCAL_STORAGE_KEY = 'ogsoreg_students_directory_v1'
@@ -45,6 +47,7 @@ function toSupabaseInsertPayload(s: Partial<Student>): any {
     full_name: s.full_name || `${s.firstname || ''} ${s.lastname || ''}`.trim(),
     email: s.email?.toLowerCase().trim(),
     jenjang: s.jenjang,
+    kelas: s.kelas || null,
     kampus: s.kampus || null,
     institution_id: normalizeInstitutionId(s.institution_id),
     source: s.source || 'manual',
@@ -87,8 +90,20 @@ class StudentRepository {
               if (s && s.id && !s.id.startsWith('std-demo-')) {
                 const key = (s.username || s.id).toLowerCase()
                 if (!mergedStudentsMap.has(key)) {
+                  let jenjang = normalizeJenjang(s.jenjang) as StudentJenjang
+                  let kelas = s.kelas as StudentKelas | undefined
+                  if (!kelas) {
+                    const rawJ = String(s.jenjang || '')
+                    if (rawJ === 'Kelas 1' || jenjang === 'Jenjang 1') kelas = 'Kelas 1'
+                    else if (rawJ === 'Kelas 2' || jenjang === 'Jenjang 2') kelas = 'Kelas 2'
+                    else if (rawJ === 'Kelas 3' || jenjang === 'Jenjang 3') kelas = 'Kelas 3'
+                    else if (rawJ === 'Kelas 4' || jenjang === 'Jenjang 4') kelas = 'Kelas 4'
+                    else if (rawJ === 'Kelas 5' || jenjang === 'Jenjang 5') kelas = 'Kelas 5'
+                  }
                   mergedStudentsMap.set(key, {
                     ...s,
+                    jenjang,
+                    kelas,
                     institution_id: CANONICAL_INSTITUTION_ID,
                   })
                 }
@@ -344,6 +359,7 @@ class StudentRepository {
           search?: string
           searchTerm?: string
           jenjang?: string
+          kelas?: string
           kampus?: string
           assignedCampus?: string | null
           accessControl?: { userRole?: string; assignedCampus?: string | null }
@@ -376,6 +392,7 @@ class StudentRepository {
 
     const searchTerm = (rawParams.search || rawParams.searchTerm || '').trim()
     const jenjang = rawParams.jenjang
+    const kelas = rawParams.kelas
     const kampus = rawParams.kampus
     const assignedCampus = rawParams.assignedCampus || rawParams.accessControl?.assignedCampus
     const syncStatus = rawParams.sync_status || rawParams.syncStatus
@@ -405,6 +422,9 @@ class StudentRepository {
         }
         if (jenjang && jenjang !== 'all' && jenjang !== 'ALL') {
           query = query.eq('jenjang', jenjang)
+        }
+        if (kelas && kelas !== 'all' && kelas !== 'ALL') {
+          query = query.eq('kelas', kelas)
         }
         if (assignedCampus) {
           query = query.eq('kampus', assignedCampus)
@@ -498,6 +518,11 @@ class StudentRepository {
     // 2. Jenjang Filter
     if (jenjang && jenjang !== 'all' && jenjang !== 'ALL') {
       list = list.filter((s) => s.jenjang === jenjang)
+    }
+
+    // 2a. Kelas Filter
+    if (kelas && kelas !== 'all' && kelas !== 'ALL') {
+      list = list.filter((s) => s.kelas === kelas)
     }
 
     // 2b. Kampus Filter
@@ -638,7 +663,8 @@ class StudentRepository {
       lastname: (data.lastname || '').trim(),
       full_name: `${data.firstname.trim()} ${(data.lastname || '').trim()}`.trim(),
       email: eKey,
-      jenjang: data.jenjang as StudentJenjang,
+      jenjang: (data.jenjang ? normalizeJenjang(data.jenjang) : 'Jenjang 1') as StudentJenjang,
+      kelas: (data.kelas || (input as any).kelas || undefined) as StudentKelas | undefined,
       kampus: (data.kampus || input.kampus || '').trim(),
       institution_id: institutionId,
       created_by: createdBy,
@@ -717,6 +743,7 @@ class StudentRepository {
       firstname: updates.firstname !== undefined ? updates.firstname : existing.firstname,
       lastname: updates.lastname !== undefined ? updates.lastname : existing.lastname,
       email: updates.email !== undefined ? updates.email : existing.email,
+      kelas: updates.kelas !== undefined ? updates.kelas : existing.kelas,
       jenjang: updates.jenjang !== undefined ? updates.jenjang : existing.jenjang,
       kampus: updates.kampus !== undefined ? updates.kampus : (existing.kampus || ''),
       source: updates.source || existing.source,
@@ -762,7 +789,8 @@ class StudentRepository {
       lastname: merged.lastname.trim(),
       full_name: `${merged.firstname.trim()} ${merged.lastname.trim()}`.trim(),
       email: newEmail,
-      jenjang: merged.jenjang as StudentJenjang,
+      jenjang: (merged.jenjang ? normalizeJenjang(merged.jenjang) : existing.jenjang) as StudentJenjang,
+      kelas: (merged.kelas !== undefined ? merged.kelas : (existing.kelas || undefined)) as StudentKelas | undefined,
       kampus: (merged.kampus !== undefined ? merged.kampus : (existing.kampus || '')).trim(),
       source: merged.source as StudentSource,
       sync_status: merged.sync_status as StudentSyncStatus,
@@ -961,7 +989,8 @@ class StudentRepository {
         lastname: (valid.lastname || '').trim(),
         full_name: `${valid.firstname.trim()} ${(valid.lastname || '').trim()}`.trim(),
         email: eKey,
-        jenjang: valid.jenjang as StudentJenjang,
+        jenjang: (valid.jenjang ? normalizeJenjang(valid.jenjang) : 'Jenjang 1') as StudentJenjang,
+        kelas: ((valid as any).kelas || (raw as any).kelas || undefined) as StudentKelas | undefined,
         kampus: (valid.kampus || (raw.kampus ? String(raw.kampus) : '')).trim(),
         institution_id: institutionId,
         created_by: createdBy,
@@ -1019,9 +1048,19 @@ class StudentRepository {
     }
 
     const byJenjang: Record<StudentJenjang, number> = {
+      'Jenjang 1': 0,
+      'Jenjang 2': 0,
+      'Jenjang 3': 0,
+      'Jenjang 4': 0,
+      'Jenjang 5': 0,
+    }
+
+    const byKelas: Record<StudentKelas, number> = {
       'Kelas 1': 0,
       'Kelas 2': 0,
+      'Kelas 1 Int': 0,
       'Kelas 3': 0,
+      'Kelas 3 Int': 0,
       'Kelas 4': 0,
       'Kelas 5': 0,
     }
@@ -1046,8 +1085,12 @@ class StudentRepository {
     }
 
     list.forEach((s) => {
-      if (byJenjang[s.jenjang] !== undefined) {
-        byJenjang[s.jenjang]++
+      const normJ = normalizeJenjang(s.jenjang) as StudentJenjang
+      if (byJenjang[normJ] !== undefined) {
+        byJenjang[normJ]++
+      }
+      if (s.kelas && byKelas[s.kelas] !== undefined) {
+        byKelas[s.kelas]++
       }
       if (s.kampus && byKampus[s.kampus] !== undefined) {
         byKampus[s.kampus]++
@@ -1078,6 +1121,7 @@ class StudentRepository {
       verifiedEnrolmentCount: enrolled,
       unSyncedCount: unsynced,
       byJenjang,
+      byKelas,
       byKampus,
       incompleteKampusCount,
       bySyncStatus: {

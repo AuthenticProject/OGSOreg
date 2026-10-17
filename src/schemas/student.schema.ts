@@ -1,8 +1,16 @@
 import { z } from 'zod'
-import { STUDENT_JENJANG_OPTIONS, type StudentJenjang } from '../types/student'
+import {
+  STUDENT_JENJANG_OPTIONS,
+  STUDENT_KELAS_OPTIONS,
+  isJenjangKelasMatch,
+  getAllowedClassesForJenjang,
+  isValidKelasFormat,
+  type StudentJenjang,
+  type StudentKelas,
+} from '../types/student'
 import { KAMPUS_OPTIONS, type StudentKampus } from '../types/campus'
 
-export const studentSchema = z.object({
+const baseStudentObject = z.object({
   id: z.string().optional(),
   username: z
     .string()
@@ -33,7 +41,13 @@ export const studentSchema = z.object({
   jenjang: z
     .string()
     .refine((val) => STUDENT_JENJANG_OPTIONS.includes(val as StudentJenjang), {
-      message: 'Jenjang harus salah satu dari: Kelas 1, Kelas 2, Kelas 3, Kelas 4, Kelas 5.',
+      message: 'Jenjang harus salah satu dari: Jenjang 1, Jenjang 2, Jenjang 3, Jenjang 4, Jenjang 5.',
+    }),
+  kelas: z
+    .string()
+    .optional()
+    .refine((val) => !val || isValidKelasFormat(val), {
+      message: 'Format kelas tidak valid (contoh format yang benar: 5-C, 5-S, 1-B, 1-Int-A).',
     }),
   kampus: z
     .string()
@@ -55,19 +69,53 @@ export const studentSchema = z.object({
   custom_fields: z.record(z.any()).optional().default({}),
 })
 
-/**
- * Strict schema for new student registration (manual entry, new Excel import).
- * Requires Kampus to be selected and valid.
- */
-export const newStudentSchema = studentSchema.extend({
-  kampus: z
-    .string({ required_error: 'Kampus wajib dipilih.' })
-    .trim()
-    .min(1, 'Kampus wajib dipilih.')
-    .refine((val) => KAMPUS_OPTIONS.includes(val as StudentKampus), {
-      message: 'Kampus harus salah satu dari 20 pilihan Kampus Gontor resmi.',
-    }),
+export const studentSchema = baseStudentObject.superRefine((data, ctx) => {
+  if (data.jenjang && data.kelas) {
+    if (!isJenjangKelasMatch(data.jenjang, data.kelas)) {
+      const allowed = getAllowedClassesForJenjang(data.jenjang)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Kombinasi data tidak valid: ${data.jenjang} hanya diperuntukkan bagi santri ${allowed.join(' atau ')} (saat ini diisi: ${data.kelas}).`,
+        path: ['kelas'],
+      })
+    }
+  }
 })
 
-export type StudentInput = z.infer<typeof studentSchema>
+/**
+ * Strict schema for new student registration (manual entry, new Excel import).
+ * Requires Kampus and Kelas to be selected and valid, and enforces jenjang-kelas matching.
+ */
+export const newStudentSchema = baseStudentObject
+  .extend({
+    kelas: z
+      .string({ required_error: 'Kelas santri wajib dipilih.' })
+      .trim()
+      .min(1, 'Kelas santri wajib dipilih.')
+      .refine((val) => STUDENT_KELAS_OPTIONS.includes(val as StudentKelas), {
+        message: 'Kelas harus salah satu dari: Kelas 1, Kelas 2, Kelas 1 Int, Kelas 3, Kelas 3 Int, Kelas 4, Kelas 5.',
+      }),
+    kampus: z
+      .string({ required_error: 'Kampus wajib dipilih.' })
+      .trim()
+      .min(1, 'Kampus wajib dipilih.')
+      .refine((val) => KAMPUS_OPTIONS.includes(val as StudentKampus), {
+        message: 'Kampus harus salah satu dari 20 pilihan Kampus Gontor resmi.',
+      }),
+  })
+  .superRefine((data, ctx) => {
+    if (data.jenjang && data.kelas) {
+      if (!isJenjangKelasMatch(data.jenjang, data.kelas)) {
+        const allowed = getAllowedClassesForJenjang(data.jenjang)
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Kombinasi data tidak valid: ${data.jenjang} hanya diperuntukkan bagi santri ${allowed.join(' atau ')} (saat ini diisi: ${data.kelas}).`,
+          path: ['kelas'],
+        })
+      }
+    }
+  })
+
+export type StudentInput = z.infer<typeof baseStudentObject>
 export type NewStudentInput = z.infer<typeof newStudentSchema>
+

@@ -4,6 +4,7 @@ import {
   normalizeUsername,
   normalizeEmail,
   normalizeJenjang,
+  normalizeKelas,
   normalizeKampus,
   normalizeNisn,
   normalizeGender,
@@ -12,6 +13,7 @@ import {
   normalizePhone,
 } from './dataNormalizer'
 import { isValidKampus } from '../types/campus'
+import { isJenjangKelasMatch, getAllowedClassesForJenjang } from '../types/student'
 import type { ColumnMappingItem, StagedParticipantRow, ImportStatistics } from '../types/excel'
 import { studentRepository } from './studentRepository'
 import { customFieldService } from './customFieldService'
@@ -40,6 +42,7 @@ export function processAndValidateRows(
     fieldToHeaderMap['lastname'] ||
     fieldToHeaderMap['email'] ||
     fieldToHeaderMap['jenjang'] ||
+    fieldToHeaderMap['kelas'] ||
     fieldToHeaderMap['kampus']
   )
 
@@ -55,6 +58,7 @@ export function processAndValidateRows(
     const rawLastname = getValue('lastname')
     const rawEmail = getValue('email')
     const rawJenjang = getValue('jenjang')
+    const rawKelas = getValue('kelas')
     const rawKampus = getValue('kampus')
 
     const rawFullName = getValue('full_name')
@@ -65,12 +69,13 @@ export function processAndValidateRows(
     const lastname = rawLastname !== undefined ? normalizeString(rawLastname) : undefined
     const email = rawEmail !== undefined ? normalizeEmail(rawEmail) : undefined
     const jenjang = rawJenjang !== undefined ? normalizeJenjang(rawJenjang) : undefined
+    const kelas = rawKelas !== undefined ? normalizeKelas(rawKelas) : undefined
     const kampus = rawKampus !== undefined ? normalizeKampus(rawKampus) : undefined
 
     const full_name = normalizeString(rawFullName) || ([firstname, lastname].filter(Boolean).join(' ').trim())
     const nisn = normalizeNisn(rawNisn)
     const gender = normalizeGender(getValue('gender'))
-    const grade_level = normalizeGrade(getValue('grade_level')) || (jenjang || '')
+    const grade_level = normalizeGrade(getValue('grade_level')) || (kelas || jenjang || '')
     const school_name = normalizeString(getValue('school_name'))
     const npsn = normalizeNpsn(getValue('npsn'))
     const competition_category = normalizeString(getValue('competition_category'))
@@ -90,6 +95,79 @@ export function processAndValidateRows(
       }
     })
 
+    // Auto-fallback username from stambuk or nisn if missing
+    let finalUsername = username
+    if (!finalUsername || finalUsername.trim() === '') {
+      const stambukCandidate =
+        custom_fields['stambuk'] ||
+        custom_fields['no_stambuk'] ||
+        raw['Stambuk'] ||
+        raw['stambuk'] ||
+        raw['No. Stambuk'] ||
+        raw['No Stambuk'] ||
+        raw['no stambuk'] ||
+        rawNisn
+      if (stambukCandidate) {
+        finalUsername = normalizeUsername(stambukCandidate)
+      }
+    }
+
+    // Auto-fallback email if missing
+    let finalEmail = email
+    if (!finalEmail || finalEmail.trim() === '') {
+      const emailCandidate =
+        raw['Email Santri'] ||
+        raw['email santri'] ||
+        raw['Email'] ||
+        raw['email'] ||
+        raw['Surel'] ||
+        raw['surel']
+      if (emailCandidate) {
+        finalEmail = normalizeEmail(emailCandidate)
+      }
+    }
+
+    // Auto-fallback jenjang if missing
+    let finalJenjang = jenjang
+    if (!finalJenjang || finalJenjang.trim() === '') {
+      const jenjangCandidate =
+        raw['Jenjang Lomba'] ||
+        raw['jenjang lomba'] ||
+        raw['Jenjang'] ||
+        raw['jenjang']
+      if (jenjangCandidate) {
+        finalJenjang = normalizeJenjang(jenjangCandidate)
+      }
+    }
+
+    // Auto-fallback kelas if missing
+    let finalKelas = kelas
+    if (!finalKelas || finalKelas.trim() === '') {
+      const kelasCandidate =
+        raw['Kelas Santri'] ||
+        raw['kelas santri'] ||
+        raw['Kelas'] ||
+        raw['kelas'] ||
+        custom_fields['kelas']
+      if (kelasCandidate) {
+        finalKelas = normalizeKelas(kelasCandidate)
+      }
+    }
+
+    // Auto-fallback kampus if missing
+    let finalKampus = kampus
+    if (!finalKampus || finalKampus.trim() === '') {
+      const kampusCandidate =
+        raw['Kampus Gontor'] ||
+        raw['kampus gontor'] ||
+        raw['Kampus'] ||
+        raw['kampus'] ||
+        custom_fields['kampus']
+      if (kampusCandidate) {
+        finalKampus = normalizeKampus(kampusCandidate)
+      }
+    }
+
     const normalized: StagedParticipantRow = {
       _rowId: `row-${idx + 1}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       _rowIndex: idx + 2, // 1-based index (row 1 is header)
@@ -99,12 +177,13 @@ export function processAndValidateRows(
       _isDuplicate: false,
 
       // Moodle Bulk Registration fields
-      username: hasMoodleMapping ? (username || '') : username,
+      username: hasMoodleMapping ? (finalUsername || '') : finalUsername,
       firstname: hasMoodleMapping ? (firstname || '') : firstname,
       lastname: hasMoodleMapping ? (lastname || '') : lastname,
-      email: hasMoodleMapping ? (email || '') : email,
-      jenjang: hasMoodleMapping ? (jenjang || '') : jenjang,
-      kampus: hasMoodleMapping ? (kampus || '') : kampus,
+      email: hasMoodleMapping ? (finalEmail || '') : finalEmail,
+      jenjang: hasMoodleMapping ? (finalJenjang || '') : finalJenjang,
+      kelas: hasMoodleMapping ? (finalKelas || '') : finalKelas,
+      kampus: hasMoodleMapping ? (finalKampus || '') : finalKampus,
 
       // Canonical data fields (Legacy compatibility)
       no: normalizeString(getValue('no')) || String(idx + 1),
@@ -197,17 +276,22 @@ export function validateAllStagedRows(
       r.lastname !== undefined ||
       r.email !== undefined ||
       r.jenjang !== undefined ||
+      r.kelas !== undefined ||
       r.kampus !== undefined
     )
 
     if (isMoodleRow) {
-      // 1. Zod validation for Moodle Registration with Kampus
+      const normJenjang = normalizeJenjang(r.jenjang)
+      const normKelas = normalizeKelas(r.kelas)
+
+      // 1. Zod validation for Moodle Registration with Kampus & Kelas
       const result = moodleParticipantSchema.safeParse({
         username: r.username || '',
         firstname: r.firstname || '',
         lastname: r.lastname || '',
         email: r.email || '',
-        jenjang: r.jenjang || '',
+        jenjang: normJenjang || '',
+        kelas: normKelas || '',
         kampus: r.kampus || '',
       })
 
@@ -216,6 +300,21 @@ export function validateAllStagedRows(
           const field = String(issue.path[0])
           errors[field] = issue.message
         })
+      }
+
+      // Validate Kelas is required
+      if (!normKelas || normKelas.trim() === '') {
+        errors['kelas'] = 'Kelas santri wajib diisi (contoh: 5-C, 5-S, 1-B, 1-Int-A).'
+      }
+
+      // Enforce strict Jenjang vs Kelas matching
+      if (normJenjang && normKelas && normJenjang.trim() !== '' && normKelas.trim() !== '') {
+        if (!isJenjangKelasMatch(normJenjang, normKelas)) {
+          const allowed = getAllowedClassesForJenjang(normJenjang)
+          const errorMsg = `Data tidak valid: ${normJenjang} hanya diperuntukkan bagi santri ${allowed.join(' atau ')} (saat ini diisi: ${normKelas}).`
+          errors['jenjang'] = errorMsg
+          errors['kelas'] = errorMsg
+        }
       }
 
       // Validate Kampus is required for new rows and must be one of the 20 official campuses

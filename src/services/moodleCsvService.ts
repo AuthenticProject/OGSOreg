@@ -96,20 +96,23 @@ export interface CourseMappingSummary {
   suggestedCourseFullName: string
 }
 
+import { normalizeJenjang } from './dataNormalizer'
+
 /**
  * Summarizes staged participants by Jenjang for automated course enrollment mapping.
  */
 export function getJenjangCourseMappingSummary(rows: StagedParticipantRow[]): CourseMappingSummary[] {
   const jenjangCounts = new Map<MoodleJenjang, number>([
-    ['Kelas 1', 0],
-    ['Kelas 2', 0],
-    ['Kelas 3', 0],
-    ['Kelas 4', 0],
-    ['Kelas 5', 0],
+    ['Jenjang 1', 0],
+    ['Jenjang 2', 0],
+    ['Jenjang 3', 0],
+    ['Jenjang 4', 0],
+    ['Jenjang 5', 0],
   ])
 
   rows.forEach((r) => {
-    const j = (r.jenjang || r.grade_level) as MoodleJenjang
+    const rawJ = r.jenjang || ''
+    const j = normalizeJenjang(rawJ) as MoodleJenjang
     if (jenjangCounts.has(j)) {
       jenjangCounts.set(j, (jenjangCounts.get(j) || 0) + 1)
     }
@@ -117,12 +120,12 @@ export function getJenjangCourseMappingSummary(rows: StagedParticipantRow[]): Co
 
   const results: CourseMappingSummary[] = []
   jenjangCounts.forEach((count, jenjang) => {
-    const gradeNum = jenjang.replace('Kelas ', '')
+    const gradeNum = jenjang.replace('Jenjang ', '')
     results.push({
       jenjang,
       participantCount: count,
-      suggestedCourseShortname: `OGSO-K${gradeNum}`,
-      suggestedCourseFullName: `Olimpiade Sains Gadjah Mada - ${jenjang}`,
+      suggestedCourseShortname: `OGSO-J${gradeNum}`,
+      suggestedCourseFullName: `Olimpiade Gontor Sains & Matematika - ${jenjang}`,
     })
   })
 

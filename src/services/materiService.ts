@@ -41,19 +41,19 @@ export interface BankSoalCollection {
   created_at: string
 }
 
-const SILABUS_STORAGE_KEY = 'ogsoreg_silabus_v2'
-const BANK_SOAL_STORAGE_KEY = 'ogsoreg_bank_soal_v2'
+const SILABUS_STORAGE_KEY = 'ogsoreg_silabus_v3'
+const BANK_SOAL_STORAGE_KEY = 'ogsoreg_bank_soal_v3'
 
-// Seed official syllabuses for Kelas 1–5
+// Seed official syllabuses for Jenjang 1–5
 const INITIAL_SYLLABUSES: SyllabusItem[] = [
   {
     id: 'syl-01',
-    title: 'Silabus Resmi Olimpiade Sains & Matematika Kelas 1',
-    jenjang: 'Kelas 1',
+    title: 'Silabus Resmi Olimpiade Sains & Matematika Jenjang 1 (Kelas 1)',
+    jenjang: 'Jenjang 1',
     subject: 'Matematika & Sains',
-    description: 'Panduan kurikulum kompetisi jenjang Kelas 1: Pengenalan bilangan asli, pola bilangan, operasi hitung dasar, geometri dasar, dan pengenalan fenomena alam sekitar.',
+    description: 'Panduan kurikulum kompetisi Jenjang 1 (Kelas 1): Pengenalan bilangan asli, pola bilangan, operasi hitung dasar, geometri dasar, dan pengenalan fenomena alam sekitar.',
     file_url: '#',
-    file_name: 'Silabus_OGSO_Kelas_1_Resmi.pdf',
+    file_name: 'Silabus_OGSO_Jenjang_1_Resmi.pdf',
     file_size: '1.2 MB',
     pages: 14,
     is_published: true,
@@ -62,12 +62,12 @@ const INITIAL_SYLLABUSES: SyllabusItem[] = [
   },
   {
     id: 'syl-02',
-    title: 'Silabus Resmi Olimpiade Sains & Matematika Kelas 2',
-    jenjang: 'Kelas 2',
+    title: 'Silabus Resmi Olimpiade Sains & Matematika Jenjang 2 (Kelas 2)',
+    jenjang: 'Jenjang 2',
     subject: 'Matematika & Sains',
-    description: 'Panduan kurikulum kompetisi jenjang Kelas 2: Aritmatika terapan, logika penalaran kuantitatif, pengukuran waktu & panjang, serta pengenalan makhluk hidup dan ekosistem.',
+    description: 'Panduan kurikulum kompetisi Jenjang 2 (Kelas 2): Aritmatika terapan, logika penalaran kuantitatif, pengukuran waktu & panjang, serta pengenalan makhluk hidup dan ekosistem.',
     file_url: '#',
-    file_name: 'Silabus_OGSO_Kelas_2_Resmi.pdf',
+    file_name: 'Silabus_OGSO_Jenjang_2_Resmi.pdf',
     file_size: '1.5 MB',
     pages: 18,
     is_published: true,
@@ -76,12 +76,12 @@ const INITIAL_SYLLABUSES: SyllabusItem[] = [
   },
   {
     id: 'syl-03',
-    title: 'Silabus Resmi Olimpiade Sains & Matematika Kelas 3',
-    jenjang: 'Kelas 3',
+    title: 'Silabus Resmi Olimpiade Sains & Matematika Jenjang 3 (Kelas 1 Int & Kelas 3)',
+    jenjang: 'Jenjang 3',
     subject: 'Matematika & Sains',
-    description: 'Panduan kurikulum kompetisi jenjang Kelas 3: Pecahan, kelipatan, faktor bilangan (KPK & FPB), sifat zat, energi, dan dasar-dasar ilmu pengetahuan bumi.',
+    description: 'Panduan kurikulum kompetisi Jenjang 3 (Kelas 1 Intensif & Kelas 3 KMI): Pecahan, kelipatan, faktor bilangan (KPK & FPB), sifat zat, energi, dan dasar-dasar ilmu pengetahuan bumi.',
     file_url: '#',
-    file_name: 'Silabus_OGSO_Kelas_3_Resmi.pdf',
+    file_name: 'Silabus_OGSO_Jenjang_3_Resmi.pdf',
     file_size: '1.8 MB',
     pages: 22,
     is_published: true,
@@ -90,12 +90,12 @@ const INITIAL_SYLLABUSES: SyllabusItem[] = [
   },
   {
     id: 'syl-04',
-    title: 'Silabus Resmi Olimpiade Sains & Matematika Kelas 4',
-    jenjang: 'Kelas 4',
+    title: 'Silabus Resmi Olimpiade Sains & Matematika Jenjang 4 (Kelas 3 Int & Kelas 4)',
+    jenjang: 'Jenjang 4',
     subject: 'Matematika & Sains',
-    description: 'Panduan kurikulum kompetisi jenjang Kelas 4: Bangun datar & ruang, statistika data sederhana, sistem organ, gaya dan gerak, serta teknologi ramah lingkungan.',
+    description: 'Panduan kurikulum kompetisi Jenjang 4 (Kelas 3 Intensif & Kelas 4 KMI): Bangun datar & ruang, statistika data sederhana, sistem organ, gaya dan gerak, serta teknologi ramah lingkungan.',
     file_url: '#',
-    file_name: 'Silabus_OGSO_Kelas_4_Resmi.pdf',
+    file_name: 'Silabus_OGSO_Jenjang_4_Resmi.pdf',
     file_size: '2.1 MB',
     pages: 26,
     is_published: true,
@@ -104,12 +104,12 @@ const INITIAL_SYLLABUSES: SyllabusItem[] = [
   },
   {
     id: 'syl-05',
-    title: 'Silabus Resmi Olimpiade Sains & Matematika Kelas 5',
-    jenjang: 'Kelas 5',
+    title: 'Silabus Resmi Olimpiade Sains & Matematika Jenjang 5 (Kelas 5)',
+    jenjang: 'Jenjang 5',
     subject: 'Matematika & Sains',
-    description: 'Panduan kurikulum kompetisi jenjang Kelas 5: Aljabar dasar, perbandingan, peluang, astronomi tata surya, gelombang & bunyi, serta pemecahan masalah olimpiade tingkat lanjut.',
+    description: 'Panduan kurikulum kompetisi Jenjang 5 (Kelas 5 KMI): Aljabar dasar, perbandingan, peluang, astronomi tata surya, gelombang & bunyi, serta pemecahan masalah olimpiade tingkat lanjut.',
     file_url: '#',
-    file_name: 'Silabus_OGSO_Kelas_5_Resmi.pdf',
+    file_name: 'Silabus_OGSO_Jenjang_5_Resmi.pdf',
     file_size: '2.4 MB',
     pages: 30,
     is_published: true,
@@ -117,6 +117,16 @@ const INITIAL_SYLLABUSES: SyllabusItem[] = [
     updated_at: '2026-01-10T00:00:00Z',
   },
 ]
+
+// Helper to normalize legacy Jenjang/Kelas
+const normalizeMateriJenjang = (val: string): StudentJenjang => {
+  if (val === 'Jenjang 1' || val === 'Kelas 1') return 'Jenjang 1'
+  if (val === 'Jenjang 2' || val === 'Kelas 2') return 'Jenjang 2'
+  if (val === 'Jenjang 3' || val === 'Kelas 3') return 'Jenjang 3'
+  if (val === 'Jenjang 4' || val === 'Kelas 4') return 'Jenjang 4'
+  if (val === 'Jenjang 5' || val === 'Kelas 5') return 'Jenjang 5'
+  return 'Jenjang 1'
+}
 
 // Seed Bank Soal collections & documents
 const INITIAL_BANK_SOAL: BankSoalCollection[] = [
@@ -130,11 +140,11 @@ const INITIAL_BANK_SOAL: BankSoalCollection[] = [
     is_published: true,
     created_at: '2025-02-01T00:00:00Z',
     documents: [
-      { id: 'doc-p25-k1', collection_id: 'bs-penyisihan-2025', jenjang: 'Kelas 1', title: 'Soal Penyisihan OGSO 2025 — Kelas 1', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2025_Kelas_1.pdf', file_size: '1.1 MB', is_published: true, download_count: 142, created_at: '2025-02-01T00:00:00Z' },
-      { id: 'doc-p25-k2', collection_id: 'bs-penyisihan-2025', jenjang: 'Kelas 2', title: 'Soal Penyisihan OGSO 2025 — Kelas 2', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2025_Kelas_2.pdf', file_size: '1.2 MB', is_published: true, download_count: 198, created_at: '2025-02-01T00:00:00Z' },
-      { id: 'doc-p25-k3', collection_id: 'bs-penyisihan-2025', jenjang: 'Kelas 3', title: 'Soal Penyisihan OGSO 2025 — Kelas 3', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2025_Kelas_3.pdf', file_size: '1.3 MB', is_published: true, download_count: 164, created_at: '2025-02-01T00:00:00Z' },
-      { id: 'doc-p25-k4', collection_id: 'bs-penyisihan-2025', jenjang: 'Kelas 4', title: 'Soal Penyisihan OGSO 2025 — Kelas 4', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2025_Kelas_4.pdf', file_size: '1.4 MB', is_published: true, download_count: 215, created_at: '2025-02-01T00:00:00Z' },
-      { id: 'doc-p25-k5', collection_id: 'bs-penyisihan-2025', jenjang: 'Kelas 5', title: 'Soal Penyisihan OGSO 2025 — Kelas 5', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2025_Kelas_5.pdf', file_size: '1.5 MB', is_published: true, download_count: 280, created_at: '2025-02-01T00:00:00Z' },
+      { id: 'doc-p25-k1', collection_id: 'bs-penyisihan-2025', jenjang: 'Jenjang 1', title: 'Soal Penyisihan OGSO 2025 — Jenjang 1 (Kelas 1)', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2025_Jenjang_1.pdf', file_size: '1.1 MB', is_published: true, download_count: 142, created_at: '2025-02-01T00:00:00Z' },
+      { id: 'doc-p25-k2', collection_id: 'bs-penyisihan-2025', jenjang: 'Jenjang 2', title: 'Soal Penyisihan OGSO 2025 — Jenjang 2 (Kelas 2)', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2025_Jenjang_2.pdf', file_size: '1.2 MB', is_published: true, download_count: 198, created_at: '2025-02-01T00:00:00Z' },
+      { id: 'doc-p25-k3', collection_id: 'bs-penyisihan-2025', jenjang: 'Jenjang 3', title: 'Soal Penyisihan OGSO 2025 — Jenjang 3 (Kelas 1 Int & 3)', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2025_Jenjang_3.pdf', file_size: '1.3 MB', is_published: true, download_count: 164, created_at: '2025-02-01T00:00:00Z' },
+      { id: 'doc-p25-k4', collection_id: 'bs-penyisihan-2025', jenjang: 'Jenjang 4', title: 'Soal Penyisihan OGSO 2025 — Jenjang 4 (Kelas 3 Int & 4)', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2025_Jenjang_4.pdf', file_size: '1.4 MB', is_published: true, download_count: 215, created_at: '2025-02-01T00:00:00Z' },
+      { id: 'doc-p25-k5', collection_id: 'bs-penyisihan-2025', jenjang: 'Jenjang 5', title: 'Soal Penyisihan OGSO 2025 — Jenjang 5 (Kelas 5)', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2025_Jenjang_5.pdf', file_size: '1.5 MB', is_published: true, download_count: 280, created_at: '2025-02-01T00:00:00Z' },
     ],
   },
   {
@@ -146,11 +156,11 @@ const INITIAL_BANK_SOAL: BankSoalCollection[] = [
     is_published: true,
     created_at: '2024-02-01T00:00:00Z',
     documents: [
-      { id: 'doc-p24-k1', collection_id: 'bs-penyisihan-2024', jenjang: 'Kelas 1', title: 'Soal Penyisihan OGSO 2024 — Kelas 1', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2024_Kelas_1.pdf', file_size: '980 KB', is_published: true, download_count: 89, created_at: '2024-02-01T00:00:00Z' },
-      { id: 'doc-p24-k2', collection_id: 'bs-penyisihan-2024', jenjang: 'Kelas 2', title: 'Soal Penyisihan OGSO 2024 — Kelas 2', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2024_Kelas_2.pdf', file_size: '1.1 MB', is_published: true, download_count: 112, created_at: '2024-02-01T00:00:00Z' },
-      { id: 'doc-p24-k3', collection_id: 'bs-penyisihan-2024', jenjang: 'Kelas 3', title: 'Soal Penyisihan OGSO 2024 — Kelas 3', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2024_Kelas_3.pdf', file_size: '1.2 MB', is_published: true, download_count: 95, created_at: '2024-02-01T00:00:00Z' },
-      { id: 'doc-p24-k4', collection_id: 'bs-penyisihan-2024', jenjang: 'Kelas 4', title: 'Soal Penyisihan OGSO 2024 — Kelas 4', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2024_Kelas_4.pdf', file_size: '1.3 MB', is_published: true, download_count: 130, created_at: '2024-02-01T00:00:00Z' },
-      { id: 'doc-p24-k5', collection_id: 'bs-penyisihan-2024', jenjang: 'Kelas 5', title: 'Soal Penyisihan OGSO 2024 — Kelas 5', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2024_Kelas_5.pdf', file_size: '1.4 MB', is_published: true, download_count: 175, created_at: '2024-02-01T00:00:00Z' },
+      { id: 'doc-p24-k1', collection_id: 'bs-penyisihan-2024', jenjang: 'Jenjang 1', title: 'Soal Penyisihan OGSO 2024 — Jenjang 1 (Kelas 1)', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2024_Jenjang_1.pdf', file_size: '980 KB', is_published: true, download_count: 89, created_at: '2024-02-01T00:00:00Z' },
+      { id: 'doc-p24-k2', collection_id: 'bs-penyisihan-2024', jenjang: 'Jenjang 2', title: 'Soal Penyisihan OGSO 2024 — Jenjang 2 (Kelas 2)', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2024_Jenjang_2.pdf', file_size: '1.1 MB', is_published: true, download_count: 112, created_at: '2024-02-01T00:00:00Z' },
+      { id: 'doc-p24-k3', collection_id: 'bs-penyisihan-2024', jenjang: 'Jenjang 3', title: 'Soal Penyisihan OGSO 2024 — Jenjang 3 (Kelas 1 Int & 3)', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2024_Jenjang_3.pdf', file_size: '1.2 MB', is_published: true, download_count: 95, created_at: '2024-02-01T00:00:00Z' },
+      { id: 'doc-p24-k4', collection_id: 'bs-penyisihan-2024', jenjang: 'Jenjang 4', title: 'Soal Penyisihan OGSO 2024 — Jenjang 4 (Kelas 3 Int & 4)', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2024_Jenjang_4.pdf', file_size: '1.3 MB', is_published: true, download_count: 130, created_at: '2024-02-01T00:00:00Z' },
+      { id: 'doc-p24-k5', collection_id: 'bs-penyisihan-2024', jenjang: 'Jenjang 5', title: 'Soal Penyisihan OGSO 2024 — Jenjang 5 (Kelas 5)', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2024_Jenjang_5.pdf', file_size: '1.4 MB', is_published: true, download_count: 175, created_at: '2024-02-01T00:00:00Z' },
     ],
   },
   {
@@ -162,8 +172,8 @@ const INITIAL_BANK_SOAL: BankSoalCollection[] = [
     is_published: true,
     created_at: '2023-02-01T00:00:00Z',
     documents: [
-      { id: 'doc-p23-k3', collection_id: 'bs-penyisihan-2023', jenjang: 'Kelas 3', title: 'Soal Penyisihan OGSO 2023 — Kelas 3', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2023_Kelas_3.pdf', file_size: '1.1 MB', is_published: true, download_count: 76, created_at: '2023-02-01T00:00:00Z' },
-      { id: 'doc-p23-k5', collection_id: 'bs-penyisihan-2023', jenjang: 'Kelas 5', title: 'Soal Penyisihan OGSO 2023 — Kelas 5', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2023_Kelas_5.pdf', file_size: '1.3 MB', is_published: true, download_count: 120, created_at: '2023-02-01T00:00:00Z' },
+      { id: 'doc-p23-k3', collection_id: 'bs-penyisihan-2023', jenjang: 'Jenjang 3', title: 'Soal Penyisihan OGSO 2023 — Jenjang 3 (Kelas 1 Int & 3)', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2023_Jenjang_3.pdf', file_size: '1.1 MB', is_published: true, download_count: 76, created_at: '2023-02-01T00:00:00Z' },
+      { id: 'doc-p23-k5', collection_id: 'bs-penyisihan-2023', jenjang: 'Jenjang 5', title: 'Soal Penyisihan OGSO 2023 — Jenjang 5 (Kelas 5)', file_url: '#', file_name: 'Soal_Penyisihan_OGSO_2023_Jenjang_5.pdf', file_size: '1.3 MB', is_published: true, download_count: 120, created_at: '2023-02-01T00:00:00Z' },
     ],
   },
   // Final
@@ -176,11 +186,11 @@ const INITIAL_BANK_SOAL: BankSoalCollection[] = [
     is_published: true,
     created_at: '2025-04-01T00:00:00Z',
     documents: [
-      { id: 'doc-f25-k1', collection_id: 'bs-final-2025', jenjang: 'Kelas 1', title: 'Soal Final OGSO 2025 — Kelas 1', file_url: '#', file_name: 'Soal_Final_OGSO_2025_Kelas_1.pdf', file_size: '1.3 MB', is_published: true, download_count: 210, created_at: '2025-04-01T00:00:00Z' },
-      { id: 'doc-f25-k2', collection_id: 'bs-final-2025', jenjang: 'Kelas 2', title: 'Soal Final OGSO 2025 — Kelas 2', file_url: '#', file_name: 'Soal_Final_OGSO_2025_Kelas_2.pdf', file_size: '1.4 MB', is_published: true, download_count: 245, created_at: '2025-04-01T00:00:00Z' },
-      { id: 'doc-f25-k3', collection_id: 'bs-final-2025', jenjang: 'Kelas 3', title: 'Soal Final OGSO 2025 — Kelas 3', file_url: '#', file_name: 'Soal_Final_OGSO_2025_Kelas_3.pdf', file_size: '1.5 MB', is_published: true, download_count: 310, created_at: '2025-04-01T00:00:00Z' },
-      { id: 'doc-f25-k4', collection_id: 'bs-final-2025', jenjang: 'Kelas 4', title: 'Soal Final OGSO 2025 — Kelas 4', file_url: '#', file_name: 'Soal_Final_OGSO_2025_Kelas_4.pdf', file_size: '1.6 MB', is_published: true, download_count: 290, created_at: '2025-04-01T00:00:00Z' },
-      { id: 'doc-f25-k5', collection_id: 'bs-final-2025', jenjang: 'Kelas 5', title: 'Soal Final OGSO 2025 — Kelas 5', file_url: '#', file_name: 'Soal_Final_OGSO_2025_Kelas_5.pdf', file_size: '1.8 MB', is_published: true, download_count: 380, created_at: '2025-04-01T00:00:00Z' },
+      { id: 'doc-f25-k1', collection_id: 'bs-final-2025', jenjang: 'Jenjang 1', title: 'Soal Final OGSO 2025 — Jenjang 1 (Kelas 1)', file_url: '#', file_name: 'Soal_Final_OGSO_2025_Jenjang_1.pdf', file_size: '1.3 MB', is_published: true, download_count: 210, created_at: '2025-04-01T00:00:00Z' },
+      { id: 'doc-f25-k2', collection_id: 'bs-final-2025', jenjang: 'Jenjang 2', title: 'Soal Final OGSO 2025 — Jenjang 2 (Kelas 2)', file_url: '#', file_name: 'Soal_Final_OGSO_2025_Jenjang_2.pdf', file_size: '1.4 MB', is_published: true, download_count: 245, created_at: '2025-04-01T00:00:00Z' },
+      { id: 'doc-f25-k3', collection_id: 'bs-final-2025', jenjang: 'Jenjang 3', title: 'Soal Final OGSO 2025 — Jenjang 3 (Kelas 1 Int & 3)', file_url: '#', file_name: 'Soal_Final_OGSO_2025_Jenjang_3.pdf', file_size: '1.5 MB', is_published: true, download_count: 310, created_at: '2025-04-01T00:00:00Z' },
+      { id: 'doc-f25-k4', collection_id: 'bs-final-2025', jenjang: 'Jenjang 4', title: 'Soal Final OGSO 2025 — Jenjang 4 (Kelas 3 Int & 4)', file_url: '#', file_name: 'Soal_Final_OGSO_2025_Jenjang_4.pdf', file_size: '1.6 MB', is_published: true, download_count: 290, created_at: '2025-04-01T00:00:00Z' },
+      { id: 'doc-f25-k5', collection_id: 'bs-final-2025', jenjang: 'Jenjang 5', title: 'Soal Final OGSO 2025 — Jenjang 5 (Kelas 5)', file_url: '#', file_name: 'Soal_Final_OGSO_2025_Jenjang_5.pdf', file_size: '1.8 MB', is_published: true, download_count: 380, created_at: '2025-04-01T00:00:00Z' },
     ],
   },
   {
@@ -192,9 +202,9 @@ const INITIAL_BANK_SOAL: BankSoalCollection[] = [
     is_published: true,
     created_at: '2024-04-01T00:00:00Z',
     documents: [
-      { id: 'doc-f24-k2', collection_id: 'bs-final-2024', jenjang: 'Kelas 2', title: 'Soal Final OGSO 2024 — Kelas 2', file_url: '#', file_name: 'Soal_Final_OGSO_2024_Kelas_2.pdf', file_size: '1.2 MB', is_published: true, download_count: 140, created_at: '2024-04-01T00:00:00Z' },
-      { id: 'doc-f24-k4', collection_id: 'bs-final-2024', jenjang: 'Kelas 4', title: 'Soal Final OGSO 2024 — Kelas 4', file_url: '#', file_name: 'Soal_Final_OGSO_2024_Kelas_4.pdf', file_size: '1.4 MB', is_published: true, download_count: 165, created_at: '2024-04-01T00:00:00Z' },
-      { id: 'doc-f24-k5', collection_id: 'bs-final-2024', jenjang: 'Kelas 5', title: 'Soal Final OGSO 2024 — Kelas 5', file_url: '#', file_name: 'Soal_Final_OGSO_2024_Kelas_5.pdf', file_size: '1.6 MB', is_published: true, download_count: 220, created_at: '2024-04-01T00:00:00Z' },
+      { id: 'doc-f24-k2', collection_id: 'bs-final-2024', jenjang: 'Jenjang 2', title: 'Soal Final OGSO 2024 — Jenjang 2 (Kelas 2)', file_url: '#', file_name: 'Soal_Final_OGSO_2024_Jenjang_2.pdf', file_size: '1.2 MB', is_published: true, download_count: 140, created_at: '2024-04-01T00:00:00Z' },
+      { id: 'doc-f24-k4', collection_id: 'bs-final-2024', jenjang: 'Jenjang 4', title: 'Soal Final OGSO 2024 — Jenjang 4 (Kelas 3 Int & 4)', file_url: '#', file_name: 'Soal_Final_OGSO_2024_Jenjang_4.pdf', file_size: '1.4 MB', is_published: true, download_count: 165, created_at: '2024-04-01T00:00:00Z' },
+      { id: 'doc-f24-k5', collection_id: 'bs-final-2024', jenjang: 'Jenjang 5', title: 'Soal Final OGSO 2024 — Jenjang 5 (Kelas 5)', file_url: '#', file_name: 'Soal_Final_OGSO_2024_Jenjang_5.pdf', file_size: '1.6 MB', is_published: true, download_count: 220, created_at: '2024-04-01T00:00:00Z' },
     ],
   },
 ]
@@ -220,6 +230,11 @@ class MateriService {
         list = INITIAL_SYLLABUSES
       }
     }
+
+    list = list.map((s) => ({
+      ...s,
+      jenjang: normalizeMateriJenjang(s.jenjang),
+    }))
 
     if (publishedOnly) {
       return list.filter((s) => s.is_published)
@@ -296,6 +311,14 @@ class MateriService {
         list = INITIAL_BANK_SOAL
       }
     }
+
+    list = list.map((c) => ({
+      ...c,
+      documents: (c.documents || []).map((d) => ({
+        ...d,
+        jenjang: normalizeMateriJenjang(d.jenjang),
+      })),
+    }))
 
     if (babak) {
       list = list.filter((c) => c.babak === babak)

@@ -1,14 +1,103 @@
-export type StudentJenjang = 'Kelas 1' | 'Kelas 2' | 'Kelas 3' | 'Kelas 4' | 'Kelas 5'
+export type StudentJenjang = 'Jenjang 1' | 'Jenjang 2' | 'Jenjang 3' | 'Jenjang 4' | 'Jenjang 5'
+export type StudentKelas = 'Kelas 1' | 'Kelas 2' | 'Kelas 1 Int' | 'Kelas 3' | 'Kelas 3 Int' | 'Kelas 4' | 'Kelas 5'
 export type StudentSource = 'excel' | 'csv' | 'manual' | 'paste'
 export type StudentSyncStatus = 'local_only' | 'exported' | 'synced' | 'enrolled' | 'failed'
 
 export const STUDENT_JENJANG_OPTIONS: StudentJenjang[] = [
+  'Jenjang 1',
+  'Jenjang 2',
+  'Jenjang 3',
+  'Jenjang 4',
+  'Jenjang 5',
+]
+
+export const STUDENT_KELAS_OPTIONS: StudentKelas[] = [
   'Kelas 1',
   'Kelas 2',
+  'Kelas 1 Int',
   'Kelas 3',
+  'Kelas 3 Int',
   'Kelas 4',
   'Kelas 5',
 ]
+
+/**
+ * Pemetaan resmi Jenjang Lomba OGSO ke Kelas Santri:
+ * - Jenjang 1 = Kelas 1
+ * - Jenjang 2 = Kelas 2
+ * - Jenjang 3 = Kelas 1 Int dan Kelas 3
+ * - Jenjang 4 = Kelas 3 Int dan Kelas 4
+ * - Jenjang 5 = Kelas 5
+ */
+export const JENJANG_TO_KELAS_MAP: Record<StudentJenjang, StudentKelas[]> = {
+  'Jenjang 1': ['Kelas 1'],
+  'Jenjang 2': ['Kelas 2'],
+  'Jenjang 3': ['Kelas 1 Int', 'Kelas 3'],
+  'Jenjang 4': ['Kelas 3 Int', 'Kelas 4'],
+  'Jenjang 5': ['Kelas 5'],
+}
+
+export const KELAS_TO_JENJANG_MAP: Record<StudentKelas, StudentJenjang> = {
+  'Kelas 1': 'Jenjang 1',
+  'Kelas 2': 'Jenjang 2',
+  'Kelas 1 Int': 'Jenjang 3',
+  'Kelas 3': 'Jenjang 3',
+  'Kelas 3 Int': 'Jenjang 4',
+  'Kelas 4': 'Jenjang 4',
+  'Kelas 5': 'Jenjang 5',
+}
+
+export function getAllowedClassesForJenjang(jenjang: string): StudentKelas[] {
+  const key = jenjang as StudentJenjang
+  return JENJANG_TO_KELAS_MAP[key] || []
+}
+
+/**
+ * Mengekstrak tingkat kelas dasar (Kelas 1 - Kelas 5, Kelas 1 Int, Kelas 3 Int)
+ * dari format penulisan kelas santri (misal: 5-C -> Kelas 5, 5-S -> Kelas 5, 1-B -> Kelas 1, 1-Int-C -> Kelas 1 Int).
+ */
+export function extractGradeLevelFromKelas(kelas: string): StudentKelas | null {
+  if (!kelas) return null
+  const clean = kelas.trim().toLowerCase()
+
+  // 1. Cek 1 Intensif (contoh: 1-int-c, 1-int, 1 int c, 1 intensif)
+  if (clean.includes('1-int') || clean.includes('1 int') || clean.includes('1int') || clean.includes('1 intensif')) {
+    return 'Kelas 1 Int'
+  }
+  // 2. Cek 3 Intensif (contoh: 3-int-c, 3-int, 3 int c, 3 intensif)
+  if (clean.includes('3-int') || clean.includes('3 int') || clean.includes('3int') || clean.includes('3 intensif')) {
+    return 'Kelas 3 Int'
+  }
+  // 3. Cek digit 1-5 (contoh: 5-c, 5-s, kelas 5, 5)
+  const m = clean.match(/^(?:kelas\s*)?([1-5])/i)
+  if (m) {
+    return `Kelas ${m[1]}` as StudentKelas
+  }
+  return null
+}
+
+export function isValidKelasFormat(val: string): boolean {
+  if (!val) return false
+  const clean = val.trim()
+  return (
+    /^(?:[1-5]-[A-Z]|(?:1|3)-Int(?:-[A-Z])?|Kelas\s*[1-5](?:\s*Int)?|[1-5])$/i.test(clean) ||
+    /^(?:kelas\s*)?(?:[1-5]\s*-?\s*[a-z]|[1-5])$/i.test(clean)
+  )
+}
+
+export function getExpectedJenjangForKelas(kelas: string): StudentJenjang | null {
+  const baseGrade = extractGradeLevelFromKelas(kelas)
+  if (!baseGrade) return null
+  return KELAS_TO_JENJANG_MAP[baseGrade] || null
+}
+
+export function isJenjangKelasMatch(jenjang: string, kelas: string): boolean {
+  if (!jenjang || !kelas) return false
+  const baseGrade = extractGradeLevelFromKelas(kelas)
+  if (!baseGrade) return false
+  const allowed = getAllowedClassesForJenjang(jenjang)
+  return allowed.includes(baseGrade)
+}
 
 export const STUDENT_SOURCE_OPTIONS: { value: StudentSource; label: string }[] = [
   { value: 'excel', label: 'Excel Import' },
@@ -33,6 +122,7 @@ export interface Student {
   full_name: string
   email: string
   jenjang: StudentJenjang
+  kelas?: StudentKelas
   kampus?: string
   institution_id: string
   created_by: string
@@ -57,6 +147,7 @@ export interface StudentStats {
   verifiedEnrolmentCount?: number
   unSyncedCount: number
   byJenjang: Record<StudentJenjang, number>
+  byKelas?: Record<StudentKelas, number>
   byKampus?: Record<string, number>
   incompleteKampusCount?: number
   bySyncStatus: Record<StudentSyncStatus, number>
@@ -67,6 +158,7 @@ export interface StudentFilterParams {
   searchTerm?: string
   search?: string
   jenjang?: StudentJenjang | 'all' | 'ALL'
+  kelas?: StudentKelas | 'all' | 'ALL'
   kampus?: string | 'all' | 'ALL'
   sync_status?: StudentSyncStatus | 'all' | 'ALL'
   syncStatus?: StudentSyncStatus | 'all' | 'ALL'

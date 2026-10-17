@@ -13,6 +13,7 @@ import { SectionCard } from '../ui/SectionCard'
 import { useImportStore } from '../../stores/importStore'
 import { exportStudentsToMoodleExcel } from '../../services/moodle/moodleExcelExporter'
 import type { Student, StudentJenjang } from '../../types/student'
+import { normalizeJenjang } from '../../services/dataNormalizer'
 
 export const ExportResultsSummary: React.FC = () => {
   const navigate = useNavigate()
@@ -205,7 +206,7 @@ export const ExportResultsSummary: React.FC = () => {
                   lastname: (r.lastname || (r.full_name ? r.full_name.split(' ').slice(1).join(' ') : '')).trim(),
                   full_name: r.full_name || `${r.firstname || ''} ${r.lastname || ''}`.trim(),
                   email: (r.email || r.teacher_email || '').trim(),
-                  jenjang: (r.jenjang || 'Kelas 1') as StudentJenjang,
+                  jenjang: (normalizeJenjang(r.jenjang) || 'Jenjang 1') as StudentJenjang,
                   source: 'excel' as const,
                   sync_status: 'local_only' as const,
                   created_by: 'system',

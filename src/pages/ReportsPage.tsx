@@ -198,17 +198,23 @@ export const ReportsPage: React.FC = () => {
         <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
           <h2 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
             <Users className="w-4 h-4 text-amber-700" />
-            Distribusi Santri Berdasarkan Jenjang
+            Distribusi Santri Berdasarkan Jenjang Lomba
           </h2>
           <div className="space-y-3">
-            {(['Kelas 1', 'Kelas 2', 'Kelas 3', 'Kelas 4', 'Kelas 5'] as const).map((j) => {
-              const count = stats?.byJenjang[j] || 0
+            {([
+              { key: 'Jenjang 1' as const, label: 'Jenjang 1 (Kelas 1)' },
+              { key: 'Jenjang 2' as const, label: 'Jenjang 2 (Kelas 2)' },
+              { key: 'Jenjang 3' as const, label: 'Jenjang 3 (Kelas 1 Int & 3)' },
+              { key: 'Jenjang 4' as const, label: 'Jenjang 4 (Kelas 3 Int & 4)' },
+              { key: 'Jenjang 5' as const, label: 'Jenjang 5 (Kelas 5)' },
+            ]).map((item) => {
+              const count = stats?.byJenjang[item.key] || 0
               const total = stats?.total || 1
               const pct = Math.round((count / (total || 1)) * 100)
               return (
-                <div key={j} className="space-y-1">
+                <div key={item.key} className="space-y-1">
                   <div className="flex justify-between text-xs font-medium">
-                    <span className="text-slate-700">{j}</span>
+                    <span className="text-slate-700">{item.label}</span>
                     <span className="text-slate-900 font-bold">{count} santri ({pct}%)</span>
                   </div>
                   <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">

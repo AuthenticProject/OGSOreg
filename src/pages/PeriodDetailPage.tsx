@@ -58,7 +58,7 @@ export const PeriodDetailPage: React.FC = () => {
   const [winnerName, setWinnerName] = useState('')
   const [winnerNisn, setWinnerNisn] = useState('')
   const [winnerCampus, setWinnerCampus] = useState(assignedCampus || 'Gontor 1')
-  const [winnerJenjang, setWinnerJenjang] = useState<StudentJenjang>('Kelas 1')
+  const [winnerJenjang, setWinnerJenjang] = useState<StudentJenjang>('Jenjang 1')
   const [winnerAward, setWinnerAward] = useState('Juara 1')
   const [winnerCategory, setWinnerCategory] = useState('Matematika Terpadu')
   const [winnerScore, setWinnerScore] = useState<number | ''>(95)
@@ -118,7 +118,7 @@ export const PeriodDetailPage: React.FC = () => {
     setWinnerName('')
     setWinnerNisn('')
     setWinnerCampus(assignedCampus || 'Gontor 1')
-    setWinnerJenjang('Kelas 1')
+    setWinnerJenjang('Jenjang 1')
     setWinnerAward('Juara 1')
     setWinnerCategory('Matematika Terpadu')
     setWinnerScore(95)
@@ -280,11 +280,11 @@ export const PeriodDetailPage: React.FC = () => {
             className="px-2.5 py-2 text-xs rounded-lg border border-slate-300 bg-white"
           >
             <option value="all">Semua Jenjang</option>
-            <option value="Kelas 1">Kelas 1</option>
-            <option value="Kelas 2">Kelas 2</option>
-            <option value="Kelas 3">Kelas 3</option>
-            <option value="Kelas 4">Kelas 4</option>
-            <option value="Kelas 5">Kelas 5</option>
+            <option value="Jenjang 1">Jenjang 1 (Kelas 1)</option>
+            <option value="Jenjang 2">Jenjang 2 (Kelas 2)</option>
+            <option value="Jenjang 3">Jenjang 3 (Kelas 1 Int & 3)</option>
+            <option value="Jenjang 4">Jenjang 4 (Kelas 3 Int & 4)</option>
+            <option value="Jenjang 5">Jenjang 5 (Kelas 5)</option>
           </select>
         </div>
       </div>
@@ -649,11 +649,11 @@ export const PeriodDetailPage: React.FC = () => {
                     onChange={(e) => setWinnerJenjang(e.target.value as any)}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white"
                   >
-                    <option value="Kelas 1">Kelas 1</option>
-                    <option value="Kelas 2">Kelas 2</option>
-                    <option value="Kelas 3">Kelas 3</option>
-                    <option value="Kelas 4">Kelas 4</option>
-                    <option value="Kelas 5">Kelas 5</option>
+                    <option value="Jenjang 1">Jenjang 1 (Kelas 1)</option>
+                    <option value="Jenjang 2">Jenjang 2 (Kelas 2)</option>
+                    <option value="Jenjang 3">Jenjang 3 (Kelas 1 Int & Kelas 3)</option>
+                    <option value="Jenjang 4">Jenjang 4 (Kelas 3 Int & Kelas 4)</option>
+                    <option value="Jenjang 5">Jenjang 5 (Kelas 5)</option>
                   </select>
                 </div>
               </div>

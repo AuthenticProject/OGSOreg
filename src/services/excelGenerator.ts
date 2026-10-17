@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs'
-import { MOODLE_JENJANG_OPTIONS } from '../types/excel'
+import { MOODLE_JENJANG_OPTIONS, MOODLE_KELAS_OPTIONS } from '../types/excel'
 import { KAMPUS_OPTIONS } from '../types/campus'
 import type { AppUserProfile } from '../types/auth'
 import { customFieldService } from './customFieldService'
@@ -19,9 +19,9 @@ function getColumnLetter(colIndex: number): string {
 
 /**
  * Builds the official OGSOreg collective bulk registration template
- * with base columns: Username, Nama Depan, Nama Belakang, Email, Jenjang, Kampus
+ * with base columns: Username, Nama Depan, Nama Belakang, Email, Kelas, Jenjang, Kampus
  * plus UNLIMITED dynamic custom fields configured by Super Admin (where include_in_excel = true).
- * Includes dropdown validation for Jenjang, Kampus, and custom dropdown fields.
+ * Includes dropdown validation for Jenjang, Kelas, Kampus, and custom dropdown fields.
  */
 export async function buildRegistrationWorkbook(
   _customFieldsParam?: CustomFieldDefinition[]
@@ -35,13 +35,13 @@ export async function buildRegistrationWorkbook(
   const activeColumns = templateConfigService.getActiveExcelColumnsSync()
 
   // ----------------------------------------------------
-  // 1. SHEET REFERENSI (Hidden reference sheet for 20 campuses, 5 grades & custom dropdowns)
+  // 1. SHEET REFERENSI (Hidden reference sheet for 20 campuses, 5 jenjang, 7 kelas & custom dropdowns)
   // ----------------------------------------------------
   const wsRef = workbook.addWorksheet('_REFERENSI', {
     state: 'hidden',
   })
 
-  // Column A: Kampus, Column B: Jenjang
+  // Column A: Kampus, Column B: Jenjang, Column C: Kelas
   KAMPUS_OPTIONS.forEach((k, idx) => {
     const row = wsRef.getRow(idx + 1)
     row.getCell(1).value = k
@@ -52,14 +52,20 @@ export async function buildRegistrationWorkbook(
     row.getCell(2).value = j
   })
 
-  // Reference columns for custom dropdowns (starting at column C = index 3)
+  MOODLE_KELAS_OPTIONS.forEach((kls, idx) => {
+    const row = wsRef.getRow(idx + 1)
+    row.getCell(3).value = kls
+  })
+
+  // Reference columns for custom dropdowns (starting at column D = index 4)
   const dropdownRefMap = new Map<string, { refColLetter: string; count: number }>()
-  let currentRefColIdx = 3
+  let currentRefColIdx = 4
 
   activeColumns.forEach((col) => {
     if (
       col.field_type === 'dropdown' &&
       col.key !== 'jenjang' &&
+      col.key !== 'kelas' &&
       col.key !== 'kampus' &&
       col.options &&
       col.options.length > 0
@@ -110,7 +116,16 @@ export async function buildRegistrationWorkbook(
           formulae: ['_REFERENSI!$B$1:$B$5'],
           showErrorMessage: true,
           errorTitle: 'Pilihan Jenjang Tidak Valid',
-          error: 'Pilih salah satu jenjang: Kelas 1, Kelas 2, Kelas 3, Kelas 4, atau Kelas 5.',
+          error: 'Pilih salah satu jenjang lomba: Jenjang 1, Jenjang 2, Jenjang 3, Jenjang 4, atau Jenjang 5.',
+        }
+      } else if (col.key === 'kelas') {
+        ws.getCell(`${colLetter}${r}`).dataValidation = {
+          type: 'list',
+          allowBlank: !col.is_required,
+          formulae: ['_REFERENSI!$C$1:$C$7'],
+          showErrorMessage: true,
+          errorTitle: 'Pilihan Kelas Tidak Valid',
+          error: 'Pilih salah satu kelas: Kelas 1, Kelas 2, Kelas 1 Int, Kelas 3, Kelas 3 Int, Kelas 4, atau Kelas 5.',
         }
       } else if (col.key === 'kampus') {
         ws.getCell(`${colLetter}${r}`).dataValidation = {
@@ -166,7 +181,8 @@ export async function buildRegistrationWorkbook(
       firstname: 'Budi',
       lastname: 'Santoso',
       email: 'budi.santoso@sekolah.sch.id',
-      jenjang: 'Kelas 1',
+      jenjang: 'Jenjang 1',
+      kelas: 'Kelas 1',
       kampus: 'Gontor 1',
     },
     {
@@ -174,7 +190,8 @@ export async function buildRegistrationWorkbook(
       firstname: 'Siti',
       lastname: 'Rahma',
       email: 'siti.rahma@sekolah.sch.id',
-      jenjang: 'Kelas 2',
+      jenjang: 'Jenjang 2',
+      kelas: 'Kelas 2',
       kampus: 'Gontor Putri 1',
     },
     {
@@ -182,7 +199,8 @@ export async function buildRegistrationWorkbook(
       firstname: 'Andi',
       lastname: 'Wijaya',
       email: 'andi.wijaya@sekolah.sch.id',
-      jenjang: 'Kelas 3',
+      jenjang: 'Jenjang 3',
+      kelas: 'Kelas 1 Int',
       kampus: 'Gontor 2',
     },
     {
@@ -190,7 +208,8 @@ export async function buildRegistrationWorkbook(
       firstname: 'Dewi',
       lastname: 'Lestari',
       email: 'dewi.lestari@sekolah.sch.id',
-      jenjang: 'Kelas 4',
+      jenjang: 'Jenjang 4',
+      kelas: 'Kelas 3 Int',
       kampus: 'Gontor Putri 3',
     },
     {
@@ -198,7 +217,8 @@ export async function buildRegistrationWorkbook(
       firstname: 'Rizky',
       lastname: 'Pratama',
       email: 'rizky.pratama@sekolah.sch.id',
-      jenjang: 'Kelas 5',
+      jenjang: 'Jenjang 5',
+      kelas: 'Kelas 5',
       kampus: 'Gontor 3',
     },
   ]
@@ -215,9 +235,6 @@ export async function buildRegistrationWorkbook(
         rowObj[col.key] = sampleDaerah[sIdx % sampleDaerah.length]
       } else if (col.key === 'nomor_induk' || col.key === 'stambuk') {
         rowObj[col.key] = `2026${sIdx + 101}`
-      } else if (col.key === 'kelas') {
-        const sampleKelas = ['5-B', '5-C', '4-A', '3-D', '2-B']
-        rowObj[col.key] = sampleKelas[sIdx % sampleKelas.length]
       } else if (col.field_type === 'number') {
         rowObj[col.key] = 1000 + sIdx + 1
       } else if (col.field_type === 'date') {
@@ -242,26 +259,36 @@ export async function buildRegistrationWorkbook(
   wsPetunjuk.columns = [{ width: 105 }]
 
   const petunjukLines = [
-    ['PANDUAN PENGISIAN TEMPLATE PENDAFTARAN KOLEKTIF OGSOREG (PHASE 7)'],
+    ['PANDUAN PENGISIAN TEMPLATE PENDAFTARAN KOLEKTIF OGSOREG'],
     [''],
     ['1. Ketentuan Kolom:'],
     ['   - Username      : ID login santri di Moodle LMS. Wajib unik, tanpa spasi (contoh: ahmad_faiz).'],
     ['   - Nama Depan    : Nama awal siswa/santri peserta (wajib diisi).'],
     ['   - Nama Belakang : Nama akhir / marga siswa/santri peserta.'],
     ['   - Email         : Alamat email aktif berformat valid (contoh: ahmad@sekolah.sch.id).'],
-    ['   - Jenjang       : PILIH DARI DROPDOWN: Kelas 1, Kelas 2, Kelas 3, Kelas 4, Kelas 5.'],
+    ['   - Kelas Santri  : PILIH DARI DROPDOWN: Kelas 1, Kelas 2, Kelas 1 Int, Kelas 3, Kelas 3 Int, Kelas 4, Kelas 5.'],
+    ['   - Jenjang Lomba : PILIH DARI DROPDOWN: Jenjang 1, Jenjang 2, Jenjang 3, Jenjang 4, Jenjang 5.'],
     ['   - Kampus        : PILIH DARI DROPDOWN: 20 Pilihan Kampus Gontor Resmi (Gontor 1–12, Gontor Putri 1–8).'],
     [''],
-    ['2. Fleksibilitas Jenjang & Kampus:'],
-    ['   - Berkas ini mengizinkan santri dari berbagai kampus dan berbagai jenjang dalam 1 sheet yang sama.'],
+    ['2. Ketentuan Lomba Berdasarkan Jenjang (Bukan Per Kelas):'],
+    ['   - Perlombaan OGSO dikelompokkan PER JENJANG, dengan pemetaan kelas santri sbb:'],
+    ['     * Jenjang 1  : Santri Kelas 1'],
+    ['     * Jenjang 2  : Santri Kelas 2'],
+    ['     * Jenjang 3  : Santri Kelas 1 Int dan Kelas 3'],
+    ['     * Jenjang 4  : Santri Kelas 3 Int dan Kelas 4'],
+    ['     * Jenjang 5  : Santri Kelas 5'],
+    ['   - PENTING / VALIDASI: Kombinasi Jenjang dan Kelas harus valid!'],
+    ['     Contoh: jika santri memilih Jenjang 1 tetapi Kelas diisi Kelas 2, maka data otomatis TIDAK VALID / ERROR.'],
+    [''],
+    ['3. Fleksibilitas Jenjang & Kampus:'],
+    ['   - Berkas ini mengizinkan santri dari berbagai kampus, berbagai jenjang, dan berbagai kelas dalam 1 sheet.'],
     ['   - Anda dapat mendaftarkan santri lintas jenjang dan lintas kampus sekaligus.'],
     [''],
-    ['3. Standar Ekspor CSV Moodle LMS:'],
-    ['   - Ekspor Moodle tetap menggunakan spesifikasi 7-kolom resmi: username,firstname,lastname,email,course1,course2,password.'],
-    ['   - Kolom Kampus disimpan di OGSOreg untuk direktori Siswa Saya, laporan administrasi, dan analitik distribusi kampus.'],
-    ['   - Kolom Kampus TIDAK dimasukkan sebagai header tidak dikenal di CSV Moodle.'],
+    ['4. Standar Ekspor CSV Moodle LMS:'],
+    ['   - Ekspor Moodle menggunakan pemetaan resmi per jenjang: username,firstname,lastname,email,course1,course2,password.'],
+    ['   - Mata uji course1 disesuaikan dengan Jenjang Lomba santri.'],
     [''],
-    ['4. Larangan:'],
+    ['5. Larangan:'],
     ['   - Jangan mengubah atau menghapus susunan nama header kolom pada baris pertama.'],
     ['   - Jangan menggabungkan sel (Merge Cells) pada baris data.'],
   ]
@@ -270,7 +297,7 @@ export async function buildRegistrationWorkbook(
     const r = wsPetunjuk.addRow(line)
     if (idx === 0) {
       r.font = { bold: true, size: 13, color: { argb: 'FF800020' } }
-    } else if (line[0]?.startsWith('1.') || line[0]?.startsWith('2.') || line[0]?.startsWith('3.') || line[0]?.startsWith('4.')) {
+    } else if (line[0]?.startsWith('1.') || line[0]?.startsWith('2.') || line[0]?.startsWith('3.') || line[0]?.startsWith('4.') || line[0]?.startsWith('5.')) {
       r.font = { bold: true, size: 11, color: { argb: 'FF1E293B' } }
     }
   })
@@ -315,6 +342,7 @@ export async function exportStudentsToExcel(
     full_name: string
     email: string
     jenjang: string
+    kelas?: string | null
     kampus?: string | null
     source: string
     sync_status: string
@@ -343,7 +371,8 @@ export async function exportStudentsToExcel(
     { header: 'Nama Lengkap', key: 'full_name', width: 28 },
     { header: 'Username', key: 'username', width: 20 },
     { header: 'Email', key: 'email', width: 30 },
-    { header: 'Jenjang', key: 'jenjang', width: 16 },
+    { header: 'Jenjang Lomba', key: 'jenjang', width: 16 },
+    { header: 'Kelas Santri', key: 'kelas', width: 16 },
     { header: 'Kampus', key: 'kampus', width: 22 },
     ...customCols,
     { header: 'Sumber', key: 'source', width: 14 },
@@ -374,6 +403,7 @@ export async function exportStudentsToExcel(
       username: s.username,
       email: s.email,
       jenjang: s.jenjang,
+      kelas: s.kelas || '-',
       kampus: s.kampus || 'Belum Diisi',
       ...customData,
       source: s.source.toUpperCase(),
@@ -456,7 +486,8 @@ export async function buildAdminReportWorkbook(
     { header: 'Nama Lengkap', key: 'full_name', width: 28 },
     { header: 'Username', key: 'username', width: 20 },
     { header: 'Email', key: 'email', width: 30 },
-    { header: 'Jenjang', key: 'jenjang', width: 16 },
+    { header: 'Jenjang Lomba', key: 'jenjang', width: 16 },
+    { header: 'Kelas Santri', key: 'kelas', width: 16 },
     { header: 'Kampus', key: 'kampus', width: 22 },
     ...customListColumns,
     { header: 'Status Moodle', key: 'sync_status', width: 22 },
@@ -478,6 +509,7 @@ export async function buildAdminReportWorkbook(
       username: s.username,
       email: s.email,
       jenjang: s.jenjang,
+      kelas: s.kelas || '-',
       kampus: s.kampus || 'Belum Diisi',
       ...customRowData,
       sync_status:

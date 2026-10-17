@@ -1,6 +1,7 @@
 import type { StudentJenjang } from '../../types/student'
+import { normalizeJenjang } from '../dataNormalizer'
 
-export const MOODLE_COURSE_MAPPING_STORAGE_KEY = 'ogsoreg_moodle_course_mappings_v1'
+export const MOODLE_COURSE_MAPPING_STORAGE_KEY = 'ogsoreg_moodle_course_mappings_v2'
 
 export interface MoodleCourseMappingConfig {
   jenjangShortnames: Record<StudentJenjang, string>
@@ -15,11 +16,11 @@ export interface MoodleCourseMappingConfig {
  */
 export const DEFAULT_COURSE_MAPPINGS: MoodleCourseMappingConfig = {
   jenjangShortnames: {
-    'Kelas 1': 'ogso_k1',
-    'Kelas 2': 'ogso_k2',
-    'Kelas 3': 'ogso_k3',
-    'Kelas 4': 'ogso_k4',
-    'Kelas 5': 'ogso_k5',
+    'Jenjang 1': 'ogso_j1',
+    'Jenjang 2': 'ogso_j2',
+    'Jenjang 3': 'ogso_j3',
+    'Jenjang 4': 'ogso_j4',
+    'Jenjang 5': 'ogso_j5',
   },
   simulationShortname: 'simulation',
   isVerified: false,
@@ -35,16 +36,36 @@ export function getCourseMappingConfig(): MoodleCourseMappingConfig {
 
   try {
     const raw = window.localStorage.getItem(MOODLE_COURSE_MAPPING_STORAGE_KEY)
-    if (!raw) return { ...DEFAULT_COURSE_MAPPINGS }
+    if (!raw) {
+      // Check legacy v1 key
+      const legacyRaw = window.localStorage.getItem('ogsoreg_moodle_course_mappings_v1')
+      if (legacyRaw) {
+        const legacyParsed = JSON.parse(legacyRaw) as any
+        const legacyNames = legacyParsed?.jenjangShortnames || {}
+        return {
+          jenjangShortnames: {
+            'Jenjang 1': legacyNames['Jenjang 1'] || legacyNames['Kelas 1'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 1'],
+            'Jenjang 2': legacyNames['Jenjang 2'] || legacyNames['Kelas 2'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 2'],
+            'Jenjang 3': legacyNames['Jenjang 3'] || legacyNames['Kelas 3'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 3'],
+            'Jenjang 4': legacyNames['Jenjang 4'] || legacyNames['Kelas 4'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 4'],
+            'Jenjang 5': legacyNames['Jenjang 5'] || legacyNames['Kelas 5'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 5'],
+          },
+          simulationShortname: legacyParsed.simulationShortname || DEFAULT_COURSE_MAPPINGS.simulationShortname,
+          isVerified: legacyParsed.isVerified ?? false,
+          lastUpdated: legacyParsed.lastUpdated,
+        }
+      }
+      return { ...DEFAULT_COURSE_MAPPINGS }
+    }
     const parsed = JSON.parse(raw) as Partial<MoodleCourseMappingConfig>
 
     return {
       jenjangShortnames: {
-        'Kelas 1': parsed.jenjangShortnames?.['Kelas 1'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Kelas 1'],
-        'Kelas 2': parsed.jenjangShortnames?.['Kelas 2'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Kelas 2'],
-        'Kelas 3': parsed.jenjangShortnames?.['Kelas 3'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Kelas 3'],
-        'Kelas 4': parsed.jenjangShortnames?.['Kelas 4'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Kelas 4'],
-        'Kelas 5': parsed.jenjangShortnames?.['Kelas 5'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Kelas 5'],
+        'Jenjang 1': parsed.jenjangShortnames?.['Jenjang 1'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 1'],
+        'Jenjang 2': parsed.jenjangShortnames?.['Jenjang 2'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 2'],
+        'Jenjang 3': parsed.jenjangShortnames?.['Jenjang 3'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 3'],
+        'Jenjang 4': parsed.jenjangShortnames?.['Jenjang 4'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 4'],
+        'Jenjang 5': parsed.jenjangShortnames?.['Jenjang 5'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 5'],
       },
       simulationShortname: parsed.simulationShortname || DEFAULT_COURSE_MAPPINGS.simulationShortname,
       isVerified: parsed.isVerified ?? false,
@@ -83,17 +104,18 @@ export function getCourseShortnameForJenjang(
   config?: MoodleCourseMappingConfig
 ): string | null {
   const activeConfig = config || getCourseMappingConfig()
-  const key = jenjang as StudentJenjang
-  return activeConfig.jenjangShortnames[key] || null
+  const normalized = normalizeJenjang(jenjang) as StudentJenjang
+  return activeConfig.jenjangShortnames[normalized] || null
 }
 
 /**
- * Validates that all classes 1-5 and simulation have non-empty shortnames.
+ * Validates that all jenjang 1-5 and simulation have non-empty shortnames.
  */
 export function isCourseMappingComplete(config?: MoodleCourseMappingConfig): boolean {
   const activeConfig = config || getCourseMappingConfig()
-  const classes: StudentJenjang[] = ['Kelas 1', 'Kelas 2', 'Kelas 3', 'Kelas 4', 'Kelas 5']
+  const classes: StudentJenjang[] = ['Jenjang 1', 'Jenjang 2', 'Jenjang 3', 'Jenjang 4', 'Jenjang 5']
   const allJenjangMapped = classes.every((c) => Boolean(activeConfig.jenjangShortnames[c]?.trim()))
   const simulationMapped = Boolean(activeConfig.simulationShortname?.trim())
   return allJenjangMapped && simulationMapped
 }
+

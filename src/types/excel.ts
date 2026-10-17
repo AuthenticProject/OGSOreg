@@ -6,12 +6,23 @@ export interface FieldError {
   isWarning?: boolean
 }
 
-export type MoodleJenjang = 'Kelas 1' | 'Kelas 2' | 'Kelas 3' | 'Kelas 4' | 'Kelas 5'
+export type MoodleJenjang = 'Jenjang 1' | 'Jenjang 2' | 'Jenjang 3' | 'Jenjang 4' | 'Jenjang 5'
+export type MoodleKelas = 'Kelas 1' | 'Kelas 2' | 'Kelas 1 Int' | 'Kelas 3' | 'Kelas 3 Int' | 'Kelas 4' | 'Kelas 5'
 
 export const MOODLE_JENJANG_OPTIONS: MoodleJenjang[] = [
+  'Jenjang 1',
+  'Jenjang 2',
+  'Jenjang 3',
+  'Jenjang 4',
+  'Jenjang 5',
+]
+
+export const MOODLE_KELAS_OPTIONS: MoodleKelas[] = [
   'Kelas 1',
   'Kelas 2',
+  'Kelas 1 Int',
   'Kelas 3',
+  'Kelas 3 Int',
   'Kelas 4',
   'Kelas 5',
 ]
@@ -32,7 +43,8 @@ export interface StagedParticipantRow {
   firstname?: string
   lastname?: string
   email?: string
-  jenjang?: string // 'Kelas 1' | 'Kelas 2' | 'Kelas 3' | 'Kelas 4' | 'Kelas 5'
+  jenjang?: string // 'Jenjang 1' | 'Jenjang 2' | 'Jenjang 3' | 'Jenjang 4' | 'Jenjang 5'
+  kelas?: string // 'Kelas 1' | 'Kelas 2' | 'Kelas 1 Int' | 'Kelas 3' | 'Kelas 3 Int' | 'Kelas 4' | 'Kelas 5'
   kampus?: string // Gontor 1 - 12, Gontor Putri 1 - 8
   _source?: string
   source?: string

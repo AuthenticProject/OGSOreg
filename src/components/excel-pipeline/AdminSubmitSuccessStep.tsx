@@ -13,6 +13,7 @@ import { Button } from '../ui/Button'
 import { useImportStore } from '../../stores/importStore'
 import { exportStudentsToExcel } from '../../services/excelGenerator'
 import type { Student, StudentJenjang } from '../../types/student'
+import { normalizeJenjang } from '../../services/dataNormalizer'
 
 interface AdminSubmitSuccessStepProps {
   submitResult: {
@@ -41,14 +42,14 @@ export const AdminSubmitSuccessStep: React.FC<AdminSubmitSuccessStepProps> = ({
   // Count by jenjang
   const jenjangCounts = React.useMemo(() => {
     const counts: Record<string, number> = {
-      'Kelas 1': 0,
-      'Kelas 2': 0,
-      'Kelas 3': 0,
-      'Kelas 4': 0,
-      'Kelas 5': 0,
+      'Jenjang 1': 0,
+      'Jenjang 2': 0,
+      'Jenjang 3': 0,
+      'Jenjang 4': 0,
+      'Jenjang 5': 0,
     }
     validRows.forEach((r) => {
-      const j = r.jenjang || 'Kelas 1'
+      const j = r.jenjang ? normalizeJenjang(r.jenjang) : 'Jenjang 1'
       if (counts[j] !== undefined) {
         counts[j] += 1
       }
@@ -67,7 +68,7 @@ export const AdminSubmitSuccessStep: React.FC<AdminSubmitSuccessStepProps> = ({
         lastname: (r.lastname || (r.full_name ? r.full_name.split(' ').slice(1).join(' ') : '')).trim(),
         full_name: r.full_name || `${r.firstname || ''} ${r.lastname || ''}`.trim(),
         email: (r.email || r.teacher_email || '').trim(),
-        jenjang: (r.jenjang || 'Kelas 1') as StudentJenjang,
+        jenjang: (normalizeJenjang(r.jenjang) || 'Jenjang 1') as StudentJenjang,
         kampus: (r.kampus || campusName).trim(),
         source: 'excel' as const,
         sync_status: 'local_only' as const,

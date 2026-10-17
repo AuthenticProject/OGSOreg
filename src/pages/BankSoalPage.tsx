@@ -31,11 +31,11 @@ import {
 import type { StudentJenjang } from '../types/student'
 
 const ALLOWED_JENJANG: StudentJenjang[] = [
-  'Kelas 1',
-  'Kelas 2',
-  'Kelas 3',
-  'Kelas 4',
-  'Kelas 5',
+  'Jenjang 1',
+  'Jenjang 2',
+  'Jenjang 3',
+  'Jenjang 4',
+  'Jenjang 5',
 ]
 
 export const BankSoalPage: React.FC = () => {
@@ -60,7 +60,7 @@ export const BankSoalPage: React.FC = () => {
 
   const [isDocModalOpen, setIsDocModalOpen] = useState(false)
   const [selectedColForDoc, setSelectedColForDoc] = useState<BankSoalCollection | null>(null)
-  const [docJenjang, setDocJenjang] = useState<StudentJenjang>('Kelas 1')
+  const [docJenjang, setDocJenjang] = useState<StudentJenjang>('Jenjang 1')
   const [docTitle, setDocTitle] = useState('')
   const [docFileName, setDocFileName] = useState('')
   const [docFileSize, setDocFileSize] = useState('1.2 MB')
@@ -125,9 +125,9 @@ export const BankSoalPage: React.FC = () => {
 
   const handleOpenAddDoc = (col: BankSoalCollection) => {
     setSelectedColForDoc(col)
-    setDocJenjang('Kelas 1')
-    setDocTitle(`Soal ${col.babak} OGSO ${col.year} — Kelas 1`)
-    setDocFileName(`Soal_${col.babak}_OGSO_${col.year}_Kelas_1.pdf`)
+    setDocJenjang('Jenjang 1')
+    setDocTitle(`Soal ${col.babak} OGSO ${col.year} — Jenjang 1`)
+    setDocFileName(`Soal_${col.babak}_OGSO_${col.year}_Jenjang_1.pdf`)
     setDocFileSize('1.2 MB')
     setDocPublished(true)
     setFormError(null)
@@ -191,7 +191,7 @@ export const BankSoalPage: React.FC = () => {
     if (count === 0) return 'Belum ada soal terunggah'
 
     // Extract sorted unique classes
-    const jenjangOrder = ['Kelas 1', 'Kelas 2', 'Kelas 3', 'Kelas 4', 'Kelas 5']
+    const jenjangOrder = ['Jenjang 1', 'Jenjang 2', 'Jenjang 3', 'Jenjang 4', 'Jenjang 5']
     const presentJenjang = Array.from(new Set(docs.map((d) => d.jenjang))).sort(
       (a, b) => jenjangOrder.indexOf(a) - jenjangOrder.indexOf(b)
     )
@@ -199,9 +199,9 @@ export const BankSoalPage: React.FC = () => {
     if (presentJenjang.length === 1) {
       return `${count} soal · ${presentJenjang[0]}`
     }
-    const first = presentJenjang[0].replace('Kelas ', '')
-    const last = presentJenjang[presentJenjang.length - 1].replace('Kelas ', '')
-    return `${count} soal · Kelas ${first}–${last}`
+    const first = presentJenjang[0].replace('Jenjang ', '')
+    const last = presentJenjang[presentJenjang.length - 1].replace('Jenjang ', '')
+    return `${count} soal · Jenjang ${first}–${last}`
   }
 
   return (
@@ -695,7 +695,7 @@ export const BankSoalPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Jenjang (Strict: Kelas 1–5 Only)
+                  Jenjang Lomba (Jenjang 1–5)
                 </label>
                 <select
                   value={docJenjang}
@@ -707,9 +707,11 @@ export const BankSoalPage: React.FC = () => {
                   }}
                   className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 font-medium"
                 >
-                  {ALLOWED_JENJANG.map((j) => (
-                    <option key={j} value={j}>{j}</option>
-                  ))}
+                  <option value="Jenjang 1">Jenjang 1 (Kelas 1)</option>
+                  <option value="Jenjang 2">Jenjang 2 (Kelas 2)</option>
+                  <option value="Jenjang 3">Jenjang 3 (Kelas 1 Int & Kelas 3)</option>
+                  <option value="Jenjang 4">Jenjang 4 (Kelas 3 Int & Kelas 4)</option>
+                  <option value="Jenjang 5">Jenjang 5 (Kelas 5)</option>
                 </select>
               </div>
 

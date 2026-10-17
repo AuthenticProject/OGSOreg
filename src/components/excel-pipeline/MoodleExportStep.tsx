@@ -20,6 +20,7 @@ import { exportStudentsToMoodleCsv } from '../../services/moodle/moodleCsvExport
 import { exportStudentsToMoodleExcel } from '../../services/moodle/moodleExcelExporter'
 import { MoodleExportModal } from '../moodle/MoodleExportModal'
 import type { Student, StudentJenjang } from '../../types/student'
+import { normalizeJenjang } from '../../services/dataNormalizer'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
@@ -60,7 +61,7 @@ export const MoodleExportStep: React.FC = () => {
         lastname: (r.lastname || (r.full_name ? r.full_name.split(' ').slice(1).join(' ') : '')).trim(),
         full_name: r.full_name || `${r.firstname || ''} ${r.lastname || ''}`.trim(),
         email: (r.email || r.teacher_email || '').trim(),
-        jenjang: (r.jenjang || 'Kelas 1') as StudentJenjang,
+        jenjang: (normalizeJenjang(r.jenjang) || 'Jenjang 1') as StudentJenjang,
         source: 'excel' as const,
         sync_status: 'local_only' as const,
         created_by: user?.id || 'system',

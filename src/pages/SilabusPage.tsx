@@ -18,12 +18,21 @@ import type { StudentJenjang } from '../types/student'
 
 const JENJANG_TABS: (StudentJenjang | 'all')[] = [
   'all',
-  'Kelas 1',
-  'Kelas 2',
-  'Kelas 3',
-  'Kelas 4',
-  'Kelas 5',
+  'Jenjang 1',
+  'Jenjang 2',
+  'Jenjang 3',
+  'Jenjang 4',
+  'Jenjang 5',
 ]
+
+const TAB_LABELS: Record<string, string> = {
+  all: 'Semua Jenjang',
+  'Jenjang 1': 'Jenjang 1 (Kelas 1)',
+  'Jenjang 2': 'Jenjang 2 (Kelas 2)',
+  'Jenjang 3': 'Jenjang 3 (Kelas 1 Int & 3)',
+  'Jenjang 4': 'Jenjang 4 (Kelas 3 Int & 4)',
+  'Jenjang 5': 'Jenjang 5 (Kelas 5)',
+}
 
 export const SilabusPage: React.FC = () => {
   const { isSuperAdmin } = useAuth()
@@ -37,7 +46,7 @@ export const SilabusPage: React.FC = () => {
 
   // Form State
   const [formTitle, setFormTitle] = useState('')
-  const [formJenjang, setFormJenjang] = useState<StudentJenjang>('Kelas 1')
+  const [formJenjang, setFormJenjang] = useState<StudentJenjang>('Jenjang 1')
   const [formSubject, setFormSubject] = useState('Matematika & Sains')
   const [formDescription, setFormDescription] = useState('')
   const [formFileName, setFormFileName] = useState('')
@@ -64,7 +73,7 @@ export const SilabusPage: React.FC = () => {
   const handleOpenAdd = () => {
     setEditingItem(null)
     setFormTitle('')
-    setFormJenjang('Kelas 1')
+    setFormJenjang('Jenjang 1')
     setFormSubject('Matematika & Sains')
     setFormDescription('')
     setFormFileName('Silabus_Resmi_OGSO.pdf')
@@ -162,7 +171,7 @@ export const SilabusPage: React.FC = () => {
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
-              <span>{tab === 'all' ? 'Semua Jenjang' : tab}</span>
+              <span>{TAB_LABELS[tab] || tab}</span>
               <span
                 className={`text-[10px] px-2 py-0.5 rounded-full ${
                   isSelected ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-700'
@@ -356,11 +365,11 @@ export const SilabusPage: React.FC = () => {
                     onChange={(e) => setFormJenjang(e.target.value as StudentJenjang)}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white"
                   >
-                    <option value="Kelas 1">Kelas 1</option>
-                    <option value="Kelas 2">Kelas 2</option>
-                    <option value="Kelas 3">Kelas 3</option>
-                    <option value="Kelas 4">Kelas 4</option>
-                    <option value="Kelas 5">Kelas 5</option>
+                    <option value="Jenjang 1">Jenjang 1 (Kelas 1)</option>
+                    <option value="Jenjang 2">Jenjang 2 (Kelas 2)</option>
+                    <option value="Jenjang 3">Jenjang 3 (Kelas 1 Int & Kelas 3)</option>
+                    <option value="Jenjang 4">Jenjang 4 (Kelas 3 Int & Kelas 4)</option>
+                    <option value="Jenjang 5">Jenjang 5 (Kelas 5)</option>
                   </select>
                 </div>
 

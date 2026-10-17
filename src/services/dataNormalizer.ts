@@ -10,24 +10,102 @@ export function normalizeString(val: unknown): string {
 export function normalizeUsername(val: unknown): string {
   if (val === null || val === undefined) return ''
   // Usernames in Moodle typically lowercased without spaces
-  return String(val).trim().toLowerCase().replace(/\s+/g, '')
+  // Aggressively strip non-breaking spaces, zero-width characters, and whitespace
+  return String(val)
+    .replace(/[\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF\u200B-\u200D]/g, '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '')
 }
 
 export function normalizeEmail(val: unknown): string {
   if (val === null || val === undefined) return ''
-  return String(val).trim().toLowerCase()
+  return String(val)
+    .replace(/[\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF\u200B-\u200D]/g, '')
+    .trim()
+    .toLowerCase()
 }
 
 export function normalizeJenjang(val: unknown): string {
   if (val === null || val === undefined) return ''
-  const str = String(val).trim()
-  // Standardize "1", "kelas 1", "Kelas 1" to "Kelas 1"
-  const m = str.match(/^(?:kelas\s*)?([1-5])$/i)
+  const str = String(val)
+    .replace(/[\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF\u200B-\u200D]/g, '')
+    .trim()
+  if (!str) return ''
+
+  const lower = str.toLowerCase().replace(/[\s\-_]+/g, ' ').trim()
+
+  // Standardize any variation of 1-5 (e.g. "kelas 1", "jenjang 1", "j1", "k1", "1", "tingkat 1") to "Jenjang X"
+  const m = lower.match(/^(?:(?:jenjang|kelas|tingkat|level|j|k)\s*)?([1-5])$/i)
   if (m) {
-    return `Kelas ${m[1]}`
+    return `Jenjang ${m[1]}`
   }
+
+  // If contains jenjang 1-5 or kelas 1-5 anywhere in string
+  const m2 = lower.match(/(?:jenjang|kelas|tingkat|level|j)\s*([1-5])/i)
+  if (m2) {
+    return `Jenjang ${m2[1]}`
+  }
+
+  // If contains just number 1-5
+  const m3 = lower.match(/\b([1-5])\b/)
+  if (m3) {
+    return `Jenjang ${m3[1]}`
+  }
+
   return str
 }
+
+export function normalizeKelas(val: unknown): string {
+  if (val === null || val === undefined) return ''
+  const str = String(val)
+    .replace(/[\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF\u200B-\u200D]/g, '')
+    .trim()
+  if (!str) return ''
+
+  // Standardize delimiters
+  const lower = str.toLowerCase().replace(/[\s_]+/g, ' ').trim()
+
+  // 1. Check 1 Intensif with room letter (e.g. "1-int-c", "1 int c", "1int c", "1 intensif c")
+  const m1Int = lower.match(/^(?:kelas\s*|k\s*)?1\s*-?\s*(?:int|intensif)\s*-?\s*([a-z]|shighor|shigor|kibar)?$/i)
+  if (m1Int) {
+    const letter = m1Int[1]
+    if (letter) {
+      const room = letter === 'shighor' || letter === 'shigor' ? 'S' : letter === 'kibar' ? 'K' : letter.toUpperCase()
+      return `1-Int-${room}`
+    }
+    return '1-Int'
+  }
+
+  // 2. Check 3 Intensif with room letter (e.g. "3-int-c", "3 int c", "3int c", "3 intensif c")
+  const m3Int = lower.match(/^(?:kelas\s*|k\s*)?3\s*-?\s*(?:int|intensif)\s*-?\s*([a-z]|shighor|shigor|kibar)?$/i)
+  if (m3Int) {
+    const letter = m3Int[1]
+    if (letter) {
+      const room = letter === 'shighor' || letter === 'shigor' ? 'S' : letter === 'kibar' ? 'K' : letter.toUpperCase()
+      return `3-Int-${room}`
+    }
+    return '3-Int'
+  }
+
+  // 3. Regular class 1-5 with room letter (e.g. "5-c", "5c", "5C", "5 C", "5 c", "5 - c", "kelas 5c", "k 5 c", "5s", "5S", "5-s", "5 S", "5 shighor")
+  const mRoom = lower.match(/^(?:kelas\s*|k\s*)?([1-5])\s*-?\s*([a-z]|shighor|shigor|kibar)$/i)
+  if (mRoom) {
+    const digit = mRoom[1]
+    const letter = mRoom[2]
+    const room = letter === 'shighor' || letter === 'shigor' ? 'S' : letter === 'kibar' ? 'K' : letter.toUpperCase()
+    return `${digit}-${room}`
+  }
+
+  // 4. Regular class without room letter (e.g. "5", "Kelas 5", "k5")
+  const mJustDigit = lower.match(/^(?:kelas\s*|k\s*)?([1-5])$/i)
+  if (mJustDigit) {
+    return `Kelas ${mJustDigit[1]}`
+  }
+
+  return str
+}
+
 
 export function normalizeKampus(val: unknown): string {
   if (val === null || val === undefined) return ''

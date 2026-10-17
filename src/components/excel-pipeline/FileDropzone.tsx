@@ -32,7 +32,7 @@ export const FileDropzone: React.FC<FileDropzoneProps> = () => {
     firstname: '',
     lastname: '',
     email: '',
-    jenjang: 'Kelas 1' as MoodleJenjang,
+    jenjang: 'Jenjang 1' as MoodleJenjang,
   })
   const [manualFormError, setManualFormError] = useState<string | null>(null)
 
@@ -283,7 +283,7 @@ export const FileDropzone: React.FC<FileDropzoneProps> = () => {
               rows={8}
               value={pasteText}
               onChange={(e) => setPasteText(e.target.value)}
-              placeholder="Contoh:&#10;ahmad01&#9;Ahmad&#9;Faiz&#9;ahmad.faiz@example.com&#9;Kelas 1&#10;siti02&#9;Siti&#9;Rahma&#9;siti.rahma@example.com&#9;Kelas 2"
+              placeholder="Contoh:&#10;ahmad01&#9;Ahmad&#9;Faiz&#9;ahmad.faiz@example.com&#9;Jenjang 1&#10;siti02&#9;Siti&#9;Rahma&#9;siti.rahma@example.com&#9;Jenjang 2"
               className="w-full p-3 text-xs font-mono rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-brand-maroon bg-white"
             />
 
@@ -347,7 +347,7 @@ export const FileDropzone: React.FC<FileDropzoneProps> = () => {
                   ))}
                 </select>
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  Pilih tingkat kelas (Kelas 1–5).
+                  Pilih tingkat jenjang perlombaan (Jenjang 1–5).
                 </p>
               </div>
 

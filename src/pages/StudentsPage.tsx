@@ -47,11 +47,13 @@ import { useAuth } from '../context/AuthContext'
 import type {
   Student,
   StudentJenjang,
+  StudentKelas,
   StudentSource,
   StudentSyncStatus,
   StudentStats,
 } from '../types/student'
-import { MOODLE_JENJANG_OPTIONS } from '../types/excel'
+import { getExpectedJenjangForKelas } from '../types/student'
+import { MOODLE_JENJANG_OPTIONS, MOODLE_KELAS_OPTIONS } from '../types/excel'
 
 export const StudentsPage: React.FC = () => {
   const navigate = useNavigate()
@@ -69,7 +71,16 @@ export const StudentsPage: React.FC = () => {
     enrolled: 0,
     failed: 0,
     unsynced: 0,
-    byJenjang: { 'Kelas 1': 0, 'Kelas 2': 0, 'Kelas 3': 0, 'Kelas 4': 0, 'Kelas 5': 0 },
+    byJenjang: { 'Jenjang 1': 0, 'Jenjang 2': 0, 'Jenjang 3': 0, 'Jenjang 4': 0, 'Jenjang 5': 0 },
+    byKelas: {
+      'Kelas 1': 0,
+      'Kelas 2': 0,
+      'Kelas 1 Int': 0,
+      'Kelas 3': 0,
+      'Kelas 3 Int': 0,
+      'Kelas 4': 0,
+      'Kelas 5': 0,
+    },
     bySyncStatus: { local_only: 0, exported: 0, synced: 0, enrolled: 0, failed: 0 },
     bySource: { excel: 0, csv: 0, manual: 0, paste: 0 },
     verifiedMoodleCount: 0,
@@ -78,6 +89,7 @@ export const StudentsPage: React.FC = () => {
 
   // Filters & Pagination
   const [search, setSearch] = useState('')
+  const [kelasFilter, setKelasFilter] = useState<StudentKelas | 'all'>('all')
   const [jenjangFilter, setJenjangFilter] = useState<StudentJenjang | 'all'>('all')
   const [kampusFilter, setKampusFilter] = useState<string>('all')
   const [syncStatusFilter, setSyncStatusFilter] = useState<StudentSyncStatus | 'all'>('all')
@@ -123,7 +135,8 @@ export const StudentsPage: React.FC = () => {
     firstname: '',
     lastname: '',
     email: '',
-    jenjang: 'Kelas 1' as StudentJenjang,
+    kelas: 'Kelas 1' as StudentKelas,
+    jenjang: 'Jenjang 1' as StudentJenjang,
     kampus: 'Gontor 1',
     custom_fields: {} as Record<string, any>,
   })
@@ -139,6 +152,7 @@ export const StudentsPage: React.FC = () => {
       const res = await studentRepository.getStudents({
         institutionId,
         search,
+        kelas: kelasFilter,
         jenjang: jenjangFilter,
         kampus: effectiveKampus,
         assignedCampus: !isSuperAdmin ? assignedCampus : undefined,
@@ -193,6 +207,7 @@ export const StudentsPage: React.FC = () => {
     assignedCampus,
     isSuperAdmin,
     institutionId,
+    kelasFilter,
     jenjangFilter,
     kampusFilter,
     syncStatusFilter,
@@ -248,7 +263,8 @@ export const StudentsPage: React.FC = () => {
       firstname: '',
       lastname: '',
       email: '',
-      jenjang: 'Kelas 1',
+      kelas: 'Kelas 1',
+      jenjang: 'Jenjang 1',
       kampus: !isSuperAdmin && assignedCampus ? assignedCampus : 'Gontor 1',
       custom_fields: initialCustom,
     })
@@ -269,12 +285,15 @@ export const StudentsPage: React.FC = () => {
           ? false
           : ''
     })
+    const k = (student.kelas || 'Kelas 1') as StudentKelas
+    const j = (student.jenjang || getExpectedJenjangForKelas(k) || 'Jenjang 1') as StudentJenjang
     setFormData({
       username: student.username,
       firstname: student.firstname,
       lastname: student.lastname || '',
       email: student.email,
-      jenjang: student.jenjang,
+      kelas: k,
+      jenjang: j,
       kampus: student.kampus || (!isSuperAdmin && assignedCampus ? assignedCampus : ''),
       custom_fields: initialCustom,
     })
@@ -625,16 +644,28 @@ export const StudentsPage: React.FC = () => {
         ),
       },
       {
+        accessorKey: 'kelas',
+        header: 'Kelas Santri',
+        cell: ({ row }) => {
+          const k = row.original.kelas
+          return (
+            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200">
+              {k || '-'}
+            </span>
+          )
+        },
+      },
+      {
         accessorKey: 'jenjang',
-        header: 'Jenjang',
+        header: 'Jenjang Lomba',
         cell: ({ row }) => {
           const j = row.original.jenjang
           const colors: Record<StudentJenjang, string> = {
-            'Kelas 1': 'bg-blue-50 text-blue-700 border-blue-200',
-            'Kelas 2': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-            'Kelas 3': 'bg-amber-50 text-amber-700 border-amber-200',
-            'Kelas 4': 'bg-purple-50 text-purple-700 border-purple-200',
-            'Kelas 5': 'bg-rose-50 text-rose-700 border-rose-200',
+            'Jenjang 1': 'bg-blue-50 text-blue-700 border-blue-200',
+            'Jenjang 2': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            'Jenjang 3': 'bg-amber-50 text-amber-700 border-amber-200',
+            'Jenjang 4': 'bg-purple-50 text-purple-700 border-purple-200',
+            'Jenjang 5': 'bg-rose-50 text-rose-700 border-rose-200',
           }
           return (
             <span
@@ -1020,7 +1051,24 @@ export const StudentsPage: React.FC = () => {
 
           {/* Filters */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Filter Jenjang */}
+            {/* Filter Kelas Santri */}
+            <select
+              value={kelasFilter}
+              onChange={(e) => {
+                setKelasFilter(e.target.value as StudentKelas | 'all')
+                setCurrentPage(1)
+              }}
+              className="text-xs px-2.5 py-2 rounded-lg border border-border bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-maroon"
+            >
+              <option value="all">Semua Kelas Santri</option>
+              {MOODLE_KELAS_OPTIONS.map((k) => (
+                <option key={k} value={k}>
+                  {k}
+                </option>
+              ))}
+            </select>
+
+            {/* Filter Jenjang Lomba */}
             <select
               value={jenjangFilter}
               onChange={(e) => {
@@ -1029,7 +1077,7 @@ export const StudentsPage: React.FC = () => {
               }}
               className="text-xs px-2.5 py-2 rounded-lg border border-border bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-maroon"
             >
-              <option value="all">Semua Jenjang</option>
+              <option value="all">Semua Jenjang Lomba</option>
               {MOODLE_JENJANG_OPTIONS.map((j) => (
                 <option key={j} value={j}>
                   {j}
@@ -1326,9 +1374,16 @@ export const StudentsPage: React.FC = () => {
 
                 <div className="p-3 rounded-lg bg-slate-50 border border-border">
                   <span className="text-[10px] uppercase font-bold text-muted-foreground">
-                    Jenjang Santri
+                    Kelas Santri
                   </span>
-                  <p className="font-bold text-slate-900 mt-0.5">{detailStudent.jenjang}</p>
+                  <p className="font-bold text-slate-900 mt-0.5">{detailStudent.kelas || '-'}</p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-slate-50 border border-border">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                    Jenjang Lomba OGSO
+                  </span>
+                  <p className="font-bold text-brand-maroon mt-0.5">{detailStudent.jenjang}</p>
                 </div>
 
                 <div className="p-3 rounded-lg bg-slate-50 border border-border">
@@ -1583,7 +1638,35 @@ export const StudentsPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
                     <label className="block font-semibold text-slate-700 mb-1">
-                      Jenjang Santri <span className="text-rose-500">*</span>
+                      Kelas Santri <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={formData.kelas}
+                      onChange={(e) => {
+                        const newKelas = e.target.value as StudentKelas
+                        const autoJenjang = getExpectedJenjangForKelas(newKelas)
+                        setFormData({
+                          ...formData,
+                          kelas: newKelas,
+                          jenjang: autoJenjang || formData.jenjang,
+                        })
+                      }}
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-maroon"
+                    >
+                      {MOODLE_KELAS_OPTIONS.map((k) => (
+                        <option key={k} value={k}>
+                          {k}
+                        </option>
+                      ))}
+                    </select>
+                    {formErrors.kelas && (
+                      <p className="text-rose-600 text-[11px] mt-0.5">{formErrors.kelas}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">
+                      Jenjang Lomba <span className="text-rose-500">*</span>
                     </label>
                     <select
                       value={formData.jenjang}
@@ -1598,34 +1681,37 @@ export const StudentsPage: React.FC = () => {
                         </option>
                       ))}
                     </select>
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
-                      Kampus Gontor <span className="text-rose-500">*</span>
-                    </label>
-                    <select
-                      required
-                      value={formData.kampus}
-                      onChange={(e) => setFormData({ ...formData, kampus: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-maroon"
-                    >
-                      <option value="" disabled>Pilih Kampus (20 Pilihan)</option>
-                      <optgroup label="Kampus Putra (1–12)">
-                        {KAMPUS_OPTIONS.filter((k) => !k.includes('Putri')).map((k) => (
-                          <option key={k} value={k}>{k}</option>
-                        ))}
-                      </optgroup>
-                      <optgroup label="Kampus Putri (1–8)">
-                        {KAMPUS_OPTIONS.filter((k) => k.includes('Putri')).map((k) => (
-                          <option key={k} value={k}>{k}</option>
-                        ))}
-                      </optgroup>
-                    </select>
-                    {formErrors.kampus && (
-                      <p className="text-rose-600 text-[11px] mt-0.5">{formErrors.kampus}</p>
+                    {formErrors.jenjang && (
+                      <p className="text-rose-600 text-[11px] mt-0.5">{formErrors.jenjang}</p>
                     )}
                   </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Kampus Gontor <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    required
+                    value={formData.kampus}
+                    onChange={(e) => setFormData({ ...formData, kampus: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-maroon"
+                  >
+                    <option value="" disabled>Pilih Kampus (20 Pilihan)</option>
+                    <optgroup label="Kampus Putra (1–12)">
+                      {KAMPUS_OPTIONS.filter((k) => !k.includes('Putri')).map((k) => (
+                        <option key={k} value={k}>{k}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Kampus Putri (1–8)">
+                      {KAMPUS_OPTIONS.filter((k) => k.includes('Putri')).map((k) => (
+                        <option key={k} value={k}>{k}</option>
+                      ))}
+                    </optgroup>
+                  </select>
+                  {formErrors.kampus && (
+                    <p className="text-rose-600 text-[11px] mt-0.5">{formErrors.kampus}</p>
+                  )}
                 </div>
 
                 {/* Dynamic Custom Fields Inputs */}
@@ -1852,7 +1938,35 @@ export const StudentsPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
                     <label className="block font-semibold text-slate-700 mb-1">
-                      Jenjang Santri <span className="text-rose-500">*</span>
+                      Kelas Santri <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={formData.kelas}
+                      onChange={(e) => {
+                        const newKelas = e.target.value as StudentKelas
+                        const autoJenjang = getExpectedJenjangForKelas(newKelas)
+                        setFormData({
+                          ...formData,
+                          kelas: newKelas,
+                          jenjang: autoJenjang || formData.jenjang,
+                        })
+                      }}
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-maroon"
+                    >
+                      {MOODLE_KELAS_OPTIONS.map((k) => (
+                        <option key={k} value={k}>
+                          {k}
+                        </option>
+                      ))}
+                    </select>
+                    {formErrors.kelas && (
+                      <p className="text-rose-600 text-[11px] mt-0.5">{formErrors.kelas}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">
+                      Jenjang Lomba <span className="text-rose-500">*</span>
                     </label>
                     <select
                       value={formData.jenjang}
@@ -1867,30 +1981,36 @@ export const StudentsPage: React.FC = () => {
                         </option>
                       ))}
                     </select>
+                    {formErrors.jenjang && (
+                      <p className="text-rose-600 text-[11px] mt-0.5">{formErrors.jenjang}</p>
+                    )}
                   </div>
+                </div>
 
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
-                      Kampus Gontor
-                    </label>
-                    <select
-                      value={formData.kampus}
-                      onChange={(e) => setFormData({ ...formData, kampus: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-maroon"
-                    >
-                      <option value="">Pilih Kampus (20 Pilihan)</option>
-                      <optgroup label="Kampus Putra (1–12)">
-                        {KAMPUS_OPTIONS.filter((k) => !k.includes('Putri')).map((k) => (
-                          <option key={k} value={k}>{k}</option>
-                        ))}
-                      </optgroup>
-                      <optgroup label="Kampus Putri (1–8)">
-                        {KAMPUS_OPTIONS.filter((k) => k.includes('Putri')).map((k) => (
-                          <option key={k} value={k}>{k}</option>
-                        ))}
-                      </optgroup>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Kampus Gontor
+                  </label>
+                  <select
+                    value={formData.kampus}
+                    onChange={(e) => setFormData({ ...formData, kampus: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-maroon"
+                  >
+                    <option value="">Pilih Kampus (20 Pilihan)</option>
+                    <optgroup label="Kampus Putra (1–12)">
+                      {KAMPUS_OPTIONS.filter((k) => !k.includes('Putri')).map((k) => (
+                        <option key={k} value={k}>{k}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Kampus Putri (1–8)">
+                      {KAMPUS_OPTIONS.filter((k) => k.includes('Putri')).map((k) => (
+                        <option key={k} value={k}>{k}</option>
+                      ))}
+                    </optgroup>
+                  </select>
+                  {formErrors.kampus && (
+                    <p className="text-rose-600 text-[11px] mt-0.5">{formErrors.kampus}</p>
+                  )}
                 </div>
 
                 {/* Dynamic Custom Fields Inputs */}

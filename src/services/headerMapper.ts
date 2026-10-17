@@ -20,7 +20,24 @@ export const MOODLE_TARGET_FIELDS: TargetFieldDef[] = [
     label: 'Username',
     isRequired: true,
     description: 'Username akun Moodle peserta (unik)',
-    aliases: ['username', 'user name', 'id pengguna', 'id peserta', 'user', 'nisn'],
+    aliases: [
+      'username',
+      'user name',
+      'username moodle',
+      'akun moodle',
+      'user moodle',
+      'id moodle',
+      'id pengguna',
+      'id peserta',
+      'user',
+      'stambuk',
+      'no stambuk',
+      'no. stambuk',
+      'nomor stambuk',
+      'stambuk santri',
+      'nisn',
+      'nis',
+    ],
   },
   {
     key: 'firstname',
@@ -41,21 +58,69 @@ export const MOODLE_TARGET_FIELDS: TargetFieldDef[] = [
     label: 'Email',
     isRequired: true,
     description: 'Alamat email aktif peserta',
-    aliases: ['email', 'alamat email', 'e-mail', 'surel', 'email peserta'],
+    aliases: [
+      'email',
+      'alamat email',
+      'e-mail',
+      'surel',
+      'email santri',
+      'email peserta',
+      'email siswa',
+      'surel santri',
+      'surel peserta',
+      'surel siswa',
+      'alamat email santri',
+      'e-mail santri',
+    ],
   },
   {
     key: 'jenjang',
-    label: 'Jenjang (Kelas 1–5)',
+    label: 'Jenjang Lomba (Jenjang 1–5)',
     isRequired: true,
-    description: 'Tingkat kelas siswa: Kelas 1, Kelas 2, Kelas 3, Kelas 4, Kelas 5',
-    aliases: ['jenjang', 'tingkat', 'kelas peserta', 'jenjang kelas', 'level'],
+    description: 'Tingkat perlombaan: Jenjang 1, Jenjang 2, Jenjang 3, Jenjang 4, Jenjang 5',
+    aliases: [
+      'jenjang',
+      'jenjang lomba',
+      'kategori jenjang',
+      'tingkat lomba',
+      'level',
+      'jenjang peserta',
+      'tingkat jenjang',
+      'jenjang santri',
+    ],
   },
   {
     key: 'kampus',
     label: 'Kampus (Gontor)',
     isRequired: true,
     description: 'Salah satu dari 20 pilihan Kampus Gontor resmi (Gontor 1–12, Gontor Putri 1–8)',
-    aliases: ['kampus', 'campus', 'lokasi kampus', 'kampus gontor', 'cabang kampus', 'kampus cabang', 'pesantren'],
+    aliases: [
+      'kampus',
+      'campus',
+      'lokasi kampus',
+      'kampus gontor',
+      'cabang kampus',
+      'kampus cabang',
+      'pesantren',
+      'pondok cabang',
+      'cabang gontor',
+    ],
+  },
+  {
+    key: 'kelas',
+    label: 'Kelas Santri',
+    isRequired: true,
+    description: 'Kelas KMI santri: Kelas 1, Kelas 2, Kelas 1 Int, Kelas 3, Kelas 3 Int, Kelas 4, Kelas 5',
+    aliases: [
+      'kelas',
+      'kelas santri',
+      'tingkat kelas',
+      'kelas kmi',
+      'grade',
+      'kelas peserta',
+      'ruang kelas',
+      'kelas/ruang',
+    ],
   },
 ]
 
@@ -198,14 +263,26 @@ export function cleanHeaderString(header: string): string {
   return header
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s\/\(\)]/g, '')
+    .replace(/[^\w\s]/g, '')
     .replace(/\s+/g, ' ')
 }
 
 export function detectHeaderSchema(headers: string[]): 'MOODLE' | 'LEGACY' {
   const cleaned = headers.map(cleanHeaderString)
   const isMoodle = cleaned.some((h) =>
-    ['username', 'nama depan', 'firstname', 'nama belakang', 'lastname', 'email'].includes(h)
+    [
+      'username',
+      'nama depan',
+      'firstname',
+      'nama belakang',
+      'lastname',
+      'email',
+      'username moodle',
+      'email santri',
+      'jenjang lomba',
+      'kelas santri',
+      'kampus gontor',
+    ].includes(h)
   )
   const isLegacy = cleaned.some((h) =>
     ['nisn', 'asal sekolah', 'sekolah', 'guru pembimbing', 'kategori lomba'].includes(h)
@@ -223,10 +300,14 @@ export function autoMapHeaders(
 ): ColumnMappingItem[] {
   const usedTargetKeys = new Set<string>()
   const schema = detectHeaderSchema(excelHeaders)
-  const customDefs = getCustomTargetFields(customFields)
-  const targetFieldDefs = schema === 'MOODLE'
-    ? [...MOODLE_TARGET_FIELDS, ...customDefs, ...LEGACY_PARTICIPANT_TARGET_FIELDS]
-    : [...LEGACY_PARTICIPANT_TARGET_FIELDS, ...customDefs, ...MOODLE_TARGET_FIELDS]
+  const allFieldDefs = getAllParticipantTargetFields(customFields)
+  const targetFieldDefs =
+    schema === 'MOODLE'
+      ? allFieldDefs
+      : [
+          ...LEGACY_PARTICIPANT_TARGET_FIELDS,
+          ...allFieldDefs.filter((f) => !LEGACY_PARTICIPANT_TARGET_FIELDS.some((l) => l.key === f.key)),
+        ]
 
   return excelHeaders.map((rawHeader) => {
     const cleaned = cleanHeaderString(rawHeader)
@@ -252,6 +333,26 @@ export function autoMapHeaders(
 
       if (matchedField) {
         confidence = 'alias'
+      } else {
+        // 3. Fallback: Keyword inclusion for essential Moodle fields
+        if (!usedTargetKeys.has('email') && (cleaned.includes('email') || cleaned.includes('surel'))) {
+          matchedField = targetFieldDefs.find((f) => f.key === 'email') || null
+        } else if (
+          !usedTargetKeys.has('username') &&
+          (cleaned.includes('username') || cleaned.includes('user moodle') || cleaned.includes('akun moodle') || cleaned.includes('user id'))
+        ) {
+          matchedField = targetFieldDefs.find((f) => f.key === 'username') || null
+        } else if (!usedTargetKeys.has('jenjang') && (cleaned.includes('jenjang') || cleaned.includes('tingkat lomba'))) {
+          matchedField = targetFieldDefs.find((f) => f.key === 'jenjang') || null
+        } else if (!usedTargetKeys.has('kelas') && cleaned.includes('kelas')) {
+          matchedField = targetFieldDefs.find((f) => f.key === 'kelas') || null
+        } else if (!usedTargetKeys.has('kampus') && (cleaned.includes('kampus') || cleaned.includes('cabang'))) {
+          matchedField = targetFieldDefs.find((f) => f.key === 'kampus') || null
+        }
+
+        if (matchedField) {
+          confidence = 'alias'
+        }
       }
     }
 
