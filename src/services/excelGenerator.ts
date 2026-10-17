@@ -5,6 +5,7 @@ import type { AppUserProfile } from '../types/auth'
 import { customFieldService } from './customFieldService'
 import { templateConfigService } from './templateConfigService'
 import type { CustomFieldDefinition } from '../types/customField'
+import { STANDARD_FIELD_KEYS } from './validationEngine'
 
 function getColumnLetter(colIndex: number): string {
   let letter = ''
@@ -350,7 +351,13 @@ export async function exportStudentsToExcel(
     views: [{ state: 'frozen', ySplit: 1 }],
   })
 
-  const activeCustomFields = customFieldService.getActiveFieldsSync()
+  const activeCustomFields = customFieldService
+    .getActiveFieldsSync()
+    .filter(
+      (cf) =>
+        !STANDARD_FIELD_KEYS.includes(cf.key.toLowerCase().trim()) &&
+        !STANDARD_FIELD_KEYS.includes(cf.label.toLowerCase().trim())
+    )
   const customCols = activeCustomFields.map((cf) => ({
     header: cf.label,
     key: `custom_${cf.key}`,
@@ -465,7 +472,13 @@ export async function buildAdminReportWorkbook(
 
   // Sheet 2: Daftar Santri & Kampus
   const wsList = workbook.addWorksheet('Daftar Santri & Kampus')
-  const activeCustomFields = customFieldService.getActiveFieldsSync()
+  const activeCustomFields = customFieldService
+    .getActiveFieldsSync()
+    .filter(
+      (cf) =>
+        !STANDARD_FIELD_KEYS.includes(cf.key.toLowerCase().trim()) &&
+        !STANDARD_FIELD_KEYS.includes(cf.label.toLowerCase().trim())
+    )
   const customListColumns = activeCustomFields.map((cf) => ({
     header: cf.label,
     key: `custom_${cf.key}`,

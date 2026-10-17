@@ -6,6 +6,27 @@ import {
 
 const LOCAL_STORAGE_KEY = 'ogsoreg_custom_fields_v1'
 
+export const SYSTEM_RESERVED_KEYS = new Set([
+  'kelas',
+  'jenjang',
+  'kampus',
+  'username',
+  'firstname',
+  'lastname',
+  'email',
+  'full_name',
+  'nisn',
+  'gender',
+  'grade_level',
+  'school_name',
+  'npsn',
+  'competition_category',
+  'teacher_name',
+  'teacher_phone',
+  'teacher_email',
+  'no',
+])
+
 /**
  * Default sample custom fields if store is completely empty
  * (Demonstrating free-form text input as default, e.g. Daerah, Nomor Induk)
@@ -152,21 +173,31 @@ class CustomFieldService {
   }
 
   /**
-   * Returns active custom fields only, sorted by display_order
+   * Returns active custom fields only, sorted by display_order, excluding system reserved keys
    */
   public async getActiveCustomFields(): Promise<CustomFieldDefinition[]> {
     const all = await this.getCustomFields()
     return all
-      .filter((f) => f.is_active)
+      .filter(
+        (f) =>
+          f.is_active &&
+          !SYSTEM_RESERVED_KEYS.has(f.key.toLowerCase().trim()) &&
+          !SYSTEM_RESERVED_KEYS.has(f.label.toLowerCase().trim())
+      )
       .sort((a, b) => a.display_order - b.display_order)
   }
 
   /**
-   * Synchronous quick accessor for active custom fields
+   * Synchronous quick accessor for active custom fields, excluding system reserved keys
    */
   public getActiveFieldsSync(): CustomFieldDefinition[] {
     return this.cache
-      .filter((f) => f.is_active)
+      .filter(
+        (f) =>
+          f.is_active &&
+          !SYSTEM_RESERVED_KEYS.has(f.key.toLowerCase().trim()) &&
+          !SYSTEM_RESERVED_KEYS.has(f.label.toLowerCase().trim())
+      )
       .sort((a, b) => a.display_order - b.display_order)
   }
 

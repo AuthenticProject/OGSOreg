@@ -352,16 +352,27 @@ export const useImportStore = create<ImportState>((set, get) => ({
     // Handle dynamic custom fields (prefixed with custom_)
     if (field.startsWith('custom_')) {
       const customKey = field.replace(/^custom_/, '')
-      const cleanVal = normalizeString(rawValue)
+      let cleanVal = normalizeString(rawValue)
+      if (customKey === 'kelas') cleanVal = normalizeKelas(rawValue)
+      else if (customKey === 'jenjang') cleanVal = normalizeJenjang(rawValue)
+      else if (customKey === 'kampus') cleanVal = normalizeKampus(rawValue)
+      else if (customKey === 'username') cleanVal = normalizeUsername(rawValue)
+      else if (customKey === 'email') cleanVal = normalizeEmail(rawValue)
+
       const updatedRows = stagedRows.map((row) => {
         if (row._rowId === rowId) {
-          return {
+          const updated: StagedParticipantRow = {
             ...row,
             custom_fields: {
               ...(row.custom_fields || {}),
               [customKey]: cleanVal,
             },
           }
+          // Also sync to root property if matching standard field
+          if (customKey in updated) {
+            ;(updated as any)[customKey] = cleanVal
+          }
+          return updated
         }
         return row
       })
@@ -387,9 +398,13 @@ export const useImportStore = create<ImportState>((set, get) => ({
 
     const updatedRows = stagedRows.map((row) => {
       if (row._rowId === rowId) {
-        const updated = {
+        const updated: StagedParticipantRow = {
           ...row,
           [field]: cleanVal,
+          custom_fields: {
+            ...(row.custom_fields || {}),
+            [field]: cleanVal,
+          },
         }
         // Sync full_name if firstname or lastname is modified
         if (field === 'firstname' || field === 'lastname') {

@@ -19,6 +19,28 @@ import { studentRepository } from './studentRepository'
 import { customFieldService } from './customFieldService'
 import { cleanHeaderString } from './headerMapper'
 
+// Standard field keys that should never conflict with or be treated as dynamic custom fields
+export const STANDARD_FIELD_KEYS = [
+  'kelas',
+  'jenjang',
+  'kampus',
+  'username',
+  'firstname',
+  'lastname',
+  'email',
+  'full_name',
+  'nisn',
+  'gender',
+  'grade_level',
+  'school_name',
+  'npsn',
+  'competition_category',
+  'teacher_name',
+  'teacher_phone',
+  'teacher_email',
+  'no',
+]
+
 /**
  * Transforms raw excel rows according to column mappings and performs
  * Zod validation and duplicate detection across the entire batch.
@@ -197,6 +219,13 @@ export function processAndValidateRows(
         finalKampus = normalizeKampus(kampusCandidate)
       }
     }
+
+    // Ensure standard fields are mirrored in custom_fields so any lookup by key or label succeeds
+    if (finalKelas && !custom_fields['kelas']) custom_fields['kelas'] = finalKelas
+    if (finalJenjang && !custom_fields['jenjang']) custom_fields['jenjang'] = finalJenjang
+    if (finalKampus && !custom_fields['kampus']) custom_fields['kampus'] = finalKampus
+    if (finalUsername && !custom_fields['username']) custom_fields['username'] = finalUsername
+    if (finalEmail && !custom_fields['email']) custom_fields['email'] = finalEmail
 
     const normalized: StagedParticipantRow = {
       _rowId: `row-${idx + 1}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
@@ -447,10 +476,17 @@ export function validateAllStagedRows(
     }
 
     // 4. Validate dynamic custom fields
-    if (activeCustomFields.length > 0) {
+    // Standard fields (kelas, jenjang, kampus, etc.) are already validated in their dedicated sections above
+    const trulyCustomFields = activeCustomFields.filter((cf) => {
+      const cleanKey = cf.key.toLowerCase().trim()
+      const cleanLabel = cf.label.toLowerCase().trim()
+      return !STANDARD_FIELD_KEYS.includes(cleanKey) && !STANDARD_FIELD_KEYS.includes(cleanLabel)
+    })
+
+    if (trulyCustomFields.length > 0) {
       const rowCustomFields = r.custom_fields || {}
-      activeCustomFields.forEach((field) => {
-        const val = rowCustomFields[field.key]
+      trulyCustomFields.forEach((field) => {
+        const val = rowCustomFields[field.key] ?? ((r as unknown) as Record<string, unknown>)[field.key]
         const strVal = val !== undefined && val !== null ? String(val).trim() : ''
 
         if (field.is_required && !strVal) {

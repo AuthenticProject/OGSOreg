@@ -39,6 +39,7 @@ import {
   validateMoodleDestinationHeader,
   STANDARD_MOODLE_FIELDS,
 } from '../types/customField'
+import { STANDARD_FIELD_KEYS } from '../services/validationEngine'
 
 // Standard mandatory columns in Moodle CSV Bulk User Upload (7 Columns)
 const MANDATORY_MOODLE_COLUMNS = [
@@ -466,6 +467,12 @@ export const CustomFieldsPage: React.FC = () => {
 
     if (!cleanKey) {
       errors.key = 'Internal key unik wajib diisi.'
+    } else if (STANDARD_FIELD_KEYS.includes(cleanKey)) {
+      errors.key = `Key '${cleanKey}' adalah nama kolom bawaan sistem dan tidak boleh digunakan sebagai custom field.`
+    }
+
+    if (STANDARD_FIELD_KEYS.includes(formLabel.trim().toLowerCase())) {
+      errors.label = `Label '${formLabel.trim()}' adalah kolom bawaan sistem dan tidak boleh digunakan sebagai custom field.`
     }
 
     let parsedOptions: string[] = []

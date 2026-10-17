@@ -40,6 +40,7 @@ import { studentRepository } from '../services/studentRepository'
 import { exportStudentsToExcel } from '../services/excelGenerator'
 import { MoodleExportModal } from '../components/moodle/MoodleExportModal'
 import { customFieldService } from '../services/customFieldService'
+import { STANDARD_FIELD_KEYS } from '../services/validationEngine'
 import type { CustomFieldDefinition } from '../types/customField'
 import { studentSchema, newStudentSchema } from '../schemas/student.schema'
 import { KAMPUS_OPTIONS } from '../types/campus'
@@ -123,10 +124,17 @@ export const StudentsPage: React.FC = () => {
 
   // Subscribe to active custom fields
   useEffect(() => {
+    const isCustomFieldValid = (f: CustomFieldDefinition) => {
+      const cleanKey = f.key.toLowerCase().trim()
+      const cleanLabel = f.label.toLowerCase().trim()
+      return f.is_active && !STANDARD_FIELD_KEYS.includes(cleanKey) && !STANDARD_FIELD_KEYS.includes(cleanLabel)
+    }
     const unsub = customFieldService.subscribe((all) => {
-      setActiveCustomFields(all.filter((f) => f.is_active))
+      setActiveCustomFields(all.filter(isCustomFieldValid))
     })
-    customFieldService.getActiveCustomFields().then(setActiveCustomFields)
+    customFieldService.getActiveCustomFields().then((fields) => {
+      setActiveCustomFields(fields.filter(isCustomFieldValid))
+    })
     return () => unsub()
   }, [])
 
