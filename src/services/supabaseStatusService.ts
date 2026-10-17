@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { supabase, isSupabaseConfigured, supabaseUrl } from '../lib/supabase'
 
 export interface SupabaseHealthStatus {
   isConfigured: boolean
@@ -14,18 +14,15 @@ export interface SupabaseHealthStatus {
  */
 export async function checkSupabaseHealth(): Promise<SupabaseHealthStatus> {
   const configured = isSupabaseConfigured()
-  const rawUrl = typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_URL
-    ? (import.meta as any).env.VITE_SUPABASE_URL
-    : 'https://cuunipngguedqttuutaa.supabase.co'
 
   if (!configured) {
     return {
       isConfigured: false,
-      url: rawUrl,
+      url: supabaseUrl,
       connectionOk: false,
       tablesExist: false,
       missingTables: ['students', 'institutions', 'user_profiles'],
-      details: 'Kredensial Supabase belum dikonfigurasi di file environment (.env).',
+      details: 'Kredensial Supabase belum terpasang dengan benar.',
     }
   }
 
@@ -37,28 +34,28 @@ export async function checkSupabaseHealth(): Promise<SupabaseHealthStatus> {
       if (studentErr.code === 'PGRST205' || studentErr.message?.includes('schema cache')) {
         return {
           isConfigured: true,
-          url: rawUrl,
+          url: supabaseUrl,
           connectionOk: true,
           tablesExist: false,
           missingTables: ['students'],
           details:
-            'Terhubung ke Supabase, namun tabel database (public.students) belum dibuat di Supabase SQL Editor.',
+            'Terhubung ke server Supabase, namun tabel database (public.students) belum dibuat di Supabase SQL Editor.',
         }
       }
 
       return {
         isConfigured: true,
-        url: rawUrl,
+        url: supabaseUrl,
         connectionOk: false,
         tablesExist: false,
         missingTables: ['students'],
-        details: `Terhubung namun terdapat kendala izin/kueri: ${studentErr.message}`,
+        details: `Terhubung ke server Supabase, namun kueri tabel mendapati kendala: ${studentErr.message}`,
       }
     }
 
     return {
       isConfigured: true,
-      url: rawUrl,
+      url: supabaseUrl,
       connectionOk: true,
       tablesExist: true,
       missingTables: [],
@@ -67,7 +64,7 @@ export async function checkSupabaseHealth(): Promise<SupabaseHealthStatus> {
   } catch (err) {
     return {
       isConfigured: true,
-      url: rawUrl,
+      url: supabaseUrl,
       connectionOk: false,
       tablesExist: false,
       missingTables: ['students'],
