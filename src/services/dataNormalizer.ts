@@ -68,35 +68,32 @@ export function normalizeKelas(val: unknown): string {
 
   // 1. Check 1 Intensif with room letter or shorthand
   // Variations: "1 int c", "1-int-c", "1int c", "1intc", "1 intensif c", "1xc", "1 x c", "1xe", "1 x e", "1-x-c", "1 int", "1x"
-  const m1Int = lower.match(/^(?:kelas\s*|k\s*)?1\s*-?\s*(?:int|intensif|x)\s*-?\s*([a-z]|shighor|shigor|kibar)?$/i)
+  const m1Int = lower.match(/^(?:kelas\s*|k\s*)?1\s*-?\s*(?:int|intensif|x)\s*-?\s*([a-z])?$/i)
   if (m1Int) {
     const letter = m1Int[1]
     if (letter) {
-      const room = letter === 'shighor' || letter === 'shigor' ? 'S' : letter === 'kibar' ? 'K' : letter.toUpperCase()
-      return `1 int ${room}`
+      return `1 int ${letter.toUpperCase()}`
     }
     return '1 int'
   }
 
   // 2. Check 3 Intensif with room letter or shorthand
   // Variations: "3 int f", "3-int-f", "3int f", "3intf", "3 intensif f", "3xf", "3 x f", "3xe", "3xE", "3 x e", "3-x-e", "3 int", "3x"
-  const m3Int = lower.match(/^(?:kelas\s*|k\s*)?3\s*-?\s*(?:int|intensif|x)\s*-?\s*([a-z]|shighor|shigor|kibar)?$/i)
+  const m3Int = lower.match(/^(?:kelas\s*|k\s*)?3\s*-?\s*(?:int|intensif|x)\s*-?\s*([a-z])?$/i)
   if (m3Int) {
     const letter = m3Int[1]
     if (letter) {
-      const room = letter === 'shighor' || letter === 'shigor' ? 'S' : letter === 'kibar' ? 'K' : letter.toUpperCase()
-      return `3 int ${room}`
+      return `3 int ${letter.toUpperCase()}`
     }
     return '3 int'
   }
 
-  // 3. Regular class 1-5 with room letter (e.g. "5-b", "5-c", "5c", "5C", "5 C", "4F", "4f", "4 f", "2b", "2 b", "2-b", "5t", "5-t", "5s", "5S", "5-s", "5 shighor")
-  const mRoom = lower.match(/^(?:kelas\s*|k\s*)?([1-5])\s*-?\s*([a-z]|shighor|shigor|kibar)$/i)
+  // 3. Regular class 1-5 with room letter (e.g. "5-b", "5-c", "5c", "5C", "5 C", "4F", "4f", "4 f", "2b", "2 b", "2-b", "5t", "5-t", "5s", "5S", "5-s")
+  const mRoom = lower.match(/^(?:kelas\s*|k\s*)?([1-5])\s*-?\s*([a-z])$/i)
   if (mRoom) {
     const digit = mRoom[1]
     const letter = mRoom[2]
-    const room = letter === 'shighor' || letter === 'shigor' ? 'S' : letter === 'kibar' ? 'K' : letter.toUpperCase()
-    return `${digit}-${room}`
+    return `${digit}-${letter.toUpperCase()}`
   }
 
   // 4. Regular class without room letter (e.g. "5", "Kelas 5", "k5")
