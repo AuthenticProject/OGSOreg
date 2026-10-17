@@ -1,11 +1,25 @@
 import type { StudentJenjang } from '../types/student'
 
+export interface SyllabusTopic {
+  title: string
+  focus?: string
+  kelas: string
+}
+
+export interface SyllabusSubjectBreakdown {
+  subject: string // "Fisika" | "Biologi" | "Matematika" | "Kimia"
+  topics: SyllabusTopic[]
+}
+
 export interface SyllabusItem {
   id: string
   title: string
   jenjang: StudentJenjang
-  subject: string // e.g. "Matematika", "IPA & Sains", "Pengetahuan Umum"
+  target_kelas?: string
+  subject: string
+  subjects?: string[]
   description: string
+  breakdown?: SyllabusSubjectBreakdown[]
   file_url: string
   file_name: string
   file_size?: string
@@ -41,20 +55,53 @@ export interface BankSoalCollection {
   created_at: string
 }
 
-const SILABUS_STORAGE_KEY = 'ogsoreg_silabus_v3'
+const SILABUS_STORAGE_KEY = 'ogsoreg_silabus_2026_v1'
 const BANK_SOAL_STORAGE_KEY = 'ogsoreg_bank_soal_v3'
 
-// Seed official syllabuses for Jenjang 1–5
+// Official syllabuses for Jenjang 1–5 extracted from Silabus_OGSO_2026.xlsx
 const INITIAL_SYLLABUSES: SyllabusItem[] = [
   {
     id: 'syl-01',
-    title: 'Silabus Resmi Olimpiade Sains & Matematika Jenjang 1 (Kelas 1)',
+    title: 'Silabus Resmi OGSO 2026 Jenjang 1 (Kelas 1 KMI)',
     jenjang: 'Jenjang 1',
-    subject: 'Matematika & Sains',
-    description: 'Panduan kurikulum kompetisi Jenjang 1 (Kelas 1): Pengenalan bilangan asli, pola bilangan, operasi hitung dasar, geometri dasar, dan pengenalan fenomena alam sekitar.',
-    file_url: '#',
-    file_name: 'Silabus_OGSO_Jenjang_1_Resmi.pdf',
-    file_size: '1.2 MB',
+    target_kelas: '1 KMI',
+    subject: 'Fisika, Biologi, Matematika',
+    subjects: ['Fisika', 'Biologi', 'Matematika'],
+    description: 'Silabus resmi materi pengujian OGSO 2026 untuk Kelas 1 KMI yang mencakup dasar-dasar Fisika (Pengukuran, Zat, Termal), Biologi (Ciri Makhluk Hidup, Ekosistem), dan Matematika (Bilangan, Aljabar, Geometri).',
+    breakdown: [
+      {
+        subject: 'Fisika',
+        topics: [
+          { title: 'Besaran dan Pengukuran', kelas: '1 KMI' },
+          { title: 'Zat dan Karakteristiknya', kelas: '1 KMI' },
+          { title: 'Suhu dan Pemuaian Termal', kelas: '1 KMI' },
+          { title: 'Kalor', kelas: '1 KMI' },
+        ],
+      },
+      {
+        subject: 'Biologi',
+        topics: [
+          { title: 'Ciri-Ciri Makhluk Hidup', kelas: '1 KMI' },
+          { title: 'Klasifikasi Makhluk Hidup', kelas: '1 KMI' },
+          { title: 'Organisasi Kehidupan', kelas: '1 KMI' },
+          { title: 'Ekosistem', kelas: '1 KMI' },
+        ],
+      },
+      {
+        subject: 'Matematika',
+        topics: [
+          { title: 'Bilangan Bulat', kelas: '1 KMI' },
+          { title: 'Pecahan', kelas: '1 KMI' },
+          { title: 'Operasi Hitung Bentuk Aljabar', kelas: '1 KMI' },
+          { title: 'Himpunan', kelas: '1 KMI' },
+          { title: 'Garis dan Sudut', kelas: '1 KMI' },
+          { title: 'Segitiga', kelas: '1 KMI' },
+        ],
+      },
+    ],
+    file_url: '/documents/Silabus_OGSO_2026.xlsx',
+    file_name: 'Silabus_OGSO_2026_Jenjang_1.xlsx',
+    file_size: '14.8 KB',
     pages: 14,
     is_published: true,
     created_at: '2026-01-10T00:00:00Z',
@@ -62,13 +109,48 @@ const INITIAL_SYLLABUSES: SyllabusItem[] = [
   },
   {
     id: 'syl-02',
-    title: 'Silabus Resmi Olimpiade Sains & Matematika Jenjang 2 (Kelas 2)',
+    title: 'Silabus Resmi OGSO 2026 Jenjang 2 (Kelas 2 KMI)',
     jenjang: 'Jenjang 2',
-    subject: 'Matematika & Sains',
-    description: 'Panduan kurikulum kompetisi Jenjang 2 (Kelas 2): Aritmatika terapan, logika penalaran kuantitatif, pengukuran waktu & panjang, serta pengenalan makhluk hidup dan ekosistem.',
-    file_url: '#',
-    file_name: 'Silabus_OGSO_Jenjang_2_Resmi.pdf',
-    file_size: '1.5 MB',
+    target_kelas: '2 KMI',
+    subject: 'Fisika, Biologi, Matematika',
+    subjects: ['Fisika', 'Biologi', 'Matematika'],
+    description: 'Silabus resmi materi pengujian OGSO 2026 untuk Kelas 2 KMI meliputi dinamika Fisika (Gaya, Energi, Tekanan, Optika), Fisiologi Biologi (Sistem Gerak, Pencernaan, Peredaran Darah), dan Matematika (SPLDV, Pythagoras, Lingkaran).',
+    breakdown: [
+      {
+        subject: 'Fisika',
+        topics: [
+          { title: 'Gaya', kelas: '2 KMI' },
+          { title: 'Energi dan Usaha', kelas: '2 KMI' },
+          { title: 'Tekanan', kelas: '2 KMI' },
+          { title: 'Getaran dan Gelombang', kelas: '2 KMI' },
+          { title: 'Optika', kelas: '2 KMI' },
+        ],
+      },
+      {
+        subject: 'Biologi',
+        topics: [
+          { title: 'Sistem Gerak pada Manusia', kelas: '2 KMI' },
+          { title: 'Sistem Pencernaan pada Manusia', kelas: '2 KMI' },
+          { title: 'Sistem Pernapasan pada Manusia', kelas: '2 KMI' },
+          { title: 'Sistem Peredaran Darah pada Manusia', kelas: '2 KMI' },
+          { title: 'Fotosintesis', kelas: '2 KMI' },
+        ],
+      },
+      {
+        subject: 'Matematika',
+        topics: [
+          { title: 'Faktorisasi Suku Aljabar', kelas: '2 KMI' },
+          { title: 'Persamaan dan Pertidaksamaan Linear Satu Variabel', kelas: '2 KMI' },
+          { title: 'Fungsi', kelas: '2 KMI' },
+          { title: 'Sistem Persamaan Linear Dua Variabel', kelas: '2 KMI' },
+          { title: 'Teorema Pythagoras', kelas: '2 KMI' },
+          { title: 'Lingkaran', kelas: '2 KMI' },
+        ],
+      },
+    ],
+    file_url: '/documents/Silabus_OGSO_2026.xlsx',
+    file_name: 'Silabus_OGSO_2026_Jenjang_2.xlsx',
+    file_size: '14.8 KB',
     pages: 18,
     is_published: true,
     created_at: '2026-01-10T00:00:00Z',
@@ -76,13 +158,47 @@ const INITIAL_SYLLABUSES: SyllabusItem[] = [
   },
   {
     id: 'syl-03',
-    title: 'Silabus Resmi Olimpiade Sains & Matematika Jenjang 3 (Kelas 1 Int & Kelas 3)',
+    title: 'Silabus Resmi OGSO 2026 Jenjang 3 (Kelas 3 KMI & 1 Intensif)',
     jenjang: 'Jenjang 3',
-    subject: 'Matematika & Sains',
-    description: 'Panduan kurikulum kompetisi Jenjang 3 (Kelas 1 Intensif & Kelas 3 KMI): Pecahan, kelipatan, faktor bilangan (KPK & FPB), sifat zat, energi, dan dasar-dasar ilmu pengetahuan bumi.',
-    file_url: '#',
-    file_name: 'Silabus_OGSO_Jenjang_3_Resmi.pdf',
-    file_size: '1.8 MB',
+    target_kelas: '3 KMI & 1 Intensif',
+    subject: 'Fisika, Biologi, Matematika',
+    subjects: ['Fisika', 'Biologi', 'Matematika'],
+    description: 'Silabus resmi materi pengujian OGSO 2026 untuk Kelas 3 KMI & 1 Intensif mencakup Kelistrikan & Kemagnetan Fisika, Sistem Ekskresi & Genetika Biologi, serta Geometri Ruang & Deret Matematika.',
+    breakdown: [
+      {
+        subject: 'Fisika',
+        topics: [
+          { title: 'Listrik Statis', kelas: '3 KMI' },
+          { title: 'Listrik Dinamis', kelas: '3 KMI' },
+          { title: 'Arus Listrik', kelas: '3 KMI' },
+          { title: 'Tata Surya', kelas: '3 KMI' },
+          { title: 'Kemagnetan', kelas: '3 KMI' },
+          { title: 'Induksi Elektromagnetik', kelas: '3 KMI' },
+        ],
+      },
+      {
+        subject: 'Biologi',
+        topics: [
+          { title: 'Sistem Ekskresi pada Manusia', kelas: '3 KMI' },
+          { title: 'Sistem Reproduksi pada Manusia', kelas: '3 KMI' },
+          { title: 'Sistem Koordinasi pada Manusia', kelas: '3 KMI' },
+          { title: 'Pewarisan Sifat', kelas: '3 KMI' },
+        ],
+      },
+      {
+        subject: 'Matematika',
+        topics: [
+          { title: 'Kesebangunan', kelas: '3 KMI' },
+          { title: 'Bangun Ruang Sisi Tegak, Limas, dan Prisma Tegak', kelas: '3 KMI' },
+          { title: 'Lingkaran Dalam dan Luar Segitiga', kelas: '3 KMI' },
+          { title: 'Barisan dan Deret Bilangan', kelas: '3 KMI' },
+          { title: 'Bangun Ruang Sisi Lengkung', kelas: '3 KMI' },
+        ],
+      },
+    ],
+    file_url: '/documents/Silabus_OGSO_2026.xlsx',
+    file_name: 'Silabus_OGSO_2026_Jenjang_3.xlsx',
+    file_size: '14.8 KB',
     pages: 22,
     is_published: true,
     created_at: '2026-01-10T00:00:00Z',
@@ -90,13 +206,44 @@ const INITIAL_SYLLABUSES: SyllabusItem[] = [
   },
   {
     id: 'syl-04',
-    title: 'Silabus Resmi Olimpiade Sains & Matematika Jenjang 4 (Kelas 3 Int & Kelas 4)',
+    title: 'Silabus Resmi OGSO 2026 Jenjang 4 (Kelas 4 KMI & 3 Intensif)',
     jenjang: 'Jenjang 4',
-    subject: 'Matematika & Sains',
-    description: 'Panduan kurikulum kompetisi Jenjang 4 (Kelas 3 Intensif & Kelas 4 KMI): Bangun datar & ruang, statistika data sederhana, sistem organ, gaya dan gerak, serta teknologi ramah lingkungan.',
-    file_url: '#',
-    file_name: 'Silabus_OGSO_Jenjang_4_Resmi.pdf',
-    file_size: '2.1 MB',
+    target_kelas: '4 KMI & 3 Intensif',
+    subject: 'Fisika, Biologi, Matematika',
+    subjects: ['Fisika', 'Biologi', 'Matematika'],
+    description: 'Silabus resmi materi pengujian OGSO 2026 untuk Kelas 4 KMI & 3 Intensif dengan pendalaman materi Vektor, Kinematika & Dinamika Newton, Struktur Tumbuhan & Pewarisan Sifat, serta Bentuk Akar, Kuadrat & Trigonometri.',
+    breakdown: [
+      {
+        subject: 'Fisika',
+        topics: [
+          { title: 'Besaran dan Pengukuran', kelas: '4 KMI' },
+          { title: 'Hitung Vektor', kelas: '4 KMI' },
+          { title: 'Gerak Lurus dan Gerak Melingkar', kelas: '4 KMI' },
+          { title: 'Hukum Newton tentang Gerak', kelas: '4 KMI' },
+        ],
+      },
+      {
+        subject: 'Biologi',
+        topics: [
+          { title: 'Struktur dan Fungsi Jaringan pada Tumbuhan', focus: 'Materi Lanjutan', kelas: '2 KMI' },
+          { title: 'Sistem Gerak pada Manusia', focus: 'Fokus: Tulang dan Otot', kelas: '2 KMI' },
+          { title: 'Pewarisan Sifat', focus: 'Fokus: Persilangan dengan Dua Sifat Beda', kelas: '3 KMI' },
+          { title: 'Klasifikasi Makhluk Hidup', focus: 'Fokus: Sistem Lima Kingdom dan Kunci Determinasi', kelas: '1 KMI' },
+        ],
+      },
+      {
+        subject: 'Matematika',
+        topics: [
+          { title: 'Bentuk Pangkat dan Akar', kelas: '4 KMI' },
+          { title: 'Persamaan dan Fungsi Kuadrat', kelas: '4 KMI' },
+          { title: 'Logika Matematika', kelas: '4 KMI' },
+          { title: 'Trigonometri', kelas: '4 KMI' },
+        ],
+      },
+    ],
+    file_url: '/documents/Silabus_OGSO_2026.xlsx',
+    file_name: 'Silabus_OGSO_2026_Jenjang_4.xlsx',
+    file_size: '14.8 KB',
     pages: 26,
     is_published: true,
     created_at: '2026-01-10T00:00:00Z',
@@ -104,13 +251,56 @@ const INITIAL_SYLLABUSES: SyllabusItem[] = [
   },
   {
     id: 'syl-05',
-    title: 'Silabus Resmi Olimpiade Sains & Matematika Jenjang 5 (Kelas 5)',
+    title: 'Silabus Resmi OGSO 2026 Jenjang 5 (Kelas 5 KMI)',
     jenjang: 'Jenjang 5',
-    subject: 'Matematika & Sains',
-    description: 'Panduan kurikulum kompetisi Jenjang 5 (Kelas 5 KMI): Aljabar dasar, perbandingan, peluang, astronomi tata surya, gelombang & bunyi, serta pemecahan masalah olimpiade tingkat lanjut.',
-    file_url: '#',
-    file_name: 'Silabus_OGSO_Jenjang_5_Resmi.pdf',
-    file_size: '2.4 MB',
+    target_kelas: '5 KMI',
+    subject: 'Fisika, Biologi, Kimia, Matematika',
+    subjects: ['Fisika', 'Biologi', 'Kimia', 'Matematika'],
+    description: 'Silabus resmi materi pengujian OGSO 2026 untuk Kelas 5 KMI meliputi 4 bidang studi: Fisika (Optika, Termal, Listrik Dinamis), Biologi (Ekosistem, Saraf, Bioteknologi), Kimia Lengkap (Atom, Reaksi, Stoikiometri/Mol), dan Matematika Tingkat Lanjut (Trigonometri, Invers, Limit).',
+    breakdown: [
+      {
+        subject: 'Fisika',
+        topics: [
+          { title: 'Optika Geometri', kelas: '5 KMI' },
+          { title: 'Suhu dan Panas', kelas: '5 KMI' },
+          { title: 'Listrik Dinamis', kelas: '5 KMI' },
+        ],
+      },
+      {
+        subject: 'Biologi',
+        topics: [
+          { title: 'Ekosistem', focus: 'Fokus: Rantai Makanan, Piramida Makanan, dan Arus Energi', kelas: '1 KMI' },
+          { title: 'Sistem Koordinasi pada Manusia', focus: 'Fokus: Sistem Saraf dan Alat Indra', kelas: '3 KMI' },
+          { title: 'Zat Adiktif dan Psikotropika', focus: 'Fokus: Jenis dan Efeknya bagi Tubuh', kelas: '2 KMI' },
+          { title: 'Bioteknologi', focus: 'Fokus: Penerapan Bioteknologi - Produk dan Mikroorganisme', kelas: '3 KMI' },
+        ],
+      },
+      {
+        subject: 'Kimia',
+        topics: [
+          { title: 'Ilmu Kimia', focus: 'Fokus: Sejarah Ilmu Kimia dan Profil Ilmuwan Muslim', kelas: '5 KMI' },
+          { title: 'Atom', kelas: '5 KMI' },
+          { title: 'Rumus Tentang Atom', kelas: '5 KMI' },
+          { title: 'Sistem Periodik', kelas: '5 KMI' },
+          { title: 'Ikatan Kimia', kelas: '5 KMI' },
+          { title: 'Struktur Nama Senyawa', kelas: '5 KMI' },
+          { title: 'Persamaan Reaksi', kelas: '5 KMI' },
+          { title: 'Konsep Mol', kelas: '5 KMI' },
+        ],
+      },
+      {
+        subject: 'Matematika',
+        topics: [
+          { title: 'Statistika', kelas: '5 KMI' },
+          { title: 'Trigonometri untuk Jumlah dan Selisih Dua Sudut', kelas: '5 KMI' },
+          { title: 'Fungsi Komposisi dan Fungsi Invers', kelas: '5 KMI' },
+          { title: 'Limit Fungsi', kelas: '5 KMI' },
+        ],
+      },
+    ],
+    file_url: '/documents/Silabus_OGSO_2026.xlsx',
+    file_name: 'Silabus_OGSO_2026_Jenjang_5.xlsx',
+    file_size: '14.8 KB',
     pages: 30,
     is_published: true,
     created_at: '2026-01-10T00:00:00Z',

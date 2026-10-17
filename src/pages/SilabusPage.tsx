@@ -3,11 +3,12 @@ import {
   BookOpen,
   Download,
   Eye,
-  FileText,
+  FileSpreadsheet,
   Plus,
   Edit2,
   Trash2,
   X,
+  Sparkles,
 } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
@@ -27,11 +28,28 @@ const JENJANG_TABS: (StudentJenjang | 'all')[] = [
 
 const TAB_LABELS: Record<string, string> = {
   all: 'Semua Jenjang',
-  'Jenjang 1': 'Jenjang 1 (Kelas 1)',
-  'Jenjang 2': 'Jenjang 2 (Kelas 2)',
-  'Jenjang 3': 'Jenjang 3 (Kelas 1 Int & 3)',
-  'Jenjang 4': 'Jenjang 4 (Kelas 3 Int & 4)',
-  'Jenjang 5': 'Jenjang 5 (Kelas 5)',
+  'Jenjang 1': 'Jenjang 1 (Kelas 1 KMI)',
+  'Jenjang 2': 'Jenjang 2 (Kelas 2 KMI)',
+  'Jenjang 3': 'Jenjang 3 (Kelas 3 KMI & 1 Int)',
+  'Jenjang 4': 'Jenjang 4 (Kelas 4 KMI & 3 Int)',
+  'Jenjang 5': 'Jenjang 5 (Kelas 5 KMI)',
+}
+
+const getSubjectBadgeStyle = (subj: string) => {
+  const s = subj.toLowerCase()
+  if (s.includes('fisika')) {
+    return 'bg-sky-50 text-sky-700 border-sky-200'
+  }
+  if (s.includes('biologi')) {
+    return 'bg-emerald-50 text-emerald-700 border-emerald-200'
+  }
+  if (s.includes('kimia')) {
+    return 'bg-amber-50 text-amber-800 border-amber-200'
+  }
+  if (s.includes('matematika')) {
+    return 'bg-indigo-50 text-indigo-700 border-indigo-200'
+  }
+  return 'bg-slate-50 text-slate-700 border-slate-200'
 }
 
 export const SilabusPage: React.FC = () => {
@@ -43,6 +61,7 @@ export const SilabusPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<SyllabusItem | null>(null)
   const [previewItem, setPreviewItem] = useState<SyllabusItem | null>(null)
+  const [modalSubjectFilter, setModalSubjectFilter] = useState<string>('all')
 
   // Form State
   const [formTitle, setFormTitle] = useState('')
@@ -118,8 +137,8 @@ export const SilabusPage: React.FC = () => {
       jenjang: formJenjang,
       subject: formSubject.trim(),
       description: formDescription.trim(),
-      file_url: '#',
-      file_name: formFileName.trim() || 'Silabus_OGSO.pdf',
+      file_url: '/documents/Silabus_OGSO_2026.xlsx',
+      file_name: formFileName.trim() || 'Silabus_OGSO_2026.xlsx',
       file_size: formFileSize.trim(),
       pages: Number(formPages),
       is_published: formPublished,
@@ -130,14 +149,24 @@ export const SilabusPage: React.FC = () => {
   }
 
   const handleDownload = (item: SyllabusItem) => {
-    alert(`Mengunduh berkas silabus PDF:\n${item.file_name}\nJenjang: ${item.jenjang}\nUkuran: ${item.file_size || '1.5 MB'}`)
+    const link = document.createElement('a')
+    link.href = item.file_url || '/documents/Silabus_OGSO_2026.xlsx'
+    link.download = item.file_name || 'Silabus_OGSO_2026.xlsx'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const handlePreviewOpen = (item: SyllabusItem) => {
+    setPreviewItem(item)
+    setModalSubjectFilter('all')
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Silabus Kompetisi OGSO"
-        subtitle="Panduan resmi materi, kisi-kisi kurikulum, dan cakupan pengujian Olimpiade Gontor Sains & Matematika untuk seluruh jenjang (Kelas 1–5)."
+        subtitle="Panduan resmi materi, kisi-kisi kurikulum, dan cakupan pengujian Olimpiade Sains & Matematika untuk seluruh jenjang (Kelas 1–5 KMI)."
         actions={
           isSuperAdmin && (
             <Button
@@ -198,13 +227,19 @@ export const SilabusPage: React.FC = () => {
               className="bg-white rounded-2xl border border-slate-200 hover:border-emerald-500 shadow-subtle hover:shadow-md transition-all p-5 flex flex-col justify-between space-y-4 group"
             >
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                    {item.jenjang}
-                  </span>
-                  <span className="text-[11px] font-semibold text-slate-400">
-                    {item.pages ? `${item.pages} Halaman • ` : ''}
-                    {item.file_size}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      {item.jenjang}
+                    </span>
+                    {item.target_kelas && (
+                      <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-brand-maroon/10 text-brand-maroon border border-brand-maroon/20">
+                        Kelas: {item.target_kelas}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[11px] font-semibold text-slate-400 shrink-0">
+                    {item.file_size || '14.8 KB'}
                   </span>
                 </div>
 
@@ -212,10 +247,40 @@ export const SilabusPage: React.FC = () => {
                   <h3 className="font-bold text-sm text-slate-900 group-hover:text-emerald-800 transition-colors line-clamp-2">
                     {item.title}
                   </h3>
-                  <p className="text-xs text-slate-500 mt-2 line-clamp-3 leading-relaxed">
+
+                  <div className="flex flex-wrap items-center gap-1.5 my-2.5">
+                    {(item.subjects || item.subject.split(', ')).map((subj) => (
+                      <span
+                        key={subj}
+                        className={`px-2 py-0.5 rounded-md text-[11px] font-semibold border ${getSubjectBadgeStyle(subj)}`}
+                      >
+                        {subj}
+                      </span>
+                    ))}
+                  </div>
+
+                  <p className="text-xs text-slate-500 mt-2 line-clamp-2 leading-relaxed">
                     {item.description}
                   </p>
                 </div>
+
+                {item.breakdown && item.breakdown.length > 0 && (
+                  <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-200/80 text-xs space-y-1.5">
+                    <div className="flex items-center justify-between text-slate-600 font-semibold text-[11px]">
+                      <span>Cakupan Materi Resmi:</span>
+                      <span className="text-emerald-800 font-bold">
+                        {item.breakdown.reduce((acc, curr) => acc + curr.topics.length, 0)} Topik
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1 text-[10px]">
+                      {item.breakdown.map((b) => (
+                        <span key={b.subject} className="bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-700 shadow-2xs">
+                          {b.subject}: <strong>{b.topics.length}</strong>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
@@ -244,7 +309,7 @@ export const SilabusPage: React.FC = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setPreviewItem(item)}
+                    onClick={() => handlePreviewOpen(item)}
                     leftIcon={<Eye className="w-3.5 h-3.5 mr-1" />}
                   >
                     Pratinjau
@@ -253,9 +318,9 @@ export const SilabusPage: React.FC = () => {
                     variant="primary"
                     size="sm"
                     onClick={() => handleDownload(item)}
-                    leftIcon={<Download className="w-3.5 h-3.5 mr-1" />}
+                    leftIcon={<FileSpreadsheet className="w-3.5 h-3.5 mr-1" />}
                   >
-                    Unduh PDF
+                    Unduh Excel
                   </Button>
                 </div>
               </div>
@@ -267,52 +332,158 @@ export const SilabusPage: React.FC = () => {
       {/* PREVIEW MODAL */}
       {previewItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-xl w-full border border-slate-200 shadow-2xl overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50">
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-emerald-700" />
-                <h3 className="text-sm font-bold text-slate-900 line-clamp-1">{previewItem.title}</h3>
+          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] border border-slate-200 shadow-2xl overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/80">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-800 shrink-0">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">{previewItem.title}</h3>
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
+                    <span className="font-semibold text-emerald-800">Target: {previewItem.target_kelas || previewItem.jenjang}</span>
+                    <span>•</span>
+                    <span>{previewItem.jenjang}</span>
+                    <span>•</span>
+                    <span>
+                      {previewItem.breakdown
+                        ? `${previewItem.breakdown.reduce((acc, curr) => acc + curr.topics.length, 0)} Topik Pengujian`
+                        : `${previewItem.subject}`}
+                    </span>
+                  </div>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setPreviewItem(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                  {previewItem.jenjang}
-                </span>
-                <span className="text-xs text-slate-500 font-medium">Bidang: {previewItem.subject}</span>
-              </div>
-
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-2 leading-relaxed">
-                <p className="font-bold text-slate-900">Deskripsi & Ruang Lingkup Materi:</p>
+            {/* Modal Body */}
+            <div className="p-6 space-y-5 overflow-y-auto flex-1">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-1 leading-relaxed">
+                <p className="font-bold text-slate-900 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  Deskripsi & Ruang Lingkup Materi:
+                </p>
                 <p>{previewItem.description}</p>
               </div>
 
-              <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
-                <span>Berkas: <strong>{previewItem.file_name}</strong></span>
-                <span>{previewItem.file_size}</span>
+              {/* Subject Breakdown Filter Tabs */}
+              {previewItem.breakdown && previewItem.breakdown.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <h4 className="font-bold text-xs text-slate-800 uppercase tracking-wider">
+                      Daftar Topik & Materi Per Bidang Studi
+                    </h4>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setModalSubjectFilter('all')}
+                        className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
+                          modalSubjectFilter === 'all'
+                            ? 'bg-slate-900 text-white'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        Semua
+                      </button>
+                      {previewItem.breakdown.map((b) => (
+                        <button
+                          key={b.subject}
+                          type="button"
+                          onClick={() => setModalSubjectFilter(b.subject)}
+                          className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
+                            modalSubjectFilter === b.subject
+                              ? 'bg-emerald-800 text-white'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          {b.subject} ({b.topics.length})
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Subject Sections */}
+                  <div className="space-y-4">
+                    {previewItem.breakdown
+                      .filter((b) => modalSubjectFilter === 'all' || modalSubjectFilter === b.subject)
+                      .map((b) => (
+                        <div key={b.subject} className="rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
+                          <div className="px-4 py-2.5 bg-slate-50/90 border-b border-slate-200 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2.5 py-0.5 rounded-md text-xs font-bold border ${getSubjectBadgeStyle(b.subject)}`}>
+                                {b.subject}
+                              </span>
+                              <span className="text-xs text-slate-600 font-medium">
+                                {b.topics.length} Topik Pembahasan
+                              </span>
+                            </div>
+                            <span className="text-[11px] text-slate-400 font-mono">
+                              Silabus OGSO 2026
+                            </span>
+                          </div>
+
+                          <div className="divide-y divide-slate-100 bg-white">
+                            {b.topics.map((t, tIdx) => (
+                              <div key={tIdx} className="px-4 py-2.5 flex items-start justify-between gap-3 hover:bg-slate-50/60 transition-colors">
+                                <div className="flex items-start gap-2.5">
+                                  <span className="font-mono text-[11px] text-slate-400 w-5 shrink-0 pt-0.5">
+                                    #{tIdx + 1}
+                                  </span>
+                                  <div>
+                                    <p className="text-xs font-semibold text-slate-900">{t.title}</p>
+                                    {t.focus && (
+                                      <p className="text-[11px] text-amber-800 font-medium mt-0.5 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-block">
+                                        {t.focus}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 shrink-0 border border-slate-200">
+                                  {t.kelas}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-100">
+                <span className="flex items-center gap-1.5">
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                  Berkas Excel Resmi: <strong>{previewItem.file_name}</strong>
+                </span>
+                <span>{previewItem.file_size || '14.8 KB'}</span>
               </div>
             </div>
 
-            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => setPreviewItem(null)}>
-                Tutup
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => handleDownload(previewItem)}
-                leftIcon={<Download className="w-3.5 h-3.5 mr-1" />}
-              >
-                Unduh Dokumen PDF
-              </Button>
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-2">
+              <span className="text-[11px] text-slate-500 italic">
+                * Silabus telah disinkronkan dengan dokumen resmi Silabus OGSO 2026
+              </span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPreviewItem(null)}>
+                  Tutup
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => handleDownload(previewItem)}
+                  leftIcon={<Download className="w-3.5 h-3.5 mr-1" />}
+                >
+                  Unduh Silabus Excel (.xlsx)
+                </Button>
+              </div>
             </div>
           </div>
         </div>
