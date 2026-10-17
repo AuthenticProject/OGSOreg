@@ -11,9 +11,11 @@ import {
 } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { generateRegistrationTemplate } from '../../services/excelGenerator'
-import { customFieldService } from '../../services/customFieldService'
+import {
+  templateConfigService,
+  type ExcelTemplateColumnConfig,
+} from '../../services/templateConfigService'
 import { useAuth } from '../../context/AuthContext'
-import type { CustomFieldDefinition } from '../../types/customField'
 
 interface TemplateDownloaderProps {
   onProceedToUpload?: () => void
@@ -25,14 +27,13 @@ export const TemplateDownloader: React.FC<TemplateDownloaderProps> = ({
   const { isSuperAdmin } = useAuth()
   const [isDownloading, setIsDownloading] = useState(false)
   const [hasDownloaded, setHasDownloaded] = useState(false)
-  const [activeCustomFields, setActiveCustomFields] = useState<CustomFieldDefinition[]>([])
+  const [activeColumns, setActiveColumns] = useState<ExcelTemplateColumnConfig[]>(() =>
+    templateConfigService.getActiveExcelColumnsSync()
+  )
 
   useEffect(() => {
-    const unsub = customFieldService.subscribe((fields) => {
-      setActiveCustomFields(fields.filter((f) => f.is_active && f.include_in_excel))
-    })
-    customFieldService.getCustomFields().then((fields) => {
-      setActiveCustomFields(fields.filter((f) => f.is_active && f.include_in_excel))
+    const unsub = templateConfigService.subscribe((cols) => {
+      setActiveColumns(cols.filter((c) => c.include_in_excel))
     })
     return () => unsub()
   }, [])
@@ -61,19 +62,14 @@ export const TemplateDownloader: React.FC<TemplateDownloaderProps> = ({
               </h3>
               <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                {6 + activeCustomFields.length} Kolom Dikonfigurasi
+                {activeColumns.length} Kolom Dikonfigurasi
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Format workbook Excel (.xlsx) dengan 6 kolom utama: <strong>Username, Nama Depan, Nama Belakang, Email, Jenjang, Kampus</strong>
-              {activeCustomFields.length > 0 && (
-                <>
-                  {' '}serta {activeCustomFields.length} kolom tambahan aktif:{' '}
-                  <strong className="text-emerald-800">
-                    {activeCustomFields.map((f) => f.label).join(', ')}
-                  </strong>.
-                </>
-              )}
+              Format workbook Excel (.xlsx) dengan susunan kolom aktif:{' '}
+              <strong className="text-emerald-800">
+                {activeColumns.map((c) => c.label).join(', ')}
+              </strong>.
             </p>
           </div>
         </div>

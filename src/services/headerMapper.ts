@@ -1,5 +1,6 @@
 import type { ColumnMappingItem } from '../types/excel'
 import { customFieldService } from './customFieldService'
+import { templateConfigService } from './templateConfigService'
 import type { CustomFieldDefinition } from '../types/customField'
 
 export interface TargetFieldDef {
@@ -171,7 +172,26 @@ export function getCustomTargetFields(customFields?: CustomFieldDefinition[]): T
 
 export function getAllParticipantTargetFields(customFields?: CustomFieldDefinition[]): TargetFieldDef[] {
   const dynamic = getCustomTargetFields(customFields)
-  return [...PARTICIPANT_TARGET_FIELDS, ...dynamic]
+  const templateCols = templateConfigService.getColumns()
+
+  const standardUpdated = PARTICIPANT_TARGET_FIELDS.map((field) => {
+    const matchedCol = templateCols.find((col) => col.key === field.key)
+    if (matchedCol && matchedCol.label) {
+      const customAlias = matchedCol.label.toLowerCase().trim()
+      const aliases = field.aliases.includes(customAlias)
+        ? field.aliases
+        : [...field.aliases, customAlias]
+      return {
+        ...field,
+        label: matchedCol.label,
+        isRequired: matchedCol.is_required,
+        aliases,
+      }
+    }
+    return field
+  })
+
+  return [...standardUpdated, ...dynamic]
 }
 
 export function cleanHeaderString(header: string): string {

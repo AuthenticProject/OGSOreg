@@ -19,12 +19,17 @@ import {
   Lock,
   Sparkles,
   Check,
+  RotateCcw,
 } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
 import { SectionCard } from '../components/ui/SectionCard'
 import { useAuth } from '../context/AuthContext'
 import { customFieldService } from '../services/customFieldService'
+import {
+  templateConfigService,
+  type ExcelTemplateColumnConfig,
+} from '../services/templateConfigService'
 import { generateRegistrationTemplate } from '../services/excelGenerator'
 import {
   type CustomFieldDefinition,
@@ -33,17 +38,6 @@ import {
   validateMoodleDestinationHeader,
   STANDARD_MOODLE_FIELDS,
 } from '../types/customField'
-
-// Standard mandatory columns in OGSOreg Excel Template
-const STANDARD_EXCEL_COLUMNS = [
-  { key: 'no', label: 'No.', description: 'Nomor urut otomatis santri', required: false, locked: true },
-  { key: 'username', label: 'Username Moodle', description: 'Username unik login Moodle santri', required: true, locked: true },
-  { key: 'firstname', label: 'Nama Depan', description: 'Nama depan santri', required: true, locked: true },
-  { key: 'lastname', label: 'Nama Belakang', description: 'Nama belakang / keluarga santri', required: false, locked: true },
-  { key: 'email', label: 'Email Santri', description: 'Alamat email aktif untuk notifikasi', required: true, locked: true },
-  { key: 'jenjang', label: 'Jenjang Santri', description: 'Pilihan dropdown: Kelas 1, 2, 3, 4, 5', required: true, locked: true },
-  { key: 'kampus', label: 'Kampus Gontor', description: 'Pilihan dropdown: 20 Kampus Resmi Gontor', required: true, locked: true },
-]
 
 // Standard mandatory columns in Moodle CSV Bulk User Upload (7 Columns)
 const MANDATORY_MOODLE_COLUMNS = [
@@ -137,19 +131,83 @@ export const CustomFieldsPage: React.FC = () => {
     }
   }
 
-  // Toggle Required directly from table
-  const handleToggleRequired = async (field: CustomFieldDefinition) => {
-    const nextVal = !field.is_required
-    const res = await customFieldService.saveCustomField({
-      ...field,
-      is_required: nextVal,
-    })
-    if (res.success) {
-      showFeedback('success', `Status bidang '${field.label}' diubah menjadi ${nextVal ? 'Wajib' : 'Opsional'}.`)
-    } else {
-      showFeedback('error', res.error || 'Gagal mengubah status wajib.')
-    }
+  // Unified Excel Template Columns (Standard + Custom)
+  const [templateColumns, setTemplateColumns] = useState<ExcelTemplateColumnConfig[]>(() =>
+    templateConfigService.getColumns()
+  )
+  const [editingTemplateColId, setEditingTemplateColId] = useState<string | null>(null)
+  const [inlineTemplateColLabel, setInlineTemplateColLabel] = useState('')
+  const [inlineTemplateColError, setInlineTemplateColError] = useState<string | null>(null)
+
+  const handleStartEditingTemplateCol = (col: ExcelTemplateColumnConfig) => {
+    setEditingTemplateColId(col.id)
+    setInlineTemplateColLabel(col.label)
+    setInlineTemplateColError(null)
   }
+
+  const handleCancelEditingTemplateCol = () => {
+    setEditingTemplateColId(null)
+    setInlineTemplateColLabel('')
+    setInlineTemplateColError(null)
+  }
+
+  const handleSaveTemplateColLabel = async (col: ExcelTemplateColumnConfig) => {
+    const trimmed = inlineTemplateColLabel.trim()
+    if (!trimmed) {
+      setInlineTemplateColError('Nama kolom tidak boleh kosong.')
+      return
+    }
+
+    await templateConfigService.updateColumn(col.id, { label: trimmed })
+    setEditingTemplateColId(null)
+    setInlineTemplateColError(null)
+    showFeedback('success', `Nama kolom diperbarui menjadi "${trimmed}".`)
+  }
+
+  const handleToggleTemplateInclude = async (col: ExcelTemplateColumnConfig) => {
+    const nextVal = !col.include_in_excel
+    await templateConfigService.updateColumn(col.id, { include_in_excel: nextVal })
+    showFeedback(
+      'success',
+      `Kolom '${col.label}' ${nextVal ? 'disertakan dalam' : 'dikeluarkan dari'} template Excel.`
+    )
+  }
+
+  const handleToggleTemplateRequired = async (col: ExcelTemplateColumnConfig) => {
+    const nextVal = !col.is_required
+    await templateConfigService.updateColumn(col.id, { is_required: nextVal })
+    showFeedback(
+      'success',
+      `Status kolom '${col.label}' diubah menjadi ${nextVal ? 'Wajib' : 'Opsional'}.`
+    )
+  }
+
+  const handleMoveTemplateOrder = async (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1
+    if (targetIndex < 0 || targetIndex >= templateColumns.length) return
+
+    const newCols = [...templateColumns]
+    const temp = newCols[index]
+    newCols[index] = newCols[targetIndex]
+    newCols[targetIndex] = temp
+
+    const idsInOrder = newCols.map((c) => c.id)
+    await templateConfigService.reorderColumns(idsInOrder)
+    showFeedback('success', 'Urutan posisi kolom template Excel berhasil diperbarui.')
+  }
+
+  const handleResetTemplateToDefault = () => {
+    templateConfigService.resetToDefault()
+    showFeedback('success', 'Nama dan urutan kolom standar template Excel dikembalikan ke bawaan.')
+  }
+
+  // Subscribe to templateConfigService
+  useEffect(() => {
+    const unsubscribe = templateConfigService.subscribe((updated) => {
+      setTemplateColumns(updated)
+    })
+    return () => unsubscribe()
+  }, [])
 
   // Subscribe to customFieldService
   useEffect(() => {
@@ -233,23 +291,6 @@ export const CustomFieldsPage: React.FC = () => {
       )
     } else {
       showFeedback('error', res.error || 'Gagal mengubah status bidang.')
-    }
-  }
-
-  // 1-Click Toggle for Include in Excel Template
-  const handleToggleIncludeExcel = async (field: CustomFieldDefinition) => {
-    const nextVal = !field.include_in_excel
-    const res = await customFieldService.saveCustomField({
-      ...field,
-      include_in_excel: nextVal,
-    })
-    if (res.success) {
-      showFeedback(
-        'success',
-        `Kolom '${field.label}' ${nextVal ? 'sekarang disertakan di' : 'dikeluarkan dari'} template Excel pendaftaran.`
-      )
-    } else {
-      showFeedback('error', res.error || 'Gagal memperbarui kolom Excel.')
     }
   }
 
@@ -410,8 +451,8 @@ export const CustomFieldsPage: React.FC = () => {
     setTimeout(() => setFeedback(null), 5000)
   }
 
-  // Active custom fields in Excel
-  const activeExcelCustomFields = fields.filter((f) => f.is_active && f.include_in_excel)
+  // Active template columns in Excel (both standard and custom fields)
+  const activeTemplateColumns = templateColumns.filter((col) => col.include_in_excel)
   // Active custom fields in Moodle
   const activeMoodleCustomFields = fields.filter((f) => f.is_active && f.include_in_moodle && f.moodle_destination)
 
@@ -481,7 +522,7 @@ export const CustomFieldsPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveTab('excel')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-bold text-xs transition-all ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-bold text-xs transition-all cursor-pointer ${
             activeTab === 'excel'
               ? 'bg-emerald-700 text-white shadow-sm'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -494,14 +535,14 @@ export const CustomFieldsPage: React.FC = () => {
               activeTab === 'excel' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
             }`}
           >
-            {STANDARD_EXCEL_COLUMNS.length + activeExcelCustomFields.length} Kolom
+            {activeTemplateColumns.length} Kolom
           </span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('moodle')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-bold text-xs transition-all ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-bold text-xs transition-all cursor-pointer ${
             activeTab === 'moodle'
               ? 'bg-emerald-700 text-white shadow-sm'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -521,7 +562,7 @@ export const CustomFieldsPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveTab('fields')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-bold text-xs transition-all ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-bold text-xs transition-all cursor-pointer ${
             activeTab === 'fields'
               ? 'bg-emerald-700 text-white shadow-sm'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -549,110 +590,94 @@ export const CustomFieldsPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
                 <FileSpreadsheet className="w-4 h-4" />
-                <span>Pratinjau Susunan Header Template Excel (Baris 4 Format Pendaftaran)</span>
+                <span>Pratinjau Susunan Header Template Excel (Baris 1 Format Pendaftaran)</span>
               </div>
               <span className="text-[11px] font-mono text-emerald-200 bg-white/10 px-2.5 py-0.5 rounded-full">
-                Total {STANDARD_EXCEL_COLUMNS.length + activeExcelCustomFields.length} Kolom
+                Total {activeTemplateColumns.length} Kolom
               </span>
             </div>
 
             <div className="overflow-x-auto pb-1">
               <div className="flex items-center gap-1.5 text-xs font-mono whitespace-nowrap">
-                {STANDARD_EXCEL_COLUMNS.map((col) => (
+                {activeTemplateColumns.map((col, idx) => (
                   <span
-                    key={col.key}
-                    className="px-2.5 py-1 rounded bg-white/15 border border-white/20 text-white flex items-center gap-1"
+                    key={col.id}
+                    className={`px-2.5 py-1 rounded border flex items-center gap-1.5 ${
+                      col.is_standard
+                        ? 'bg-white/15 border-white/20 text-white'
+                        : 'bg-emerald-600/60 border-emerald-400/50 text-emerald-100 font-bold'
+                    }`}
                   >
-                    <Lock className="w-3 h-3 text-emerald-400" />
+                    <span className="opacity-60 text-[10px]">[{idx + 1}]</span>
+                    {col.is_standard ? (
+                      <Lock className="w-3 h-3 text-emerald-400" />
+                    ) : (
+                      <Sparkles className="w-3 h-3 text-emerald-300" />
+                    )}
                     <span>{col.label}</span>
-                  </span>
-                ))}
-
-                {activeExcelCustomFields.map((cf) => (
-                  <span
-                    key={cf.id}
-                    className="px-2.5 py-1 rounded bg-emerald-600/60 border border-emerald-400/50 text-emerald-100 font-bold flex items-center gap-1"
-                  >
-                    <Sparkles className="w-3 h-3 text-emerald-300" />
-                    <span>{cf.label}</span>
                   </span>
                 ))}
               </div>
             </div>
             <p className="text-[11px] text-slate-300">
-              Kolom dengan ikon kunci adalah kolom standar sistem. Kolom hijau dengan ikon bintang adalah kolom kustom yang Anda aktifkan.
+              Kolom dengan ikon kunci adalah kolom standar sistem (dapat diubah nama & posisinya). Kolom hijau dengan bintang adalah bidang kustom. Urutan nomor [1, 2, ...] adalah posisi kolom persis di berkas Excel santri.
             </p>
           </div>
 
           {/* Matrix of Columns in Excel Template */}
           <SectionCard
             title="Daftar Kolom Template Excel Pendaftaran"
-            subtitle="Atur kolom Excel: ubah nama kolom langsung, atur urutan kolom, tentukan wajib/opsional, atau buka pengaturan lengkap bidang."
+            subtitle="Atur seluruh kolom Excel (bawaan & kustom): ubah nama kolom langsung, atur urutan posisi naik/turun, tentukan wajib/opsional, atau nonaktifkan dari template."
             action={
-              <Button
-                size="sm"
-                variant="primary"
-                onClick={() => handleOpenAddModal({ include_in_excel: true, include_in_moodle: false })}
-                leftIcon={<Plus className="w-3.5 h-3.5 mr-1" />}
-              >
-                Tambah Kolom Excel
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleResetTemplateToDefault}
+                  leftIcon={<RotateCcw className="w-3.5 h-3.5 mr-1" />}
+                  title="Kembalikan nama dan urutan kolom standar ke bawaan"
+                >
+                  Reset ke Bawaan
+                </Button>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => handleOpenAddModal({ include_in_excel: true, include_in_moodle: false })}
+                  leftIcon={<Plus className="w-3.5 h-3.5 mr-1" />}
+                >
+                  Tambah Kolom Excel
+                </Button>
+              </div>
             }
           >
             <div className="divide-y divide-slate-100 text-xs">
-              {/* Standard Columns */}
-              {STANDARD_EXCEL_COLUMNS.map((col) => (
-                <div key={col.key} className="py-3 px-3 flex items-center justify-between bg-slate-50/50">
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-lg bg-slate-200/80 text-slate-600 flex items-center justify-center shrink-0">
-                      <Lock className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900 text-xs">{col.label}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200 font-semibold text-slate-700">
-                          Standar Wajib
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5">{col.description}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Selalu Ada</span>
-                  </div>
-                </div>
-              ))}
-
-              {/* Custom Columns */}
-              {fields.map((field, index) => {
-                const isEditingLabel = editingLabelFieldId === field.id
+              {templateColumns.map((col, index) => {
+                const isEditingLabel = editingTemplateColId === col.id
                 return (
                   <div
-                    key={field.id}
+                    key={col.id}
                     className={`py-3 px-3 flex flex-col md:flex-row md:items-center justify-between gap-3 transition-colors ${
-                      field.include_in_excel ? 'bg-white' : 'bg-slate-50/70 opacity-60'
+                      col.include_in_excel ? 'bg-white' : 'bg-slate-50/70 opacity-60'
                     }`}
                   >
                     <div className="flex items-start gap-2.5">
-                      {/* Reorder Buttons */}
+                      {/* Reorder Buttons: Enabled for ALL columns */}
                       <div className="flex flex-col gap-0.5 shrink-0 mt-0.5">
                         <button
                           type="button"
                           disabled={index === 0}
-                          onClick={() => handleMoveOrder(index, 'up')}
+                          onClick={() => handleMoveTemplateOrder(index, 'up')}
                           className="p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
-                          title="Pindah ke Atas"
+                          title="Pindah Posisi ke Atas"
                         >
                           <ArrowUp className="w-3 h-3" />
                         </button>
                         <button
                           type="button"
-                          disabled={index === fields.length - 1}
-                          onClick={() => handleMoveOrder(index, 'down')}
+                          disabled={index === templateColumns.length - 1}
+                          onClick={() => handleMoveTemplateOrder(index, 'down')}
                           className="p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
-                          title="Pindah ke Bawah"
+                          title="Pindah Posisi ke Bawah"
                         >
                           <ArrowDown className="w-3 h-3" />
                         </button>
@@ -660,10 +685,14 @@ export const CustomFieldsPage: React.FC = () => {
 
                       <div
                         className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                          field.include_in_excel ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'
+                          col.is_standard
+                            ? 'bg-blue-100 text-blue-700'
+                            : col.include_in_excel
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-slate-200 text-slate-500'
                         }`}
                       >
-                        <FileSpreadsheet className="w-3.5 h-3.5" />
+                        {col.is_standard ? <Lock className="w-3.5 h-3.5" /> : <FileSpreadsheet className="w-3.5 h-3.5" />}
                       </div>
 
                       <div className="flex-1">
@@ -673,19 +702,19 @@ export const CustomFieldsPage: React.FC = () => {
                             <div className="flex items-center gap-1.5">
                               <input
                                 type="text"
-                                value={inlineLabelValue}
-                                onChange={(e) => setInlineLabelValue(e.target.value)}
+                                value={inlineTemplateColLabel}
+                                onChange={(e) => setInlineTemplateColLabel(e.target.value)}
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleSaveInlineLabel(field)
-                                  if (e.key === 'Escape') handleCancelEditingLabel()
+                                  if (e.key === 'Enter') handleSaveTemplateColLabel(col)
+                                  if (e.key === 'Escape') handleCancelEditingTemplateCol()
                                 }}
                                 autoFocus
                                 placeholder="Nama kolom di Excel"
-                                className="px-2.5 py-1 text-xs font-bold border-2 border-emerald-500 rounded bg-white text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-52"
+                                className="px-2.5 py-1 text-xs font-bold border-2 border-emerald-500 rounded bg-white text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-56"
                               />
                               <button
                                 type="button"
-                                onClick={() => handleSaveInlineLabel(field)}
+                                onClick={() => handleSaveTemplateColLabel(col)}
                                 className="p-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs cursor-pointer"
                                 title="Simpan Nama Kolom"
                               >
@@ -693,80 +722,93 @@ export const CustomFieldsPage: React.FC = () => {
                               </button>
                               <button
                                 type="button"
-                                onClick={handleCancelEditingLabel}
+                                onClick={handleCancelEditingTemplateCol}
                                 className="p-1.5 rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer"
                                 title="Batal"
                               >
                                 <X className="w-3.5 h-3.5" />
                               </button>
                             </div>
-                            {inlineLabelError && (
-                              <p className="text-rose-600 text-[11px] font-semibold">{inlineLabelError}</p>
+                            {inlineTemplateColError && (
+                              <p className="text-rose-600 text-[11px] font-semibold">{inlineTemplateColError}</p>
                             )}
                           </div>
                         ) : (
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-bold text-slate-900 text-xs">{field.label}</span>
+                            <span className="font-bold text-slate-900 text-xs">{col.label}</span>
                             <button
                               type="button"
-                              onClick={() => handleStartEditingLabel(field)}
+                              onClick={() => handleStartEditingTemplateCol(col)}
                               className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-emerald-700 transition-colors cursor-pointer"
-                              title="Klik untuk ubah nama kolom di Excel"
+                              title="Klik untuk ubah nama header kolom ini di template Excel"
                             >
                               <Edit2 className="w-3 h-3" />
                             </button>
+
                             <code className="text-[10px] font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-600">
-                              key: {field.key}
+                              key: {col.key}
                             </code>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
-                              {CUSTOM_FIELD_TYPE_OPTIONS.find((t) => t.value === field.field_type)?.label ||
-                                field.field_type}
+
+                            {col.is_standard ? (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
+                                Standar Sistem
+                              </span>
+                            ) : (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
+                                Bidang Kustom
+                              </span>
+                            )}
+
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold">
+                              {CUSTOM_FIELD_TYPE_OPTIONS.find((t) => t.value === col.field_type)?.label || col.field_type}
                             </span>
+
                             <button
                               type="button"
-                              onClick={() => handleToggleRequired(field)}
+                              onClick={() => handleToggleTemplateRequired(col)}
                               className={`text-[10px] px-2 py-0.5 rounded cursor-pointer font-bold transition-all ${
-                                field.is_required
+                                col.is_required
                                   ? 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
                                   : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
                               }`}
                               title="Klik untuk mengubah status Wajib / Opsional"
                             >
-                              {field.is_required ? 'Wajib' : 'Opsional'}
+                              {col.is_required ? 'Wajib' : 'Opsional'}
                             </button>
                           </div>
                         )}
 
-                        <p className="text-[11px] text-slate-500 mt-0.5">
-                          {field.field_type === 'dropdown'
-                            ? `Dropdown dengan ${field.options?.length || 0} opsi pilihan`
-                            : field.validation_rules?.placeholder || 'Input bebas'}
-                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">{col.description}</p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 self-end md:self-center">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleOpenEditModal(field)}
-                        leftIcon={<Edit2 className="w-3 h-3 mr-1" />}
-                        title="Buka modal konfigurasi bidang lengkap"
-                      >
-                        Edit Bidang
-                      </Button>
+                      {!col.is_standard && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const targetCf = fields.find((f) => f.id === col.id)
+                            if (targetCf) handleOpenEditModal(targetCf)
+                          }}
+                          leftIcon={<Edit2 className="w-3 h-3 mr-1" />}
+                          title="Buka modal konfigurasi bidang lengkap"
+                        >
+                          Edit Bidang
+                        </Button>
+                      )}
 
                       <button
                         type="button"
-                        onClick={() => handleToggleIncludeExcel(field)}
+                        onClick={() => handleToggleTemplateInclude(col)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          field.include_in_excel
+                          col.include_in_excel
                             ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300'
                             : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
                         }`}
-                        title="Klik untuk mengubah status di template Excel"
+                        title="Klik untuk menyertakan / mengeluarkan dari template Excel"
                       >
-                        {field.include_in_excel ? (
+                        {col.include_in_excel ? (
                           <>
                             <ToggleRight className="w-4 h-4 text-emerald-600" />
                             <span>Ada di Excel (ON)</span>

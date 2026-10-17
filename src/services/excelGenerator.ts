@@ -3,6 +3,7 @@ import { MOODLE_JENJANG_OPTIONS } from '../types/excel'
 import { KAMPUS_OPTIONS } from '../types/campus'
 import type { AppUserProfile } from '../types/auth'
 import { customFieldService } from './customFieldService'
+import { templateConfigService } from './templateConfigService'
 import type { CustomFieldDefinition } from '../types/customField'
 
 function getColumnLetter(colIndex: number): string {
@@ -23,15 +24,15 @@ function getColumnLetter(colIndex: number): string {
  * Includes dropdown validation for Jenjang, Kampus, and custom dropdown fields.
  */
 export async function buildRegistrationWorkbook(
-  customFieldsParam?: CustomFieldDefinition[]
+  _customFieldsParam?: CustomFieldDefinition[]
 ): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook()
   workbook.creator = 'OGSOreg LMS Moodle Portal'
   workbook.lastModifiedBy = 'OGSOreg'
   workbook.created = new Date()
 
-  const allActiveFields = customFieldsParam || customFieldService.getActiveFieldsSync()
-  const excelCustomFields = allActiveFields.filter((f) => f.include_in_excel)
+  // Unified active columns from templateConfigService in exact configured order
+  const activeColumns = templateConfigService.getActiveExcelColumnsSync()
 
   // ----------------------------------------------------
   // 1. SHEET REFERENSI (Hidden reference sheet for 20 campuses, 5 grades & custom dropdowns)
@@ -55,14 +56,20 @@ export async function buildRegistrationWorkbook(
   const dropdownRefMap = new Map<string, { refColLetter: string; count: number }>()
   let currentRefColIdx = 3
 
-  excelCustomFields.forEach((cf) => {
-    if (cf.field_type === 'dropdown' && cf.options && cf.options.length > 0) {
+  activeColumns.forEach((col) => {
+    if (
+      col.field_type === 'dropdown' &&
+      col.key !== 'jenjang' &&
+      col.key !== 'kampus' &&
+      col.options &&
+      col.options.length > 0
+    ) {
       const refColLetter = getColumnLetter(currentRefColIdx)
-      cf.options.forEach((opt, optIdx) => {
+      col.options.forEach((opt, optIdx) => {
         const row = wsRef.getRow(optIdx + 1)
         row.getCell(currentRefColIdx).value = opt
       })
-      dropdownRefMap.set(cf.key, { refColLetter, count: cf.options.length })
+      dropdownRefMap.set(col.key, { refColLetter, count: col.options.length })
       currentRefColIdx++
     }
   })
@@ -74,22 +81,11 @@ export async function buildRegistrationWorkbook(
     views: [{ state: 'frozen', ySplit: 1 }],
   })
 
-  const baseColumns = [
-    { header: 'Username', key: 'username', width: 24 },
-    { header: 'Nama Depan', key: 'firstname', width: 24 },
-    { header: 'Nama Belakang', key: 'lastname', width: 24 },
-    { header: 'Email', key: 'email', width: 32 },
-    { header: 'Jenjang', key: 'jenjang', width: 20 },
-    { header: 'Kampus', key: 'kampus', width: 24 },
-  ]
-
-  const customColumns = excelCustomFields.map((cf) => ({
-    header: cf.label,
-    key: cf.key,
-    width: Math.max(22, cf.label.length + 6),
+  ws.columns = activeColumns.map((col) => ({
+    header: col.label,
+    key: col.key,
+    width: Math.max(col.key === 'email' ? 32 : 22, col.label.length + 6),
   }))
-
-  ws.columns = [...baseColumns, ...customColumns]
 
   // Style Header Row
   const headerRow = ws.getRow(1)
@@ -102,55 +98,57 @@ export async function buildRegistrationWorkbook(
   headerRow.alignment = { vertical: 'middle', horizontal: 'center' }
   headerRow.height = 26
 
-  // Apply dropdown data validation to column E (Jenjang) and column F (Kampus)
+  // Apply dropdown data validation to respective columns dynamically
   for (let r = 2; r <= 5001; r++) {
-    // Column E: Jenjang
-    ws.getCell(`E${r}`).dataValidation = {
-      type: 'list',
-      allowBlank: true,
-      formulae: ['_REFERENSI!$B$1:$B$5'],
-      showErrorMessage: true,
-      errorTitle: 'Pilihan Jenjang Tidak Valid',
-      error: 'Pilih salah satu jenjang: Kelas 1, Kelas 2, Kelas 3, Kelas 4, atau Kelas 5.',
-    }
+    activeColumns.forEach((col, colIdx) => {
+      const colLetter = getColumnLetter(colIdx + 1)
 
-    // Column F: Kampus (20 official Gontor options)
-    ws.getCell(`F${r}`).dataValidation = {
-      type: 'list',
-      allowBlank: true,
-      formulae: ['_REFERENSI!$A$1:$A$20'],
-      showErrorMessage: true,
-      errorTitle: 'Pilihan Kampus Tidak Valid',
-      error: 'Pilih salah satu dari 20 Kampus Gontor resmi (misal: Gontor 1, Gontor Putri 1).',
-    }
-
-    // Custom dropdown validations
-    excelCustomFields.forEach((cf, cfIdx) => {
-      const colIdx = 7 + cfIdx // Base columns are 1 to 6
-      const colLetter = getColumnLetter(colIdx)
-      const refInfo = dropdownRefMap.get(cf.key)
-
-      if (refInfo) {
+      if (col.key === 'jenjang') {
         ws.getCell(`${colLetter}${r}`).dataValidation = {
           type: 'list',
-          allowBlank: !cf.is_required,
-          formulae: [`_REFERENSI!$${refInfo.refColLetter}$1:$${refInfo.refColLetter}$${refInfo.count}`],
+          allowBlank: !col.is_required,
+          formulae: ['_REFERENSI!$B$1:$B$5'],
           showErrorMessage: true,
-          errorTitle: `Pilihan ${cf.label} Tidak Valid`,
-          error: `Pilih salah satu opsi yang tersedia untuk ${cf.label}.`,
+          errorTitle: 'Pilihan Jenjang Tidak Valid',
+          error: 'Pilih salah satu jenjang: Kelas 1, Kelas 2, Kelas 3, Kelas 4, atau Kelas 5.',
+        }
+      } else if (col.key === 'kampus') {
+        ws.getCell(`${colLetter}${r}`).dataValidation = {
+          type: 'list',
+          allowBlank: !col.is_required,
+          formulae: ['_REFERENSI!$A$1:$A$20'],
+          showErrorMessage: true,
+          errorTitle: 'Pilihan Kampus Tidak Valid',
+          error: 'Pilih salah satu dari 20 Kampus Gontor resmi (misal: Gontor 1, Gontor Putri 1).',
+        }
+      } else if (col.field_type === 'dropdown') {
+        const refInfo = dropdownRefMap.get(col.key)
+        if (refInfo) {
+          ws.getCell(`${colLetter}${r}`).dataValidation = {
+            type: 'list',
+            allowBlank: !col.is_required,
+            formulae: [`_REFERENSI!$${refInfo.refColLetter}$1:$${refInfo.refColLetter}$${refInfo.count}`],
+            showErrorMessage: true,
+            errorTitle: `Pilihan ${col.label} Tidak Valid`,
+            error: `Pilih salah satu opsi yang tersedia untuk ${col.label}.`,
+          }
         }
       }
     })
   }
 
   // ----------------------------------------------------
-  // 3. SHEET CONTOH (Sample Data demonstrating mixed campus, mixed classes & custom fields)
+  // 3. SHEET CONTOH
   // ----------------------------------------------------
   const wsContoh = workbook.addWorksheet('Contoh', {
     views: [{ state: 'frozen', ySplit: 1 }],
   })
 
-  wsContoh.columns = [...baseColumns, ...customColumns]
+  wsContoh.columns = activeColumns.map((col) => ({
+    header: col.label,
+    key: col.key,
+    width: Math.max(col.key === 'email' ? 32 : 22, col.label.length + 6),
+  }))
 
   const headerContoh = wsContoh.getRow(1)
   headerContoh.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 }
@@ -206,25 +204,32 @@ export async function buildRegistrationWorkbook(
   ]
 
   sampleBase.forEach((base, sIdx) => {
-    const rowObj: Record<string, any> = { ...base }
-    excelCustomFields.forEach((cf) => {
-      if (cf.key === 'daerah') {
+    const rowObj: Record<string, any> = {}
+    activeColumns.forEach((col) => {
+      if (col.key === 'no') {
+        rowObj.no = sIdx + 1
+      } else if (col.key in base) {
+        rowObj[col.key] = (base as any)[col.key]
+      } else if (col.key === 'daerah') {
         const sampleDaerah = ['Konsulat Ponorogo', 'Konsulat Jakarta', 'Konsulat Surabaya', 'Konsulat Bandung', 'Konsulat Medan']
-        rowObj[cf.key] = sampleDaerah[sIdx % sampleDaerah.length]
-      } else if (cf.key === 'nomor_induk') {
-        rowObj[cf.key] = `2026${sIdx + 101}`
-      } else if (cf.field_type === 'number') {
-        rowObj[cf.key] = 1000 + sIdx + 1
-      } else if (cf.field_type === 'date') {
-        rowObj[cf.key] = '2010-06-15'
-      } else if (cf.field_type === 'email') {
-        rowObj[cf.key] = `kontak${sIdx + 1}@sekolah.sch.id`
-      } else if (cf.field_type === 'dropdown' && cf.options && cf.options.length > 0) {
-        rowObj[cf.key] = cf.options[sIdx % cf.options.length]
-      } else if (cf.field_type === 'checkbox') {
-        rowObj[cf.key] = sIdx % 2 === 0 ? 'Ya' : 'Tidak'
+        rowObj[col.key] = sampleDaerah[sIdx % sampleDaerah.length]
+      } else if (col.key === 'nomor_induk' || col.key === 'stambuk') {
+        rowObj[col.key] = `2026${sIdx + 101}`
+      } else if (col.key === 'kelas') {
+        const sampleKelas = ['5-B', '5-C', '4-A', '3-D', '2-B']
+        rowObj[col.key] = sampleKelas[sIdx % sampleKelas.length]
+      } else if (col.field_type === 'number') {
+        rowObj[col.key] = 1000 + sIdx + 1
+      } else if (col.field_type === 'date') {
+        rowObj[col.key] = '2010-06-15'
+      } else if (col.field_type === 'email') {
+        rowObj[col.key] = `kontak${sIdx + 1}@sekolah.sch.id`
+      } else if (col.field_type === 'dropdown' && col.options && col.options.length > 0) {
+        rowObj[col.key] = col.options[sIdx % col.options.length]
+      } else if (col.field_type === 'checkbox') {
+        rowObj[col.key] = sIdx % 2 === 0 ? 'Ya' : 'Tidak'
       } else {
-        rowObj[cf.key] = `Contoh ${cf.label}`
+        rowObj[col.key] = `Contoh ${col.label}`
       }
     })
     wsContoh.addRow(rowObj)
