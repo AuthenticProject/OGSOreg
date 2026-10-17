@@ -18,6 +18,7 @@ import {
   X,
   Lock,
   Sparkles,
+  Check,
 } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
@@ -98,6 +99,58 @@ export const CustomFieldsPage: React.FC = () => {
   const [inlineMoodleHeader, setInlineMoodleHeader] = useState('')
   const [inlineMoodleError, setInlineMoodleError] = useState<string | null>(null)
 
+  // Quick inline edit field label (used in Tab 1 Excel and Tab 2 Moodle)
+  const [editingLabelFieldId, setEditingLabelFieldId] = useState<string | null>(null)
+  const [inlineLabelValue, setInlineLabelValue] = useState('')
+  const [inlineLabelError, setInlineLabelError] = useState<string | null>(null)
+
+  const handleStartEditingLabel = (field: CustomFieldDefinition) => {
+    setEditingLabelFieldId(field.id)
+    setInlineLabelValue(field.label)
+    setInlineLabelError(null)
+  }
+
+  const handleCancelEditingLabel = () => {
+    setEditingLabelFieldId(null)
+    setInlineLabelValue('')
+    setInlineLabelError(null)
+  }
+
+  const handleSaveInlineLabel = async (field: CustomFieldDefinition) => {
+    const trimmed = inlineLabelValue.trim()
+    if (!trimmed) {
+      setInlineLabelError('Nama label kolom tidak boleh kosong.')
+      return
+    }
+
+    const res = await customFieldService.saveCustomField({
+      ...field,
+      label: trimmed,
+    })
+
+    if (res.success) {
+      setEditingLabelFieldId(null)
+      setInlineLabelError(null)
+      showFeedback('success', `Nama kolom diperbarui menjadi "${trimmed}".`)
+    } else {
+      setInlineLabelError(res.error || 'Gagal menyimpan perubahan nama.')
+    }
+  }
+
+  // Toggle Required directly from table
+  const handleToggleRequired = async (field: CustomFieldDefinition) => {
+    const nextVal = !field.is_required
+    const res = await customFieldService.saveCustomField({
+      ...field,
+      is_required: nextVal,
+    })
+    if (res.success) {
+      showFeedback('success', `Status bidang '${field.label}' diubah menjadi ${nextVal ? 'Wajib' : 'Opsional'}.`)
+    } else {
+      showFeedback('error', res.error || 'Gagal mengubah status wajib.')
+    }
+  }
+
   // Subscribe to customFieldService
   useEffect(() => {
     const unsubscribe = customFieldService.subscribe((updated) => {
@@ -129,16 +182,19 @@ export const CustomFieldsPage: React.FC = () => {
     }
   }
 
-  // Open Add Modal
-  const handleOpenAddModal = () => {
+  // Open Add Modal with optional preset
+  const handleOpenAddModal = (preset?: { include_in_excel?: boolean; include_in_moodle?: boolean } | React.MouseEvent) => {
+    const isPresetObj = preset && !('nativeEvent' in preset)
+    const presetConfig = isPresetObj ? (preset as { include_in_excel?: boolean; include_in_moodle?: boolean }) : undefined
+
     setEditingFieldId(null)
     setFormLabel('')
     setFormKey('')
     setFormType('text') // Default free-form text
     setFormRequired(false)
     setFormActive(true)
-    setFormIncludeExcel(true)
-    setFormIncludeMoodle(false)
+    setFormIncludeExcel(presetConfig?.include_in_excel !== undefined ? presetConfig.include_in_excel : true)
+    setFormIncludeMoodle(presetConfig?.include_in_moodle !== undefined ? presetConfig.include_in_moodle : activeTab === 'moodle')
     setFormMoodleDest('')
     setFormDropdownOptions('')
     setFormPlaceholder('')
@@ -531,7 +587,17 @@ export const CustomFieldsPage: React.FC = () => {
           {/* Matrix of Columns in Excel Template */}
           <SectionCard
             title="Daftar Kolom Template Excel Pendaftaran"
-            subtitle="Gunakan switch ON/OFF untuk menentukan kolom mana saja yang disertakan dalam file Excel yang dapat diunduh oleh Admin Kampus."
+            subtitle="Atur kolom Excel: ubah nama kolom langsung, atur urutan kolom, tentukan wajib/opsional, atau buka pengaturan lengkap bidang."
+            action={
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => handleOpenAddModal({ include_in_excel: true, include_in_moodle: false })}
+                leftIcon={<Plus className="w-3.5 h-3.5 mr-1" />}
+              >
+                Tambah Kolom Excel
+              </Button>
+            }
           >
             <div className="divide-y divide-slate-100 text-xs">
               {/* Standard Columns */}
@@ -560,71 +626,162 @@ export const CustomFieldsPage: React.FC = () => {
               ))}
 
               {/* Custom Columns */}
-              {fields.map((field) => (
-                <div
-                  key={field.id}
-                  className={`py-3 px-3 flex items-center justify-between transition-colors ${
-                    field.include_in_excel ? 'bg-white' : 'bg-slate-50/70 opacity-60'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                        field.include_in_excel ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'
-                      }`}
-                    >
-                      <FileSpreadsheet className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900 text-xs">{field.label}</span>
-                        <code className="text-[10px] font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-600">
-                          {field.key}
-                        </code>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
-                          {CUSTOM_FIELD_TYPE_OPTIONS.find((t) => t.value === field.field_type)?.label ||
-                            field.field_type}
-                        </span>
-                        {field.is_required && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200 font-bold">
-                            Wajib
-                          </span>
-                        )}
+              {fields.map((field, index) => {
+                const isEditingLabel = editingLabelFieldId === field.id
+                return (
+                  <div
+                    key={field.id}
+                    className={`py-3 px-3 flex flex-col md:flex-row md:items-center justify-between gap-3 transition-colors ${
+                      field.include_in_excel ? 'bg-white' : 'bg-slate-50/70 opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2.5">
+                      {/* Reorder Buttons */}
+                      <div className="flex flex-col gap-0.5 shrink-0 mt-0.5">
+                        <button
+                          type="button"
+                          disabled={index === 0}
+                          onClick={() => handleMoveOrder(index, 'up')}
+                          className="p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                          title="Pindah ke Atas"
+                        >
+                          <ArrowUp className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={index === fields.length - 1}
+                          onClick={() => handleMoveOrder(index, 'down')}
+                          className="p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                          title="Pindah ke Bawah"
+                        >
+                          <ArrowDown className="w-3 h-3" />
+                        </button>
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        {field.field_type === 'dropdown'
-                          ? `Dropdown dengan ${field.options?.length || 0} opsi pilihan`
-                          : field.validation_rules?.placeholder || 'Input bebas'}
-                      </p>
+
+                      <div
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                          field.include_in_excel ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'
+                        }`}
+                      >
+                        <FileSpreadsheet className="w-3.5 h-3.5" />
+                      </div>
+
+                      <div className="flex-1">
+                        {/* Inline Editable Label or Display */}
+                        {isEditingLabel ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="text"
+                                value={inlineLabelValue}
+                                onChange={(e) => setInlineLabelValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleSaveInlineLabel(field)
+                                  if (e.key === 'Escape') handleCancelEditingLabel()
+                                }}
+                                autoFocus
+                                placeholder="Nama kolom di Excel"
+                                className="px-2.5 py-1 text-xs font-bold border-2 border-emerald-500 rounded bg-white text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-52"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleSaveInlineLabel(field)}
+                                className="p-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs cursor-pointer"
+                                title="Simpan Nama Kolom"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleCancelEditingLabel}
+                                className="p-1.5 rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer"
+                                title="Batal"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            {inlineLabelError && (
+                              <p className="text-rose-600 text-[11px] font-semibold">{inlineLabelError}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-bold text-slate-900 text-xs">{field.label}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleStartEditingLabel(field)}
+                              className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-emerald-700 transition-colors cursor-pointer"
+                              title="Klik untuk ubah nama kolom di Excel"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                            <code className="text-[10px] font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-600">
+                              key: {field.key}
+                            </code>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
+                              {CUSTOM_FIELD_TYPE_OPTIONS.find((t) => t.value === field.field_type)?.label ||
+                                field.field_type}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleRequired(field)}
+                              className={`text-[10px] px-2 py-0.5 rounded cursor-pointer font-bold transition-all ${
+                                field.is_required
+                                  ? 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
+                                  : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
+                              }`}
+                              title="Klik untuk mengubah status Wajib / Opsional"
+                            >
+                              {field.is_required ? 'Wajib' : 'Opsional'}
+                            </button>
+                          </div>
+                        )}
+
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          {field.field_type === 'dropdown'
+                            ? `Dropdown dengan ${field.options?.length || 0} opsi pilihan`
+                            : field.validation_rules?.placeholder || 'Input bebas'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-end md:self-center">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleOpenEditModal(field)}
+                        leftIcon={<Edit2 className="w-3 h-3 mr-1" />}
+                        title="Buka modal konfigurasi bidang lengkap"
+                      >
+                        Edit Bidang
+                      </Button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggleIncludeExcel(field)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          field.include_in_excel
+                            ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300'
+                            : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                        }`}
+                        title="Klik untuk mengubah status di template Excel"
+                      >
+                        {field.include_in_excel ? (
+                          <>
+                            <ToggleRight className="w-4 h-4 text-emerald-600" />
+                            <span>Ada di Excel (ON)</span>
+                          </>
+                        ) : (
+                          <>
+                            <ToggleLeft className="w-4 h-4 text-slate-400" />
+                            <span>Tidak Ada (OFF)</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleToggleIncludeExcel(field)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        field.include_in_excel
-                          ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300'
-                          : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
-                      }`}
-                      title="Klik untuk mengubah status di template Excel"
-                    >
-                      {field.include_in_excel ? (
-                        <>
-                          <ToggleRight className="w-4 h-4 text-emerald-600" />
-                          <span>Ada di Excel (ON)</span>
-                        </>
-                      ) : (
-                        <>
-                          <ToggleLeft className="w-4 h-4 text-slate-400" />
-                          <span>Tidak Ada (OFF)</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </SectionCard>
         </div>
@@ -662,7 +819,17 @@ export const CustomFieldsPage: React.FC = () => {
           {/* Matrix of Columns in Moodle CSV */}
           <SectionCard
             title="Daftar Kolom Ekspor Berkas CSV Moodle"
-            subtitle="7 Kolom wajib Moodle otomatis disertakan. Bidang kustom dapat Anda petakan ke profile_field_<nama> atau kolom standar Moodle."
+            subtitle="Ubah header Moodle langsung, atur urutan ekspor, edit nama bidang, atau tentukan kolom yang disertakan."
+            action={
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => handleOpenAddModal({ include_in_excel: true, include_in_moodle: true })}
+                leftIcon={<Plus className="w-3.5 h-3.5 mr-1" />}
+              >
+                Tambah Kolom Moodle
+              </Button>
+            }
           >
             <div className="divide-y divide-slate-100 text-xs">
               {/* Mandatory Moodle Columns */}
@@ -693,8 +860,9 @@ export const CustomFieldsPage: React.FC = () => {
               ))}
 
               {/* Custom Columns mapped to Moodle */}
-              {fields.map((field) => {
-                const isEditing = editingMoodleFieldId === field.id
+              {fields.map((field, index) => {
+                const isEditingMoodle = editingMoodleFieldId === field.id
+                const isEditingLabel = editingLabelFieldId === field.id
                 return (
                   <div
                     key={field.id}
@@ -702,7 +870,29 @@ export const CustomFieldsPage: React.FC = () => {
                       field.include_in_moodle ? 'bg-white' : 'bg-slate-50/70 opacity-60'
                     }`}
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-2.5">
+                      {/* Reorder Buttons */}
+                      <div className="flex flex-col gap-0.5 shrink-0 mt-0.5">
+                        <button
+                          type="button"
+                          disabled={index === 0}
+                          onClick={() => handleMoveOrder(index, 'up')}
+                          className="p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                          title="Pindah ke Atas"
+                        >
+                          <ArrowUp className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={index === fields.length - 1}
+                          onClick={() => handleMoveOrder(index, 'down')}
+                          className="p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                          title="Pindah ke Bawah"
+                        >
+                          <ArrowDown className="w-3 h-3" />
+                        </button>
+                      </div>
+
                       <div
                         className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
                           field.include_in_moodle
@@ -712,21 +902,69 @@ export const CustomFieldsPage: React.FC = () => {
                       >
                         <Download className="w-3.5 h-3.5" />
                       </div>
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-bold text-slate-900 text-xs">{field.label}</span>
-                          <code className="text-[10px] font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-600">
-                            key: {field.key}
-                          </code>
-                          {field.include_in_moodle && (
-                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
-                              Header CSV: {field.moodle_destination || `profile_field_${field.key}`}
-                            </span>
-                          )}
-                        </div>
+
+                      <div className="flex-1">
+                        {/* Inline Editable Label or Display */}
+                        {isEditingLabel ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="text"
+                                value={inlineLabelValue}
+                                onChange={(e) => setInlineLabelValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleSaveInlineLabel(field)
+                                  if (e.key === 'Escape') handleCancelEditingLabel()
+                                }}
+                                autoFocus
+                                placeholder="Nama label bidang"
+                                className="px-2.5 py-1 text-xs font-bold border-2 border-emerald-500 rounded bg-white text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-52"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleSaveInlineLabel(field)}
+                                className="p-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs cursor-pointer"
+                                title="Simpan Nama"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleCancelEditingLabel}
+                                className="p-1.5 rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer"
+                                title="Batal"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            {inlineLabelError && (
+                              <p className="text-rose-600 text-[11px] font-semibold">{inlineLabelError}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-bold text-slate-900 text-xs">{field.label}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleStartEditingLabel(field)}
+                              className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-emerald-700 transition-colors cursor-pointer"
+                              title="Klik untuk ubah nama label"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                            <code className="text-[10px] font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-600">
+                              key: {field.key}
+                            </code>
+                            {field.include_in_moodle && (
+                              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                Header CSV: {field.moodle_destination || `profile_field_${field.key}`}
+                              </span>
+                            )}
+                          </div>
+                        )}
 
                         {/* Inline Destination Editor */}
-                        {isEditing ? (
+                        {isEditingMoodle ? (
                           <div className="mt-2 p-3 rounded-lg bg-slate-100 border border-slate-300 space-y-2">
                             <label className="block text-[11px] font-bold text-slate-800">
                               Ubah Header Kolom CSV Moodle:
@@ -760,28 +998,35 @@ export const CustomFieldsPage: React.FC = () => {
                             {inlineMoodleError && (
                               <p className="text-rose-600 text-[11px] font-semibold">{inlineMoodleError}</p>
                             )}
-                            <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                            <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-500">
                               <span>Pilihan Cepat:</span>
                               <button
                                 type="button"
                                 onClick={() => setInlineMoodleHeader(`profile_field_${field.key}`)}
-                                className="px-1.5 py-0.5 bg-white border rounded font-mono hover:bg-slate-50"
+                                className="px-1.5 py-0.5 bg-white border rounded font-mono hover:bg-slate-50 cursor-pointer"
                               >
                                 profile_field_{field.key}
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setInlineMoodleHeader('idnumber')}
-                                className="px-1.5 py-0.5 bg-white border rounded font-mono hover:bg-slate-50"
+                                className="px-1.5 py-0.5 bg-white border rounded font-mono hover:bg-slate-50 cursor-pointer"
                               >
                                 idnumber
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setInlineMoodleHeader('department')}
-                                className="px-1.5 py-0.5 bg-white border rounded font-mono hover:bg-slate-50"
+                                className="px-1.5 py-0.5 bg-white border rounded font-mono hover:bg-slate-50 cursor-pointer"
                               >
                                 department
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setInlineMoodleHeader('institution')}
+                                className="px-1.5 py-0.5 bg-white border rounded font-mono hover:bg-slate-50 cursor-pointer"
+                              >
+                                institution
                               </button>
                             </div>
                           </div>
@@ -796,7 +1041,7 @@ export const CustomFieldsPage: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-2 self-end md:self-center">
-                      {field.include_in_moodle && !isEditing && (
+                      {field.include_in_moodle && !isEditingMoodle && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -810,6 +1055,16 @@ export const CustomFieldsPage: React.FC = () => {
                           Ubah Header
                         </Button>
                       )}
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleOpenEditModal(field)}
+                        leftIcon={<Edit2 className="w-3 h-3 mr-1" />}
+                        title="Buka modal konfigurasi bidang lengkap"
+                      >
+                        Edit Bidang
+                      </Button>
 
                       <button
                         type="button"
