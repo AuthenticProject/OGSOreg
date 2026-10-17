@@ -39,7 +39,6 @@ const navItems: NavItem[] = [
     title: 'Pendaftaran Kolektif',
     href: '/imports',
     icon: FileSpreadsheet,
-    badge: 'Moodle',
   },
   {
     title: 'Siswa Saya',
@@ -58,9 +57,11 @@ const navItems: NavItem[] = [
     icon: FileText,
   },
   {
-    title: 'Export Data',
+    title: 'Ekspor Moodle LMS',
     href: '/exports',
     icon: Download,
+    badge: 'Super Admin',
+    superAdminOnly: true,
   },
   {
     title: 'Manajemen Pengguna',

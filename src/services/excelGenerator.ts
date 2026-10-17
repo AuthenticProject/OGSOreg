@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs'
 import { MOODLE_JENJANG_OPTIONS } from '../types/excel'
 import { KAMPUS_OPTIONS } from '../types/campus'
+import type { AppUserProfile } from '../types/auth'
 
 /**
  * Builds the official OGSOreg collective bulk registration template (Phase 7)
@@ -425,6 +426,75 @@ export async function exportAdminReportToExcel(
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   })
   const outName = filename || `Laporan_Pendaftaran_OGSOreg_${new Date().toISOString().slice(0, 10)}.xlsx`
+
+  if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = outName
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+}
+
+/**
+ * Exports official accounts roster with usernames, passwords, and assigned campus to Excel.
+ */
+export async function exportUserAccountsToExcel(
+  users: AppUserProfile[],
+  passwords: Record<string, string>,
+  filename?: string
+): Promise<void> {
+  const workbook = new ExcelJS.Workbook()
+  workbook.creator = 'OGSOreg Panitia Pusat'
+  const ws = workbook.addWorksheet('AKUN_ADMIN', {
+    views: [{ state: 'frozen', ySplit: 1 }],
+  })
+
+  ws.columns = [
+    { header: 'No', key: 'no', width: 6 },
+    { header: 'Username', key: 'username', width: 20 },
+    { header: 'Kata Sandi (Password)', key: 'password', width: 22 },
+    { header: 'Nama Tampilan', key: 'display_name', width: 28 },
+    { header: 'Peran', key: 'role', width: 16 },
+    { header: 'Kampus / Kontingen', key: 'campus', width: 24 },
+    { header: 'Email Kontak', key: 'email', width: 32 },
+    { header: 'Status Akun', key: 'status', width: 14 },
+    { header: 'Login Terakhir', key: 'last_login', width: 20 },
+  ]
+
+  const headerRow = ws.getRow(1)
+  headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 }
+  headerRow.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF166534' },
+  }
+  headerRow.alignment = { vertical: 'middle', horizontal: 'center' }
+
+  users.forEach((u, idx) => {
+    const pw = passwords[u.username] || (u.role === 'super_admin' ? 'OGSOreg_SuperAdmin2026!' : 'OGSO2026')
+    const row = ws.addRow({
+      no: idx + 1,
+      username: u.username,
+      password: pw,
+      display_name: u.display_name,
+      role: u.role === 'super_admin' ? 'Super Admin' : 'Admin Kampus',
+      campus: u.campus_id || 'Seluruh Kampus',
+      email: u.email,
+      status: u.is_active ? 'Aktif' : 'Nonaktif',
+      last_login: u.last_login_at ? new Date(u.last_login_at).toLocaleString('id-ID') : 'Belum pernah',
+    })
+    row.alignment = { vertical: 'middle' }
+  })
+
+  const buffer = await workbook.xlsx.writeBuffer()
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
+  const outName = filename || `Daftar_Akun_Admin_OGSOreg_${new Date().toISOString().slice(0, 10)}.xlsx`
 
   if (typeof window !== 'undefined' && typeof document !== 'undefined') {
     const url = URL.createObjectURL(blob)

@@ -3,7 +3,9 @@ import {
   INITIAL_ACCOUNT_ROSTER,
   SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD,
   type AppUserProfile,
+  type AppUserRole,
 } from '../types/auth'
+import type { StudentKampus } from '../types/campus'
 
 const LOCAL_USERS_STORAGE_KEY = 'ogsoreg_user_profiles_v2'
 const LOCAL_PASSWORDS_STORAGE_KEY = 'ogsoreg_user_passwords_v2'
@@ -486,6 +488,176 @@ class AccountService {
   getUserByUsername(username: string): AppUserProfile | undefined {
     const key = (username || '').trim().toLowerCase()
     return this.inMemoryProfiles.find((p) => p.username.toLowerCase() === key)
+  }
+
+  /**
+   * Retrieves the current password for an account (Super Admin only).
+   */
+  getUserPassword(username: string, currentUserRole: string = 'super_admin'): string | undefined {
+    if (currentUserRole !== 'super_admin') {
+      return undefined
+    }
+    const key = (username || '').trim().toLowerCase()
+    return (
+      this.inMemoryPasswords[key] ||
+      this.inMemoryPasswords[username] ||
+      (username === 'admin' ? LOCAL_DEV_SUPER_ADMIN_PASSWORD : SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD)
+    )
+  }
+
+  /**
+   * Retrieves all passwords mapped by username (Super Admin only).
+   */
+  getAllUserPasswords(currentUserRole: string = 'super_admin'): Record<string, string> {
+    if (currentUserRole !== 'super_admin') {
+      return {}
+    }
+    const result: Record<string, string> = {}
+    for (const user of this.inMemoryProfiles) {
+      result[user.username] = this.getUserPassword(user.username, currentUserRole) || SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD
+    }
+    return result
+  }
+
+  /**
+   * Directly sets/updates an account's password (Super Admin only).
+   */
+  async setUserPassword(
+    username: string,
+    newPasswordInput: string,
+    currentUserRole: string = 'super_admin'
+  ): Promise<{ success: boolean; error?: string }> {
+    if (currentUserRole !== 'super_admin') {
+      return { success: false, error: 'Hanya Super Admin yang diizinkan mengubah kata sandi pengguna.' }
+    }
+    const newPassword = (newPasswordInput || '').trim()
+    if (!newPassword || newPassword.length < 6) {
+      return { success: false, error: 'Kata sandi minimal 6 karakter.' }
+    }
+
+    const key = (username || '').trim().toLowerCase()
+    const user = this.inMemoryProfiles.find((p) => p.username.toLowerCase() === key)
+    if (!user) return { success: false, error: 'Pengguna tidak ditemukan.' }
+
+    this.inMemoryPasswords[user.username] = newPassword
+    user.must_change_password = false
+    user.updated_at = new Date().toISOString()
+    this.persistStore()
+
+    if (isSupabaseConfigured() && user.auth_user_id) {
+      try {
+        await supabase.auth.admin.updateUserById(user.auth_user_id, { password: newPassword })
+      } catch {
+        // Local fallback
+      }
+    }
+
+    return { success: true }
+  }
+
+  /**
+   * Updates an existing user profile (Super Admin only).
+   */
+  async updateUser(
+    userId: string,
+    data: {
+      display_name?: string
+      email?: string
+      campus_id?: StudentKampus | null
+      is_active?: boolean
+    },
+    currentUserRole: string = 'super_admin'
+  ): Promise<{ success: boolean; error?: string }> {
+    if (currentUserRole !== 'super_admin') {
+      return { success: false, error: 'Hanya Super Admin yang diizinkan mengubah data akun pengguna.' }
+    }
+
+    const user = this.inMemoryProfiles.find((p) => p.id === userId || p.username.toLowerCase() === userId.toLowerCase())
+    if (!user) return { success: false, error: 'Pengguna tidak ditemukan.' }
+
+    if (data.display_name !== undefined) user.display_name = data.display_name.trim()
+    if (data.email !== undefined) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(data.email)) {
+        return { success: false, error: 'Format email tidak valid.' }
+      }
+      user.email = data.email.trim().toLowerCase()
+    }
+    if (data.campus_id !== undefined) user.campus_id = data.campus_id
+    if (data.is_active !== undefined) user.is_active = data.is_active
+
+    user.updated_at = new Date().toISOString()
+    this.persistStore()
+
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase
+          .from('user_profiles')
+          .update({
+            display_name: user.display_name,
+            email: user.email,
+            campus_id: user.campus_id,
+            is_active: user.is_active,
+            updated_at: user.updated_at,
+          })
+          .eq('id', user.id)
+      } catch {
+        // Local fallback
+      }
+    }
+
+    return { success: true }
+  }
+
+  /**
+   * Creates a new user profile (Super Admin only).
+   */
+  async createUser(
+    data: {
+      username: string
+      display_name: string
+      email: string
+      role?: AppUserRole
+      campus_id?: StudentKampus | null
+      password?: string
+    },
+    currentUserRole: string = 'super_admin'
+  ): Promise<{ success: boolean; user?: AppUserProfile; error?: string }> {
+    if (currentUserRole !== 'super_admin') {
+      return { success: false, error: 'Hanya Super Admin yang diizinkan menambah akun baru.' }
+    }
+
+    const username = (data.username || '').trim().toLowerCase()
+    if (!username) {
+      return { success: false, error: 'Username wajib diisi.' }
+    }
+
+    if (this.inMemoryProfiles.some((p) => p.username.toLowerCase() === username)) {
+      return { success: false, error: `Username '${username}' sudah digunakan.` }
+    }
+
+    const password = (data.password || '').trim() || SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD
+    const now = new Date().toISOString()
+    const newUser: AppUserProfile = {
+      id: `usr-${Date.now()}-${username}`,
+      auth_user_id: `auth-${Date.now()}-${username}`,
+      username,
+      email: (data.email || `${username}@ogso.gontor.ac.id`).trim().toLowerCase(),
+      display_name: data.display_name.trim() || `Admin ${data.campus_id || username}`,
+      role: data.role || 'campus_admin',
+      campus_id: data.campus_id || null,
+      is_active: true,
+      must_change_password: false,
+      last_login_at: null,
+      created_at: now,
+      updated_at: now,
+    }
+
+    this.inMemoryProfiles.push(newUser)
+    this.inMemoryPasswords[username] = password
+    this.persistStore()
+
+    return { success: true, user: newUser }
   }
 
   /**

@@ -7,7 +7,7 @@ import { useAuth } from '../../context/AuthContext'
 
 export const AppShell: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { appProfile, profile, isLoading } = useAuth()
+  const { appProfile, isLoading } = useAuth()
 
   if (isLoading) {
     return (
@@ -17,8 +17,8 @@ export const AppShell: React.FC = () => {
     )
   }
 
-  // If neither appProfile nor profile is present, navigate to login
-  if (!appProfile && !profile) {
+  // Strictly require active appProfile session; any unauthenticated access redirects to /login
+  if (!appProfile) {
     return <Navigate to="/login" replace />
   }
 

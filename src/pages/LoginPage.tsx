@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Sparkles, Lock, User, ArrowRight, AlertCircle, Eye, EyeOff } from 'lucide-react'
 import { Button } from '../components/ui/Button'
@@ -6,7 +6,13 @@ import { useAuth } from '../context/AuthContext'
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate()
-  const { loginWithUsername, isConfigured } = useAuth()
+  const { appProfile, isLoading, loginWithUsername, isConfigured } = useAuth()
+
+  useEffect(() => {
+    if (!isLoading && appProfile) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [appProfile, isLoading, navigate])
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')

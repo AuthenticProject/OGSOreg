@@ -25,6 +25,7 @@ import {
 } from '../services/moodle/moodleCourseMapping'
 import { downloadMoodleUsersCsv } from '../services/moodle/moodleCsvExporter'
 import { downloadMoodleUsersExcel } from '../services/moodle/moodleExcelExporter'
+import { Navigate } from 'react-router-dom'
 import { exportStudentsToExcel } from '../services/excelGenerator'
 import { MoodleExportModal } from '../components/moodle/MoodleExportModal'
 import { MoodleCourseMappingModal } from '../components/moodle/MoodleCourseMappingModal'
@@ -33,7 +34,12 @@ import type { Student, StudentStats } from '../types/student'
 import { MOODLE_JENJANG_OPTIONS } from '../types/excel'
 
 export const ExportStationPage: React.FC = () => {
-  const { institution } = useAuth()
+  const { institution, isSuperAdmin } = useAuth()
+
+  if (!isSuperAdmin) {
+    return <Navigate to="/dashboard" replace />
+  }
+
   const institutionId = institution?.id || 'a0000000-0000-0000-0000-000000000001'
 
   const [students, setStudents] = useState<Student[]>([])

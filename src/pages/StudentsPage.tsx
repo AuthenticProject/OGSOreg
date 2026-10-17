@@ -665,13 +665,15 @@ export const StudentsPage: React.FC = () => {
               >
                 <Edit className="w-3.5 h-3.5" />
               </button>
-              <button
-                onClick={() => handleOpenExportSingle(s)}
-                className="p-1.5 rounded hover:bg-slate-100 text-slate-600 hover:text-emerald-700 transition-colors"
-                title="Ekspor ke Format Moodle (7 Kolom)"
-              >
-                <Download className="w-3.5 h-3.5" />
-              </button>
+              {isSuperAdmin && (
+                <button
+                  onClick={() => handleOpenExportSingle(s)}
+                  className="p-1.5 rounded hover:bg-slate-100 text-slate-600 hover:text-emerald-700 transition-colors"
+                  title="Ekspor ke Format Moodle (7 Kolom)"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                </button>
+              )}
               <button
                 onClick={() => setDeletingStudent(s)}
                 className="p-1.5 rounded hover:bg-slate-100 text-slate-600 hover:text-rose-600 transition-colors"
@@ -706,15 +708,17 @@ export const StudentsPage: React.FC = () => {
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleOpenExportFiltered}
-              leftIcon={<Download className="w-4 h-4 mr-1.5 text-[#166534]" />}
-              className="border-[#166534]/30 text-[#166534] hover:bg-[#DCFCE7]/40 font-semibold"
-            >
-              Ekspor Moodle
-            </Button>
+            {isSuperAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleOpenExportFiltered}
+                leftIcon={<Download className="w-4 h-4 mr-1.5 text-[#166534]" />}
+                className="border-[#166534]/30 text-[#166534] hover:bg-[#DCFCE7]/40 font-semibold"
+              >
+                Ekspor Moodle
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -995,14 +999,16 @@ export const StudentsPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportSelectedMoodle}
-                leftIcon={<Download className="w-3.5 h-3.5 mr-1" />}
-              >
-                Ekspor CSV Moodle ({selectedIds.length})
-              </Button>
+              {isSuperAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportSelectedMoodle}
+                  leftIcon={<Download className="w-3.5 h-3.5 mr-1" />}
+                >
+                  Ekspor CSV Moodle ({selectedIds.length})
+                </Button>
+              )}
               <Button
                 variant="danger"
                 size="sm"

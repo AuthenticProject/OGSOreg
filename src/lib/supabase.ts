@@ -31,6 +31,7 @@ const safeAnonKey = isSupabaseConfigured() ? supabaseAnonKey : 'placeholder-anon
 export const supabase: SupabaseClient = createClient(safeUrl, safeAnonKey, {
   auth: {
     persistSession: true,
+    storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
     autoRefreshToken: true,
     detectSessionInUrl: true,
   },

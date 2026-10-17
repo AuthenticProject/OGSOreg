@@ -7,31 +7,42 @@ export interface StepDef {
   desc: string
 }
 
-export const IMPORT_STEPS: StepDef[] = [
+export const SUPER_ADMIN_STEPS: StepDef[] = [
   { id: 1, name: '1. Input Data', desc: 'Unggah / Tempel / Manual' },
   { id: 2, name: '2. Pratinjau & Validasi', desc: 'Cek & Edit Data' },
   { id: 3, name: '3. Ekspor CSV Moodle', desc: 'Generate CSV LMS' },
   { id: 4, name: '4. Hasil & Petunjuk', desc: 'Panduan Upload Moodle' },
 ]
 
+export const CAMPUS_ADMIN_STEPS: StepDef[] = [
+  { id: 1, name: '1. Input Data', desc: 'Unggah / Tempel / Manual' },
+  { id: 2, name: '2. Pratinjau & Validasi', desc: 'Cek & Edit Data' },
+  { id: 3, name: '3. Submit Pendaftaran', desc: 'Simpan ke Direktori' },
+]
+
+export const IMPORT_STEPS = SUPER_ADMIN_STEPS
+
 interface ImportStepperProps {
   currentStep: number
   onStepClick?: (stepId: number) => void
   maxReachedStep?: number
+  isSuperAdmin?: boolean
 }
 
 export const ImportStepper: React.FC<ImportStepperProps> = ({
   currentStep,
   onStepClick,
   maxReachedStep = 1,
+  isSuperAdmin = true,
 }) => {
+  const steps = isSuperAdmin ? SUPER_ADMIN_STEPS : CAMPUS_ADMIN_STEPS
   return (
     <div className="bg-white p-4 sm:p-5 rounded-xl border border-border shadow-subtle">
       <div className="flex items-center justify-between relative max-w-4xl mx-auto">
         {/* Connector Line behind steps */}
         <div className="absolute left-8 right-8 top-5 -translate-y-1/2 h-0.5 bg-slate-200 -z-0" />
 
-        {IMPORT_STEPS.map((step) => {
+        {steps.map((step) => {
           const isCompleted = currentStep > step.id
           const isActive = currentStep === step.id
           const isClickable = step.id <= Math.max(currentStep, maxReachedStep)

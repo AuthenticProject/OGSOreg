@@ -1,11 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
-import {
-  authService,
-  DEMO_DEV_INSTITUTION,
-  DEMO_DEV_PROFILE,
-} from '../services/authService'
+import { authService } from '../services/authService'
 import { accountService } from '../services/accountService'
 import { useImportStore } from '../stores/importStore'
 import type { Profile, Institution } from '../types/database'
@@ -38,40 +34,124 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const CURRENT_USER_PROFILE_KEY = 'ogsoreg_active_session_profile_v1'
+const CURRENT_USER_PROFILE_KEY = 'ogsoreg_active_session_profile_v2'
+
+/**
+ * Detects whether the current page visit is an intentional reload (F5 / pull-to-refresh)
+ * vs a fresh cold navigation (clicking a link, opening tab/browser, opening app after close).
+ */
+function isPageReload(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[]
+    if (navEntries && navEntries.length > 0) {
+      return navEntries[0].type === 'reload'
+    }
+    // Fallback for older browsers
+    const perf = window.performance as unknown as { navigation?: { type?: number } }
+    if (perf && perf.navigation) {
+      return perf.navigation.type === 1
+    }
+  } catch {
+    // Ignore sandbox errors
+  }
+  return false
+}
+
+// Strict Session & Close Protection:
+// When opening fresh (clicked link, new tab, reopened after web/apk close),
+// purge any residual sessions so all users must explicitly log in.
+if (typeof window !== 'undefined') {
+  try {
+    // 1. localStorage must NEVER hold active user session tokens
+    if (window.localStorage) {
+      window.localStorage.removeItem('ogsoreg_active_session_profile_v1')
+      window.localStorage.removeItem('ogsoreg_active_session_profile_v2')
+      window.localStorage.removeItem(CURRENT_USER_PROFILE_KEY)
+      for (let i = window.localStorage.length - 1; i >= 0; i--) {
+        const key = window.localStorage.key(i)
+        if (key && (key.startsWith('sb-') || key.includes('auth-token') || key.includes('session'))) {
+          window.localStorage.removeItem(key)
+        }
+      }
+    }
+
+    // 2. If it's a fresh visit (not an in-session reload), wipe sessionStorage completely
+    if (!isPageReload() && window.sessionStorage) {
+      window.sessionStorage.removeItem(CURRENT_USER_PROFILE_KEY)
+      window.sessionStorage.clear()
+    }
+  } catch {
+    // Ignore sandbox errors
+  }
+}
+
+function buildProfileFromAppProfile(p: AppUserProfile): Profile {
+  return {
+    id: p.id,
+    full_name: p.display_name,
+    role: p.role === 'super_admin' ? 'admin' : 'institution',
+    institution_id: p.campus_id,
+    created_at: p.created_at,
+    updated_at: p.updated_at,
+  }
+}
+
+function buildInstitutionFromAppProfile(p: AppUserProfile): Institution {
+  return {
+    id: p.campus_id || 'general-inst',
+    name: p.display_name,
+    npsn: '-',
+    address: '-',
+    phone: '-',
+    email: p.email,
+    created_at: p.created_at,
+    updated_at: p.updated_at,
+  }
+}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(DEMO_DEV_PROFILE)
-  const [institution, setInstitution] = useState<Institution | null>(DEMO_DEV_INSTITUTION)
-  const [appProfile, setAppProfile] = useState<AppUserProfile | null>(() => {
-    // Check localStorage for saved session profile
-    if (typeof window !== 'undefined' && window.localStorage) {
+  // Read session ONLY on reload within the same active tab session.
+  // When closing web/apk or clicking link fresh, initial session is strictly null!
+  const [initialSessionProfile] = useState<AppUserProfile | null>(() => {
+    if (typeof window !== 'undefined' && window.sessionStorage && isPageReload()) {
       try {
-        const raw = window.localStorage.getItem(CURRENT_USER_PROFILE_KEY)
-        if (raw) return JSON.parse(raw)
+        const raw = window.sessionStorage.getItem(CURRENT_USER_PROFILE_KEY)
+        if (raw) return JSON.parse(raw) as AppUserProfile
       } catch {
         // Fall back
       }
     }
-    // Default to Super Admin for smooth preview
-    const defaultAdmin = accountService.getUserByUsername('admin')
-    return defaultAdmin || null
+    // Must NEVER auto-authenticate: all devices must explicitly pass login!
+    return null
   })
+
+  const [user, setUser] = useState<User | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
+  const [appProfile, setAppProfile] = useState<AppUserProfile | null>(initialSessionProfile)
+  const [profile, setProfile] = useState<Profile | null>(() =>
+    initialSessionProfile ? buildProfileFromAppProfile(initialSessionProfile) : null
+  )
+  const [institution, setInstitution] = useState<Institution | null>(() =>
+    initialSessionProfile ? buildInstitutionFromAppProfile(initialSessionProfile) : null
+  )
   const [isLoading, setIsLoading] = useState(true)
 
   const configured = isSupabaseConfigured()
 
   useEffect(() => {
     if (appProfile) {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        window.localStorage.setItem(CURRENT_USER_PROFILE_KEY, JSON.stringify(appProfile))
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        window.sessionStorage.setItem(CURRENT_USER_PROFILE_KEY, JSON.stringify(appProfile))
       }
+      setProfile(buildProfileFromAppProfile(appProfile))
+      setInstitution(buildInstitutionFromAppProfile(appProfile))
     } else {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        window.localStorage.removeItem(CURRENT_USER_PROFILE_KEY)
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        window.sessionStorage.removeItem(CURRENT_USER_PROFILE_KEY)
       }
+      setProfile(null)
+      setInstitution(null)
     }
   }, [appProfile])
 
@@ -82,40 +162,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return
     }
 
-    // Live Supabase session check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        // Fetch user_profiles row
-        supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('auth_user_id', session.user.id)
-          .single()
-          .then(({ data, error }) => {
-            if (!error && data) {
-              setAppProfile(data as AppUserProfile)
-            }
-            setIsLoading(false)
-          })
-      } else {
+    // Fresh navigation/click: sign out Supabase to prevent auto-login
+    if (!isPageReload()) {
+      supabase.auth.signOut().finally(() => {
+        setIsLoading(false)
+      })
+      return
+    }
+
+    // Live Supabase session check (only on reload)
+    const checkLiveSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        setSession(session)
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          const { data, error } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('auth_user_id', session.user.id)
+            .single()
+          if (!error && data) {
+            setAppProfile(data as AppUserProfile)
+          } else {
+            setAppProfile(null)
+          }
+        } else {
+          setAppProfile(null)
+        }
+      } catch {
+        setAppProfile(null)
+      } finally {
         setIsLoading(false)
       }
-    })
+    }
+
+    checkLiveSession()
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        const { data } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('auth_user_id', session.user.id)
-          .single()
-        if (data) setAppProfile(data as AppUserProfile)
+        setSession(session)
+        setUser(session.user)
+        try {
+          const { data } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('auth_user_id', session.user.id)
+            .single()
+          if (data) setAppProfile(data as AppUserProfile)
+        } catch {
+          // ignore
+        }
+      } else {
+        setSession(null)
+        setUser(null)
+        if (event === 'SIGNED_OUT') {
+          setAppProfile(null)
+        }
       }
       setIsLoading(false)
     })
@@ -139,15 +244,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       useImportStore.getState().reset()
 
       setAppProfile(result.profile)
-      // Also sync legacy profile for backward compatibility
-      setProfile({
-        id: result.profile.id,
-        full_name: result.profile.display_name,
-        role: result.profile.role === 'super_admin' ? 'admin' : 'institution',
-        institution_id: result.profile.campus_id,
-        created_at: result.profile.created_at,
-        updated_at: result.profile.updated_at,
-      })
+      setProfile(buildProfileFromAppProfile(result.profile))
+      setInstitution(buildInstitutionFromAppProfile(result.profile))
       return {
         success: true,
         mustChangePassword: result.mustChangePassword,
@@ -190,12 +288,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     setIsLoading(true)
     useImportStore.getState().reset()
-    await accountService.loginWithUsername('', '') // Clear state
     setAppProfile(null)
     setProfile(null)
     setInstitution(null)
-    if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.removeItem(CURRENT_USER_PROFILE_KEY)
+    setUser(null)
+    setSession(null)
+    if (typeof window !== 'undefined') {
+      try {
+        window.sessionStorage.clear()
+        window.localStorage.removeItem(CURRENT_USER_PROFILE_KEY)
+        window.localStorage.removeItem('ogsoreg_active_session_profile_v1')
+        window.localStorage.removeItem('ogsoreg_active_session_profile_v2')
+        for (let i = window.localStorage.length - 1; i >= 0; i--) {
+          const key = window.localStorage.key(i)
+          if (key && (key.startsWith('sb-') || key.includes('auth-token') || key.includes('session'))) {
+            window.localStorage.removeItem(key)
+          }
+        }
+      } catch {
+        // Ignore
+      }
     }
     if (configured) {
       await authService.signOut()

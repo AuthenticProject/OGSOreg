@@ -11,11 +11,11 @@ export interface AuthUserContext {
 // Fallback demo institution & profile for local / offline development when Supabase is not yet connected
 export const DEMO_DEV_INSTITUTION: Institution = {
   id: 'a0000000-0000-0000-0000-000000000001',
-  name: 'SMA Darussalam Boarding School',
-  npsn: '20108492',
-  address: 'Jl. Raya Pesantren No. 45, Bogor',
-  phone: '081288990011',
-  email: 'admin@darussalam.sch.id',
+  name: 'Pondok Modern Darussalam Gontor Kampus Pusat',
+  npsn: '-',
+  address: 'Ds. Gontor, Kec. Mlarak, Kab. Ponorogo, Prov. Jawa Timur, 63472',
+  phone: '(0352) 311766 / WA: +62 851-7512-1926',
+  email: 'sekretariat@gontor.ac.id',
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 }

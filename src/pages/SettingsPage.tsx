@@ -1,81 +1,253 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Save,
+  Building2,
+  MapPin,
+  UserCheck,
+  PhoneCall,
+  ExternalLink,
+  CheckCircle2,
+  RotateCcw,
 } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
 import { SectionCard } from '../components/ui/SectionCard'
+import { useAuth } from '../context/AuthContext'
+import { KAMPUS_OPTIONS, type StudentKampus } from '../types/campus'
+import {
+  OFFICIAL_CAMPUS_PROFILES,
+  getSavedCampusProfile,
+  saveCampusProfile,
+  type CampusProfileInfo,
+} from '../constants/campusProfiles'
 
 export const SettingsPage: React.FC = () => {
+  const { isSuperAdmin, assignedCampus } = useAuth()
+
+  // Tentukan kampus default: jika admin kampus, gunakan kampus akunnya; jika super admin, default Gontor 1
+  const defaultCampusKey: StudentKampus = assignedCampus || 'Gontor 1'
+
+  const [selectedCampusKey, setSelectedCampusKey] = useState<StudentKampus>(defaultCampusKey)
+  const [formData, setFormData] = useState<CampusProfileInfo>(() =>
+    getSavedCampusProfile(defaultCampusKey)
+  )
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null)
+
+  // Update form data jika selectedCampusKey berubah
+  useEffect(() => {
+    setFormData(getSavedCampusProfile(selectedCampusKey))
+    setSaveSuccessMessage(null)
+  }, [selectedCampusKey])
+
+  // Sinkronisasi jika login admin kampus terdeteksi
+  useEffect(() => {
+    if (assignedCampus) {
+      setSelectedCampusKey(assignedCampus)
+      setFormData(getSavedCampusProfile(assignedCampus))
+    }
+  }, [assignedCampus])
+
+  const handleSelectCampus = (campusKey: StudentKampus) => {
+    setSelectedCampusKey(campusKey)
+  }
+
+  const handleResetToOfficial = () => {
+    const official = OFFICIAL_CAMPUS_PROFILES[selectedCampusKey]
+    setFormData(official)
+    saveCampusProfile(official)
+    setSaveSuccessMessage(`Data ${selectedCampusKey} dikembalikan ke data resmi gontor.ac.id`)
+  }
+
+  const handleSave = (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    saveCampusProfile(formData)
+    setSaveSuccessMessage(`Profil ${formData.campusKey} berhasil disimpan ke sistem.`)
+  }
+
   return (
     <div className="space-y-6 max-w-4xl">
       <PageHeader
         title="Pengaturan Sistem"
-        subtitle="Konfigurasi preferensi organisasi, informasi kontak penanggung jawab, dan akun pendaftaran."
+        subtitle="Konfigurasi data institusi kampus, informasi kontak penanggung jawab, dan alamat resmi pendaftaran."
       />
 
-      <SectionCard title="Profil Institusi Utama" subtitle="Informasi ini dicetak otomatis pada rekap dan kartu peserta">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-700">Nama Lembaga / Sekolah</label>
-            <input
-              type="text"
-              defaultValue="SMA Darussalam Boarding School"
-              className="w-full px-3 py-2 border border-border rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-maroon"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-700">Nomor Pokok Sekolah Nasional (NPSN)</label>
-            <input
-              type="text"
-              defaultValue="20108492"
-              className="w-full px-3 py-2 border border-border rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-maroon font-mono"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-700">Nama Penanggung Jawab (PIC)</label>
-            <input
-              type="text"
-              defaultValue="H. Lukman Hakim, S.E."
-              className="w-full px-3 py-2 border border-border rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-maroon"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-700">No. WhatsApp PIC</label>
-            <input
-              type="text"
-              defaultValue="081288990011"
-              className="w-full px-3 py-2 border border-border rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#22C55E] font-mono"
-            />
-          </div>
+      {saveSuccessMessage && (
+        <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-sm shadow-sm animate-fade-in">
+          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+          <span className="font-medium">{saveSuccessMessage}</span>
         </div>
+      )}
 
-        <div className="mt-6 flex justify-end">
-          <Button
-            variant="primary"
-            size="sm"
-            leftIcon={<Save className="w-4 h-4 mr-1.5" />}
-            onClick={() => alert('Preferensi berhasil disimpan (mock local state).')}
+      <SectionCard
+        title="Profil Kampus / Institusi Utama"
+        subtitle="Informasi ini dicetak otomatis pada rekap dan kartu peserta."
+        action={
+          <a
+            href="https://gontor.ac.id/kontak-alamat/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center text-xs font-medium text-emerald-700 hover:text-emerald-800 hover:underline bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200/60"
           >
-            Simpan Perubahan
-          </Button>
-        </div>
-      </SectionCard>
+            <span>Sumber Alamat Resmi Gontor</span>
+            <ExternalLink className="w-3.5 h-3.5 ml-1" />
+          </a>
+        }
+      >
+        <form onSubmit={handleSave} className="space-y-5">
+          {/* Switcher Kampus (Tersedia bagi Super Admin, atau informasi kampus bagi Admin) */}
+          <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200/70">
+            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
+              {isSuperAdmin ? 'Pilih Kampus yang Dikonfigurasi' : 'Kampus Terdaftar'}
+            </label>
 
-      <SectionCard title="Tema & Tampilan" subtitle="Pengaturan identitas warna dan mode tampilan sistem">
-        <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-slate-50/60">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 rounded-full bg-[#166534] border-2 border-white shadow-sm" />
-            <div>
-              <p className="text-xs font-bold text-slate-900">Tema Resmi OGSOreg (Forest Green & Emerald)</p>
-              <p className="text-[11px] text-muted-foreground">Palet warna resmi hijau OGSOreg (#166534 & #22C55E)</p>
+            {isSuperAdmin ? (
+              <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+                <select
+                  value={selectedCampusKey}
+                  onChange={(e) => handleSelectCampus(e.target.value as StudentKampus)}
+                  className="w-full sm:w-80 px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600 text-sm"
+                >
+                  <optgroup label="Kampus Putra (Gontor 1–12)">
+                    {KAMPUS_OPTIONS.slice(0, 12).map((k) => (
+                      <option key={k} value={k}>
+                        {k}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Kampus Putri (Gontor Putri 1–8)">
+                    {KAMPUS_OPTIONS.slice(12).map((k) => (
+                      <option key={k} value={k}>
+                        {k}
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  leftIcon={<RotateCcw className="w-3.5 h-3.5 mr-1" />}
+                  onClick={handleResetToOfficial}
+                  title="Kembalikan ke alamat & kontak standar dari gontor.ac.id"
+                >
+                  Reset Standar Web
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 bg-emerald-100 text-emerald-900 font-bold text-sm rounded-md border border-emerald-300">
+                  {selectedCampusKey}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  (Ditetapkan sesuai akun login admin kampus)
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            {/* Nama Kampus */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                <Building2 className="w-3.5 h-3.5 text-emerald-700" />
+                <span>Nama Kampus</span>
+              </label>
+              <input
+                type="text"
+                value={formData.officialName}
+                onChange={(e) => setFormData({ ...formData, officialName: e.target.value })}
+                required
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 font-medium"
+                placeholder="Contoh: Pondok Modern Darussalam Gontor Kampus Pusat (Gontor 1)"
+              />
+            </div>
+
+            {/* Alamat Kampus */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                <MapPin className="w-3.5 h-3.5 text-emerald-700" />
+                <span>Alamat Lengkap Kampus</span>
+              </label>
+              <textarea
+                rows={2}
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                required
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 leading-relaxed"
+                placeholder="Alamat resmi kampus sesuai gontor.ac.id/kontak-alamat/"
+              />
+            </div>
+
+            {/* Penanggung Jawab */}
+            <div className="space-y-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                <UserCheck className="w-3.5 h-3.5 text-emerald-700" />
+                <span>Penanggung Jawab (PIC)</span>
+              </label>
+              <input
+                type="text"
+                value={formData.pic}
+                onChange={(e) => setFormData({ ...formData, pic: e.target.value })}
+                required
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                placeholder="Contoh: Sekretariat Pimpinan PMDG / Pengasuh Kampus"
+              />
+            </div>
+
+            {/* No. Telp / WhatsApp */}
+            <div className="space-y-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                <PhoneCall className="w-3.5 h-3.5 text-emerald-700" />
+                <span>No. Telp / WhatsApp</span>
+              </label>
+              <input
+                type="text"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                required
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 font-mono"
+                placeholder="Contoh: (0352) 311766 / WA: +62 851-7512-1926"
+              />
             </div>
           </div>
-          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">Aktif</span>
-        </div>
+
+          {/* Pratinjau Singkat */}
+          <div className="mt-4 p-4 rounded-lg bg-emerald-50/50 border border-emerald-200/80">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-900 mb-2">
+              Pratinjau Data Cetak Rekap & Kartu
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-700">
+              <div>
+                <span className="text-slate-500 font-medium">Kampus: </span>
+                <span className="font-semibold text-slate-900">{formData.officialName}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 font-medium">Kontak: </span>
+                <span className="font-mono text-slate-900">{formData.phone}</span>
+              </div>
+              <div className="md:col-span-2">
+                <span className="text-slate-500 font-medium">Alamat: </span>
+                <span className="text-slate-800">{formData.address}</span>
+              </div>
+              <div className="md:col-span-2">
+                <span className="text-slate-500 font-medium">PIC: </span>
+                <span className="text-slate-800 font-medium">{formData.pic}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2 flex justify-end gap-2">
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              leftIcon={<Save className="w-4 h-4 mr-1.5" />}
+            >
+              Simpan Perubahan
+            </Button>
+          </div>
+        </form>
       </SectionCard>
     </div>
   )

@@ -115,7 +115,7 @@ export const TeachersPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Building2 className="w-3.5 h-3.5 text-slate-400" />
                   <span className="text-slate-700 font-medium">
-                    {institution?.name || 'SMA Darussalam Boarding School'}
+                    {institution?.name || 'Pondok Modern Darussalam Gontor'}
                   </span>
                 </div>
                 <div className="flex items-center gap-4">
