@@ -99,7 +99,7 @@ function buildProfileFromAppProfile(p: AppUserProfile): Profile {
 
 function buildInstitutionFromAppProfile(p: AppUserProfile): Institution {
   return {
-    id: p.campus_id || 'general-inst',
+    id: 'a0000000-0000-0000-0000-000000000001',
     name: p.display_name,
     npsn: '-',
     address: '-',

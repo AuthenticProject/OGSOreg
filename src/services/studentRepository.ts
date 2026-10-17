@@ -10,6 +10,7 @@ import type {
   StudentJenjang,
 } from '../types/student'
 
+export const CANONICAL_INSTITUTION_ID = 'a0000000-0000-0000-0000-000000000001'
 const LOCAL_STORAGE_KEY = 'ogsoreg_students_directory_v1'
 
 class StudentRepository {
@@ -25,31 +26,46 @@ class StudentRepository {
         const stored = window.localStorage.getItem(LOCAL_STORAGE_KEY)
         if (stored) {
           const parsed = JSON.parse(stored) as Record<string, Student[]>
-          Object.entries(parsed).forEach(([instId, students]) => {
-            // Filter out any legacy dummy demo students
-            const cleanStudents = (students || []).filter((s) => !s.id.startsWith('std-demo-'))
-            this.inMemoryStore.set(instId, cleanStudents)
+          const mergedStudentsMap = new Map<string, Student>()
+
+          // 1. Gather all students across any legacy institution keys (e.g. general-inst, Gontor 1, etc.)
+          Object.entries(parsed).forEach(([, students]) => {
+            ;(students || []).forEach((s) => {
+              if (s && s.id && !s.id.startsWith('std-demo-')) {
+                const key = (s.username || s.id).toLowerCase()
+                if (!mergedStudentsMap.has(key)) {
+                  mergedStudentsMap.set(key, {
+                    ...s,
+                    institution_id: CANONICAL_INSTITUTION_ID,
+                  })
+                }
+              }
+            })
           })
+
+          const allUniqueStudents = Array.from(mergedStudentsMap.values())
+          this.inMemoryStore.set(CANONICAL_INSTITUTION_ID, allUniqueStudents)
           this.persistLocalStorage()
         } else {
-          this.inMemoryStore.set('a0000000-0000-0000-0000-000000000001', [])
+          this.inMemoryStore.set(CANONICAL_INSTITUTION_ID, [])
           this.persistLocalStorage()
         }
       } catch {
-        this.inMemoryStore.set('a0000000-0000-0000-0000-000000000001', [])
+        this.inMemoryStore.set(CANONICAL_INSTITUTION_ID, [])
       }
     } else {
-      this.inMemoryStore.set('a0000000-0000-0000-0000-000000000001', [])
+      this.inMemoryStore.set(CANONICAL_INSTITUTION_ID, [])
     }
   }
 
   private persistLocalStorage() {
     if (typeof window !== 'undefined' && window.localStorage) {
       try {
-        const obj: Record<string, Student[]> = {}
-        this.inMemoryStore.forEach((students, instId) => {
-          obj[instId] = students
-        })
+        const canonicalList = this.inMemoryStore.get(CANONICAL_INSTITUTION_ID) || []
+        const obj: Record<string, Student[]> = {
+          [CANONICAL_INSTITUTION_ID]: canonicalList,
+          'general-inst': canonicalList,
+        }
         window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(obj))
       } catch {
         // Silent catch for quota limits
@@ -61,12 +77,20 @@ class StudentRepository {
     return isSupabaseConfigured() ? 'SUPABASE_CLOUD' : 'LOCAL_PERSISTENCE_DEV'
   }
 
-  public getRawStore(institutionId: string): Student[] {
-    return this.inMemoryStore.get(institutionId) || []
+  public getRawStore(_institutionId?: string): Student[] {
+    // Return all students from unified canonical pool
+    const canonical = this.inMemoryStore.get(CANONICAL_INSTITUTION_ID) || []
+    if (canonical.length > 0) return canonical
+
+    // Fallback: search any other bucket
+    for (const [, students] of this.inMemoryStore) {
+      if (students && students.length > 0) return students
+    }
+    return []
   }
 
-  public setRawStore(institutionId: string, students: Student[]) {
-    this.inMemoryStore.set(institutionId, students)
+  public setRawStore(_institutionId: string, students: Student[]) {
+    this.inMemoryStore.set(CANONICAL_INSTITUTION_ID, students)
     this.persistLocalStorage()
   }
 
