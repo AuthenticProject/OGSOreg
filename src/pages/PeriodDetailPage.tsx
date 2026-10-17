@@ -560,7 +560,7 @@ export const PeriodDetailPage: React.FC = () => {
                   </div>
                   <div className="text-right">
                     <p>Ponorogo, {new Date(previewCert.issue_date).toLocaleDateString('id-ID', { dateStyle: 'long' })}</p>
-                    <p className="font-bold text-slate-800">Panitia Pusat OGSO Gontor</p>
+                    <p className="font-bold text-slate-800">Panitia Pusat OGSO</p>
                   </div>
                 </div>
               </div>

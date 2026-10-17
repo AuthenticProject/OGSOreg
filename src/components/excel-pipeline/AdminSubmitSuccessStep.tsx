@@ -118,7 +118,7 @@ export const AdminSubmitSuccessStep: React.FC<AdminSubmitSuccessStepProps> = ({
         </div>
 
         <p className="text-xs sm:text-sm text-emerald-100/90 max-w-2xl leading-relaxed">
-          Alhamdulillah, seluruh data santri valid telah tersimpan resmi di direktori kontingen Anda. Data ini siap direkapitulasi oleh Panitia Pusat OGSO Gontor.
+          Alhamdulillah, seluruh data santri valid telah tersimpan resmi di direktori kontingen Anda. Data ini siap direkapitulasi oleh Panitia Pusat OGSO.
         </p>
 
         {/* Quick action buttons right on hero */}

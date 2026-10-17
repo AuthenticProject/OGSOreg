@@ -86,7 +86,7 @@ export const DashboardPage: React.FC = () => {
       {/* Page Header */}
       <PageHeader
         title="Selamat datang di OGSOreg"
-        subtitle="Asisten pendaftaran kolektif dan manajemen santri untuk LMS Moodle OGSO Gontor."
+        subtitle="Asisten pendaftaran kolektif dan manajemen santri untuk LMS Moodle OGSO."
         actions={
           <div className="flex items-center gap-2">
             <Button

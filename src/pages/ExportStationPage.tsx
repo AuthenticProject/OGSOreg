@@ -171,7 +171,7 @@ export const ExportStationPage: React.FC = () => {
           </div>
           <div>
             <h3 className="text-sm font-bold text-foreground">
-              Portal Target: LMS Moodle OGSO Gontor
+              Portal Target: LMS Moodle OGSO
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
               URL:{' '}
@@ -547,7 +547,7 @@ export const ExportStationPage: React.FC = () => {
             </ol>
 
             <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs">
-              <strong>Pemberitahuan Hak Akses & Integritas:</strong> Mengunduh berkas CSV di halaman ini tidak otomatis membuat akun santri di Moodle. Pembuatan akun secara resmi hanya terjadi saat Administrator menuntaskan proses unggah di portal LMS Moodle OGSO Gontor.
+              <strong>Pemberitahuan Hak Akses & Integritas:</strong> Mengunduh berkas CSV di halaman ini tidak otomatis membuat akun santri di Moodle. Pembuatan akun secara resmi hanya terjadi saat Administrator menuntaskan proses unggah di portal LMS Moodle OGSO.
             </div>
           </div>
         )}

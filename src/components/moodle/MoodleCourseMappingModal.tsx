@@ -80,7 +80,7 @@ export const MoodleCourseMappingModal: React.FC<MoodleCourseMappingModalProps> =
                 Konfigurasi Shortname Course Moodle
               </h3>
               <p className="text-[11px] text-muted-foreground">
-                Pemetaan Jenjang santri ke shortname course resmi di Moodle OGSO Gontor
+                Pemetaan Jenjang santri ke shortname course resmi di Moodle OGSO
               </p>
             </div>
           </div>

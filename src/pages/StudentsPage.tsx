@@ -1345,7 +1345,7 @@ export const StudentsPage: React.FC = () => {
               <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-2.5">
                 <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
                 <p className="text-[11px] leading-relaxed">
-                  <strong>Pemberitahuan Sinkronisasi:</strong> Data santri yang tersimpan di OGSOreg tidak otomatis memiliki akun aktif di Moodle LMS. Akun resmi baru terbuat setelah berkas CSV diunggah ke Moodle LMS OGSO Gontor.
+                  <strong>Pemberitahuan Sinkronisasi:</strong> Data santri yang tersimpan di OGSOreg tidak otomatis memiliki akun aktif di Moodle LMS. Akun resmi baru terbuat setelah berkas CSV diunggah ke Moodle LMS OGSO.
                 </p>
               </div>
 
@@ -2149,7 +2149,7 @@ export const StudentsPage: React.FC = () => {
                 Tindakan ini akan menghapus catatan santri dari repositori lokal OGSOreg.
               </p>
               <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-900 leading-normal">
-                <strong>Catatan Keamanan LMS:</strong> Menghapus santri di OGSOreg <u>TIDAK</u> akan menghapus akun yang telah dibuat di server LMS Moodle OGSO Gontor.
+                <strong>Catatan Keamanan LMS:</strong> Menghapus santri di OGSOreg <u>TIDAK</u> akan menghapus akun yang telah dibuat di server LMS Moodle OGSO.
               </div>
             </div>
 
@@ -2189,7 +2189,7 @@ export const StudentsPage: React.FC = () => {
                 Anda akan menghapus {selectedIds.length} santri yang dipilih dari direktori lokal OGSOreg.
               </p>
               <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-900 leading-normal">
-                <strong>Catatan Keamanan LMS:</strong> Menghapus catatan lokal ini <u>TIDAK</u> menghapus akun pengguna yang telah terdaftar di Moodle LMS OGSO Gontor.
+                <strong>Catatan Keamanan LMS:</strong> Menghapus catatan lokal ini <u>TIDAK</u> menghapus akun pengguna yang telah terdaftar di Moodle LMS OGSO.
               </div>
             </div>
 

@@ -392,7 +392,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-[#22C55E] shrink-0" />
               <p className="text-xs font-semibold text-emerald-100 truncate">
-                {appProfile?.display_name || 'Panitia OGSO Gontor'}
+                {appProfile?.display_name || 'Panitia OGSO'}
               </p>
             </div>
             <p className="text-[11px] text-emerald-300/70 leading-tight">

@@ -237,7 +237,7 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
                   </h4>
                   <p className="text-[11px] opacity-90 leading-relaxed">
                     Course 1: <code>ogso_k1</code> s/d <code>ogso_k5</code> &bull; Course 2:{' '}
-                    <code>{courseConfig.simulationShortname}</code>. Pastikan shortname kursus ini benar-benar ada di Moodle LMS OGSO Gontor.
+                    <code>{courseConfig.simulationShortname}</code>. Pastikan shortname kursus ini benar-benar ada di Moodle LMS OGSO.
                   </p>
                 </div>
               </div>

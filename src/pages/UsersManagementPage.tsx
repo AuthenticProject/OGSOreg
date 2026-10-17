@@ -302,7 +302,7 @@ export const UsersManagementPage: React.FC = () => {
             </span>
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            Lihat kata sandi, ubah kredensial, kelola hak akses, dan atur akun seluruh Admin Kampus OGSO Gontor.
+            Lihat kata sandi, ubah kredensial, kelola hak akses, dan atur akun seluruh Admin Kampus OGSO.
           </p>
         </div>
 
