@@ -13,8 +13,40 @@ import type {
 export const CANONICAL_INSTITUTION_ID = 'a0000000-0000-0000-0000-000000000001'
 const LOCAL_STORAGE_KEY = 'ogsoreg_students_directory_v1'
 
+export function normalizeInstitutionId(id?: string | null): string {
+  if (id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return id
+  }
+  return CANONICAL_INSTITUTION_ID
+}
+
+function toSupabaseInsertPayload(s: Partial<Student>): any {
+  const payload: Record<string, any> = {
+    username: s.username?.toLowerCase(),
+    firstname: s.firstname,
+    lastname: s.lastname,
+    full_name: s.full_name || `${s.firstname || ''} ${s.lastname || ''}`.trim(),
+    email: s.email?.toLowerCase(),
+    jenjang: s.jenjang,
+    kampus: s.kampus || null,
+    institution_id: normalizeInstitutionId(s.institution_id),
+    source: s.source || 'manual',
+    sync_status: s.sync_status || 'local_only',
+    moodle_user_id: s.moodle_user_id || null,
+    last_synced_at: s.last_synced_at || null,
+  }
+
+  // Kolom id di Supabase adalah UUID. Hanya teruskan id jika memang format UUID valid!
+  if (s.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s.id)) {
+    payload.id = s.id
+  }
+
+  return payload
+}
+
 class StudentRepository {
   private inMemoryStore: Map<string, Student[]> = new Map()
+  private isSyncing = false
 
   constructor() {
     this.initLocalStorage()
@@ -73,6 +105,66 @@ class StudentRepository {
     }
   }
 
+  /**
+   * Otomatis melakukan sinkronisasi dua arah antara data lokal dan Supabase Cloud
+   */
+  public async syncWithSupabase(): Promise<void> {
+    if (!isSupabaseConfigured() || this.isSyncing) return
+    this.isSyncing = true
+    try {
+      const canonicalId = CANONICAL_INSTITUTION_ID
+      const { data: cloudStudents, error } = await supabase
+        .from('students')
+        .select('*')
+        .eq('institution_id', canonicalId)
+
+      if (error) {
+        return
+      }
+
+      const cloudMap = new Map<string, Student>()
+      ;(cloudStudents || []).forEach((s) => {
+        cloudMap.set((s.username || s.id).toLowerCase(), s as Student)
+      })
+
+      // Cek siswa lokal yang belum ada di Supabase Cloud
+      const localStudents = this.getRawStore(canonicalId)
+      const toUpload: any[] = []
+
+      localStudents.forEach((local) => {
+        const key = (local.username || local.id).toLowerCase()
+        if (!cloudMap.has(key)) {
+          toUpload.push(toSupabaseInsertPayload(local))
+        }
+      })
+
+      // Upload siswa lokal ke Supabase Cloud
+      if (toUpload.length > 0) {
+        const { data: inserted, error: insertErr } = await supabase
+          .from('students')
+          .insert(toUpload)
+          .select()
+
+        if (!insertErr && inserted) {
+          inserted.forEach((ins) => {
+            cloudMap.set((ins.username || ins.id).toLowerCase(), ins as Student)
+          })
+        }
+      }
+
+      // Simpan gabungan lengkap ke local cache
+      const mergedList = Array.from(cloudMap.values())
+      if (mergedList.length > 0) {
+        this.inMemoryStore.set(canonicalId, mergedList)
+        this.persistLocalStorage()
+      }
+    } catch {
+      // Ignore background sync errors
+    } finally {
+      this.isSyncing = false
+    }
+  }
+
   public getStorageType(): 'SUPABASE_CLOUD' | 'LOCAL_PERSISTENCE_DEV' {
     return isSupabaseConfigured() ? 'SUPABASE_CLOUD' : 'LOCAL_PERSISTENCE_DEV'
   }
@@ -126,7 +218,7 @@ class StudentRepository {
     stats: StudentStats
   }> {
     const isObjectFirstArg = typeof institutionIdOrParams === 'object' && institutionIdOrParams !== null
-    const institutionId = isObjectFirstArg
+    const rawInstitutionId = isObjectFirstArg
       ? institutionIdOrParams.institutionId || ''
       : (institutionIdOrParams as string)
 
@@ -146,6 +238,9 @@ class StudentRepository {
     const page = Number(rawParams.page) || 1
     const pageSize = Number(rawParams.pageSize) || 25
 
+    // Jalankan auto-sync lokal <-> cloud di background
+    this.syncWithSupabase().catch(() => {})
+
     let list: Student[] = []
 
     // Try Supabase first if configured
@@ -154,7 +249,7 @@ class StudentRepository {
         let query = supabase
           .from('students')
           .select('*', { count: 'exact' })
-          .eq('institution_id', institutionId)
+          .eq('institution_id', CANONICAL_INSTITUTION_ID)
 
         if (searchTerm) {
           query = query.or(
@@ -192,8 +287,8 @@ class StudentRepository {
         query = query.range(from, to)
 
         const { data, count, error } = await query
-        if (!error && data) {
-          const stats = await this.getStats(institutionId)
+        if (!error && data && data.length > 0) {
+          const stats = await this.getStats(CANONICAL_INSTITUTION_ID, assignedCampus)
           return {
             data: data as Student[],
             students: data as Student[],
@@ -207,8 +302,8 @@ class StudentRepository {
       }
     }
 
-    // Local Persistence Adapter logic
-    list = [...this.getRawStore(institutionId)]
+    // Local Persistence Adapter fallback logic
+    list = [...this.getRawStore(rawInstitutionId)]
 
     // Campus Isolation: If user is assigned to a specific campus, restrict results
     if (assignedCampus) {
@@ -272,7 +367,7 @@ class StudentRepository {
     const total = list.length
     const startIndex = (page - 1) * pageSize
     const paginated = list.slice(startIndex, startIndex + pageSize)
-    const stats = await this.getStats(institutionId)
+    const stats = await this.getStats(CANONICAL_INSTITUTION_ID, assignedCampus)
 
     return {
       data: paginated,
@@ -381,22 +476,23 @@ class StudentRepository {
 
     if (isSupabaseConfigured()) {
       try {
+        const dbPayload = toSupabaseInsertPayload(newStudent)
         const { data: dbData, error } = await supabase
           .from('students')
-          .insert(newStudent)
+          .insert(dbPayload)
           .select()
           .single()
         if (!error && dbData) {
-          // Also sync to local cache
-          this.setRawStore(institutionId, [dbData as Student, ...currentStudents])
-          return { success: true, student: dbData as Student, ...(dbData as any) }
+          const finalStudent = dbData as Student
+          this.setRawStore(CANONICAL_INSTITUTION_ID, [finalStudent, ...currentStudents])
+          return { success: true, student: finalStudent, ...(finalStudent as any) }
         }
       } catch {
         // Fall back to local persistence
       }
     }
 
-    this.setRawStore(institutionId, [newStudent, ...currentStudents])
+    this.setRawStore(CANONICAL_INSTITUTION_ID, [newStudent, ...currentStudents])
     return { success: true, student: newStudent, ...(newStudent as any) }
   }
 
@@ -675,7 +771,8 @@ class StudentRepository {
     if (toInsert.length > 0) {
       if (isSupabaseConfigured()) {
         try {
-          const { error } = await supabase.from('students').insert(toInsert)
+          const dbPayloads = toInsert.map((s) => toSupabaseInsertPayload(s))
+          const { error } = await supabase.from('students').insert(dbPayloads)
           if (error) {
             console.warn('Supabase bulk insert warning, falling back to local adapter:', error.message)
           }
@@ -685,7 +782,7 @@ class StudentRepository {
       }
 
       const updatedAll = [...toInsert, ...currentStudents]
-      this.setRawStore(institutionId, updatedAll)
+      this.setRawStore(CANONICAL_INSTITUTION_ID, updatedAll)
     }
 
     return {
