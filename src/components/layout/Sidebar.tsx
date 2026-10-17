@@ -12,6 +12,7 @@ import {
   Sparkles,
   FileText,
   UserCog,
+  Sliders,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useAuth } from '../../context/AuthContext'
@@ -60,6 +61,13 @@ const navItems: NavItem[] = [
     title: 'Ekspor Moodle LMS',
     href: '/exports',
     icon: Download,
+    badge: 'Super Admin',
+    superAdminOnly: true,
+  },
+  {
+    title: 'Atur Template & Moodle',
+    href: '/custom-fields',
+    icon: Sliders,
     badge: 'Super Admin',
     superAdminOnly: true,
   },

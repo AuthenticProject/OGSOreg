@@ -1,4 +1,6 @@
 import type { StagedParticipantRow, MoodleJenjang } from '../types/excel'
+import { customFieldService } from './customFieldService'
+import type { CustomFieldDefinition } from '../types/customField'
 
 /**
  * Standard Moodle User Upload CSV Headers.
@@ -27,9 +29,25 @@ export function escapeCsvField(val: unknown): string {
 /**
  * Generates RFC 4180 compliant CSV string for Moodle User Upload.
  * Kolom 'course' otomatis diisi dari Jenjang peserta (misal: Kelas 1, Kelas 2, dst).
+ * Dynamically appends any custom fields configured by Super Admin where include_in_moodle is ON.
  */
-export function generateMoodleCsv(rows: StagedParticipantRow[]): string {
-  const headerLine = MOODLE_CSV_HEADERS.join(',')
+export function generateMoodleCsv(
+  rows: StagedParticipantRow[],
+  customFields?: CustomFieldDefinition[],
+  includeCustomFields = true
+): string {
+  const activeMoodleFields = includeCustomFields
+    ? (customFields || customFieldService.getActiveFieldsSync()).filter(
+        (f) => f.include_in_moodle && f.moodle_destination && f.moodle_destination.trim() !== ''
+      )
+    : []
+
+  const headerColumns = [
+    ...MOODLE_CSV_HEADERS,
+    ...activeMoodleFields.map((f) => f.moodle_destination!.trim()),
+  ]
+  const headerLine = headerColumns.join(',')
+
   const dataLines = rows.map((r) => {
     // If username/firstname/lastname/email are not directly populated, derive from canonical fields
     const username = r.username || r.nisn || ''
@@ -38,13 +56,20 @@ export function generateMoodleCsv(rows: StagedParticipantRow[]): string {
     const email = r.email || r.teacher_email || ''
     const course = r.jenjang || r.grade_level || ''
 
-    return [
+    const values = [
       escapeCsvField(username),
       escapeCsvField(firstname),
       escapeCsvField(lastname),
       escapeCsvField(email),
       escapeCsvField(course),
-    ].join(',')
+    ]
+
+    activeMoodleFields.forEach((f) => {
+      const val = r.custom_fields?.[f.key] ?? ''
+      values.push(escapeCsvField(val))
+    })
+
+    return values.join(',')
   })
 
   return [headerLine, ...dataLines].join('\r\n')
@@ -55,8 +80,12 @@ export function generateMoodleCsv(rows: StagedParticipantRow[]): string {
  * Ensures international and Indonesian characters (accents, UTF-8 symbols)
  * display flawlessly in Microsoft Excel, LibreOffice, and Moodle LMS.
  */
-export function generateMoodleCsvWithBom(rows: StagedParticipantRow[]): string {
-  const csvBody = generateMoodleCsv(rows)
+export function generateMoodleCsvWithBom(
+  rows: StagedParticipantRow[],
+  customFields?: CustomFieldDefinition[],
+  includeCustomFields = true
+): string {
+  const csvBody = generateMoodleCsv(rows, customFields, includeCustomFields)
   return `\uFEFF${csvBody}`
 }
 
@@ -105,11 +134,12 @@ export function getJenjangCourseMappingSummary(rows: StagedParticipantRow[]): Co
  */
 export function downloadMoodleCsvFile(
   rows: StagedParticipantRow[],
-  customFilename?: string
+  customFilename?: string,
+  customFields?: CustomFieldDefinition[]
 ): { filename: string; totalExported: number; byteSize: number } {
   // Only export non-error rows
   const validRows = rows.filter((r) => r._status !== 'ERROR')
-  const content = generateMoodleCsvWithBom(validRows)
+  const content = generateMoodleCsvWithBom(validRows, customFields, true)
   const filename = customFilename || `moodle_users_kolektif_${new Date().toISOString().slice(0, 10)}.csv`
 
   const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
@@ -130,34 +160,79 @@ export function downloadMoodleCsvFile(
 }
 
 /**
- * Generates confirmed basic Moodle CSV for Students:
- * Columns: username, firstname, lastname, email
- * (Preserves jenjang internally, avoids arbitrary fields in basic Moodle user upload CSV)
+ * Generates confirmed Moodle CSV for Students:
+ * Columns: username, firstname, lastname, email, plus any active custom fields mapped to Moodle.
  */
 export function generateStudentsMoodleCsv(
-  students: { username: string; firstname: string; lastname?: string | null; email: string }[]
+  students: {
+    username: string
+    firstname: string
+    lastname?: string | null
+    email: string
+    custom_fields?: Record<string, any>
+  }[],
+  customFields?: CustomFieldDefinition[],
+  includeCustomFields = true
 ): string {
-  const headers = ['username', 'firstname', 'lastname', 'email']
-  const lines = students.map((s) => [
-    escapeCsvField(s.username),
-    escapeCsvField(s.firstname),
-    escapeCsvField(s.lastname || ''),
-    escapeCsvField(s.email),
-  ].join(','))
+  const activeMoodleFields = includeCustomFields
+    ? (customFields || customFieldService.getActiveFieldsSync()).filter(
+        (f) => f.include_in_moodle && f.moodle_destination && f.moodle_destination.trim() !== ''
+      )
+    : []
+
+  const headers = [
+    'username',
+    'firstname',
+    'lastname',
+    'email',
+    ...activeMoodleFields.map((f) => f.moodle_destination!.trim()),
+  ]
+
+  const lines = students.map((s) => {
+    const row = [
+      escapeCsvField(s.username),
+      escapeCsvField(s.firstname),
+      escapeCsvField(s.lastname || ''),
+      escapeCsvField(s.email),
+    ]
+
+    activeMoodleFields.forEach((f) => {
+      const val = s.custom_fields?.[f.key] ?? ''
+      row.push(escapeCsvField(val))
+    })
+
+    return row.join(',')
+  })
+
   return [headers.join(','), ...lines].join('\r\n')
 }
 
 export function generateStudentsMoodleCsvWithBom(
-  students: { username: string; firstname: string; lastname?: string | null; email: string }[]
+  students: {
+    username: string
+    firstname: string
+    lastname?: string | null
+    email: string
+    custom_fields?: Record<string, any>
+  }[],
+  customFields?: CustomFieldDefinition[],
+  includeCustomFields = true
 ): string {
-  return `\uFEFF${generateStudentsMoodleCsv(students)}`
+  return `\uFEFF${generateStudentsMoodleCsv(students, customFields, includeCustomFields)}`
 }
 
 export function downloadStudentsMoodleCsv(
-  students: { username: string; firstname: string; lastname?: string | null; email: string }[],
-  filename?: string
+  students: {
+    username: string
+    firstname: string
+    lastname?: string | null
+    email: string
+    custom_fields?: Record<string, any>
+  }[],
+  filename?: string,
+  customFields?: CustomFieldDefinition[]
 ): { filename: string; totalExported: number; byteSize: number } {
-  const content = generateStudentsMoodleCsvWithBom(students)
+  const content = generateStudentsMoodleCsvWithBom(students, customFields, true)
   const finalFilename = filename || `moodle_siswa_${new Date().toISOString().slice(0, 10)}.csv`
   const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
   if (typeof window !== 'undefined' && typeof document !== 'undefined') {
@@ -176,4 +251,3 @@ export function downloadStudentsMoodleCsv(
     byteSize: blob.size,
   }
 }
-

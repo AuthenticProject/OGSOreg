@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Download,
   FileSpreadsheet,
@@ -6,9 +7,13 @@ import {
   CheckCircle2,
   ChevronDown,
   Layers,
+  Sliders,
 } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { generateRegistrationTemplate } from '../../services/excelGenerator'
+import { customFieldService } from '../../services/customFieldService'
+import { useAuth } from '../../context/AuthContext'
+import type { CustomFieldDefinition } from '../../types/customField'
 
 interface TemplateDownloaderProps {
   onProceedToUpload?: () => void
@@ -17,8 +22,20 @@ interface TemplateDownloaderProps {
 export const TemplateDownloader: React.FC<TemplateDownloaderProps> = ({
   onProceedToUpload,
 }) => {
+  const { isSuperAdmin } = useAuth()
   const [isDownloading, setIsDownloading] = useState(false)
   const [hasDownloaded, setHasDownloaded] = useState(false)
+  const [activeCustomFields, setActiveCustomFields] = useState<CustomFieldDefinition[]>([])
+
+  useEffect(() => {
+    const unsub = customFieldService.subscribe((fields) => {
+      setActiveCustomFields(fields.filter((f) => f.is_active && f.include_in_excel))
+    })
+    customFieldService.getCustomFields().then((fields) => {
+      setActiveCustomFields(fields.filter((f) => f.is_active && f.include_in_excel))
+    })
+    return () => unsub()
+  }, [])
 
   const handleDownload = async () => {
     try {
@@ -44,16 +61,35 @@ export const TemplateDownloader: React.FC<TemplateDownloaderProps> = ({
               </h3>
               <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                Dropdown Kelas 1–5 & 20 Kampus Aktif
+                {6 + activeCustomFields.length} Kolom Dikonfigurasi
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Format workbook Excel (.xlsx) dengan 6 kolom resmi: <strong>Username, Nama Depan, Nama Belakang, Email, Jenjang, Kampus</strong>.
+              Format workbook Excel (.xlsx) dengan 6 kolom utama: <strong>Username, Nama Depan, Nama Belakang, Email, Jenjang, Kampus</strong>
+              {activeCustomFields.length > 0 && (
+                <>
+                  {' '}serta {activeCustomFields.length} kolom tambahan aktif:{' '}
+                  <strong className="text-emerald-800">
+                    {activeCustomFields.map((f) => f.label).join(', ')}
+                  </strong>.
+                </>
+              )}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+          {isSuperAdmin && (
+            <Link
+              to="/custom-fields?tab=excel"
+              className="inline-flex items-center text-xs font-semibold px-3 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors border border-slate-300"
+              title="Atur kolom apa saja yang ada di template Excel"
+            >
+              <Sliders className="w-3.5 h-3.5 mr-1.5 text-emerald-700" />
+              <span>Atur Kolom Excel</span>
+            </Link>
+          )}
+
           <Button
             variant="primary"
             size="sm"

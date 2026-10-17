@@ -22,11 +22,11 @@ export function normalizeInstitutionId(id?: string | null): string {
 
 function toSupabaseInsertPayload(s: Partial<Student>): any {
   const payload: Record<string, any> = {
-    username: s.username?.toLowerCase(),
-    firstname: s.firstname,
-    lastname: s.lastname,
+    username: s.username?.toLowerCase().trim(),
+    firstname: s.firstname?.trim(),
+    lastname: s.lastname?.trim(),
     full_name: s.full_name || `${s.firstname || ''} ${s.lastname || ''}`.trim(),
-    email: s.email?.toLowerCase(),
+    email: s.email?.toLowerCase().trim(),
     jenjang: s.jenjang,
     kampus: s.kampus || null,
     institution_id: normalizeInstitutionId(s.institution_id),
@@ -34,6 +34,10 @@ function toSupabaseInsertPayload(s: Partial<Student>): any {
     sync_status: s.sync_status || 'local_only',
     moodle_user_id: s.moodle_user_id || null,
     last_synced_at: s.last_synced_at || null,
+  }
+
+  if (s.custom_fields && Object.keys(s.custom_fields).length > 0) {
+    payload.custom_fields = s.custom_fields
   }
 
   // Kolom id di Supabase adalah UUID. Hanya teruskan id jika memang format UUID valid!
@@ -184,6 +188,114 @@ class StudentRepository {
   public setRawStore(_institutionId: string, students: Student[]) {
     this.inMemoryStore.set(CANONICAL_INSTITUTION_ID, students)
     this.persistLocalStorage()
+  }
+
+  /**
+   * Returns all registered usernames and emails across all campuses (case-insensitive & trimmed)
+   */
+  public getAllRegisteredUsernamesAndEmails(): { usernames: Set<string>; emails: Set<string> } {
+    const canonical = this.getRawStore(CANONICAL_INSTITUTION_ID)
+    const usernames = new Set<string>()
+    const emails = new Set<string>()
+
+    canonical.forEach((s) => {
+      if (s.username) usernames.add(s.username.toLowerCase().trim())
+      if (s.email) emails.add(s.email.toLowerCase().trim())
+    })
+
+    return { usernames, emails }
+  }
+
+  /**
+   * Generates available username suggestions for a duplicate username
+   */
+  public suggestAvailableUsernames(
+    baseUsername: string,
+    extraTaken?: Set<string>
+  ): string[] {
+    const clean = (baseUsername || '').toLowerCase().trim().replace(/[^a-z0-9_]/g, '') || 'santri'
+    const { usernames: registered } = this.getAllRegisteredUsernamesAndEmails()
+    const taken = new Set(registered)
+    if (extraTaken) {
+      extraTaken.forEach((u) => taken.add(u.toLowerCase().trim()))
+    }
+
+    const currentYear = new Date().getFullYear()
+    const candidates: string[] = [
+      `${clean}1`,
+      `${clean}2`,
+      `${clean}${currentYear}`,
+      `${clean}_ogso`,
+      `${clean}3`,
+      `${clean}4`,
+      `${clean}2026`,
+      `${clean}_santri`,
+    ]
+
+    const available: string[] = []
+    for (const cand of candidates) {
+      if (!taken.has(cand)) {
+        available.push(cand)
+        taken.add(cand)
+        if (available.length >= 3) break
+      }
+    }
+
+    let counter = 5
+    while (available.length < 3 && counter < 50) {
+      const cand = `${clean}${counter}`
+      if (!taken.has(cand)) {
+        available.push(cand)
+        taken.add(cand)
+      }
+      counter++
+    }
+
+    return available
+  }
+
+  /**
+   * Checks global duplicates across all 20 campuses and returns available username suggestions
+   */
+  public checkGlobalDuplicates(
+    items: { username?: string; email?: string }[]
+  ): {
+    takenUsernames: Set<string>
+    takenEmails: Set<string>
+    usernameSuggestions: Map<string, string[]>
+  } {
+    const { usernames: registeredUsernames, emails: registeredEmails } = this.getAllRegisteredUsernamesAndEmails()
+    const takenUsernames = new Set<string>()
+    const takenEmails = new Set<string>()
+    const usernameSuggestions = new Map<string, string[]>()
+
+    // Combine intra-batch usernames for suggestion collision avoidance
+    const allKnownUsernames = new Set(registeredUsernames)
+    items.forEach((item) => {
+      if (item.username) allKnownUsernames.add(item.username.toLowerCase().trim())
+    })
+
+    items.forEach((item) => {
+      if (item.username) {
+        const u = item.username.toLowerCase().trim()
+        if (registeredUsernames.has(u)) {
+          takenUsernames.add(u)
+          if (!usernameSuggestions.has(u)) {
+            const suggestions = this.suggestAvailableUsernames(u, allKnownUsernames)
+            usernameSuggestions.set(u, suggestions)
+          }
+        }
+      }
+
+      if (item.email) {
+        const e = item.email.toLowerCase().trim()
+        if (registeredEmails.has(e)) {
+          takenEmails.add(e)
+        }
+      }
+    })
+
+    return { takenUsernames, takenEmails, usernameSuggestions }
   }
 
   /**
@@ -411,7 +523,7 @@ class StudentRepository {
     institutionIdParam?: string,
     createdByParam?: string,
     accessControl?: { userRole?: string; assignedCampus?: string | null }
-  ): Promise<{ success: boolean; student?: Student; error?: string }> {
+  ): Promise<{ success: boolean; student?: Student; error?: string; suggestedUsernames?: string[] }> {
     const institutionId = institutionIdParam || input.institution_id || ''
     const createdBy = createdByParam || input.created_by || 'system'
 
@@ -437,31 +549,36 @@ class StudentRepository {
 
     const data = parseResult.data
     const currentStudents = this.getRawStore(institutionId)
+    const { usernames: registeredUsernames, emails: registeredEmails } = this.getAllRegisteredUsernamesAndEmails()
+    const uKey = data.username.toLowerCase().trim()
+    const eKey = data.email.toLowerCase().trim()
 
-    // Check duplicate username within institution
-    const isDupUsername = currentStudents.some(
-      (s) => s.username.toLowerCase() === data.username.toLowerCase()
-    )
-    if (isDupUsername) {
-      return { success: false, error: `Username '${data.username}' sudah terdaftar pada santri lain.` }
+    // Global cross-campus duplicate username check
+    if (registeredUsernames.has(uKey)) {
+      const suggestions = this.suggestAvailableUsernames(uKey)
+      return {
+        success: false,
+        error: `Username '${data.username}' sudah terdaftar di sistem OGSOreg. Silakan gunakan salah satu alternatif yang tersedia.`,
+        suggestedUsernames: suggestions,
+      }
     }
 
-    // Check duplicate email within institution
-    const isDupEmail = currentStudents.some(
-      (s) => s.email.toLowerCase() === data.email.toLowerCase()
-    )
-    if (isDupEmail) {
-      return { success: false, error: `Email '${data.email}' sudah terdaftar pada santri lain.` }
+    // Global cross-campus duplicate email check
+    if (registeredEmails.has(eKey)) {
+      return {
+        success: false,
+        error: `Email '${data.email}' sudah terdaftar di sistem OGSOreg. Harap gunakan alamat email santri yang berbeda dan aktif.`,
+      }
     }
 
     const now = new Date().toISOString()
     const newStudent: Student = {
       id: `std-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      username: data.username.toLowerCase(),
-      firstname: data.firstname,
-      lastname: data.lastname,
-      full_name: `${data.firstname} ${data.lastname}`.trim(),
-      email: data.email.toLowerCase(),
+      username: uKey,
+      firstname: data.firstname.trim(),
+      lastname: (data.lastname || '').trim(),
+      full_name: `${data.firstname.trim()} ${(data.lastname || '').trim()}`.trim(),
+      email: eKey,
       jenjang: data.jenjang as StudentJenjang,
       kampus: (data.kampus || input.kampus || '').trim(),
       institution_id: institutionId,
@@ -472,18 +589,28 @@ class StudentRepository {
       sync_status: data.sync_status || 'local_only',
       moodle_user_id: data.moodle_user_id || null,
       last_synced_at: data.last_synced_at || null,
+      custom_fields: (input as any).custom_fields || (data as any).custom_fields || {},
     }
 
     if (isSupabaseConfigured()) {
       try {
         const dbPayload = toSupabaseInsertPayload(newStudent)
-        const { data: dbData, error } = await supabase
+        let { data: dbData, error } = await supabase
           .from('students')
           .insert(dbPayload)
           .select()
           .single()
+
+        // Handle case if custom_fields column is not yet migrated in Supabase
+        if (error && error.code === '42703' && error.message?.includes('custom_fields')) {
+          const { custom_fields, ...safePayload } = dbPayload
+          const retry = await supabase.from('students').insert(safePayload).select().single()
+          dbData = retry.data
+          error = retry.error
+        }
+
         if (!error && dbData) {
-          const finalStudent = dbData as Student
+          const finalStudent = { ...newStudent, ...(dbData as any) } as Student
           this.setRawStore(CANONICAL_INSTITUTION_ID, [finalStudent, ...currentStudents])
           return { success: true, student: finalStudent, ...(finalStudent as any) }
         }
@@ -501,7 +628,7 @@ class StudentRepository {
     updates: Partial<StudentInput>,
     institutionId: string,
     accessControl?: { userRole?: string; assignedCampus?: string | null }
-  ): Promise<{ success: boolean; student?: Student; error?: string }> {
+  ): Promise<{ success: boolean; student?: Student; error?: string; suggestedUsernames?: string[] }> {
     const currentStudents = this.getRawStore(institutionId)
     const existingIndex = currentStudents.findIndex((s) => s.id === id)
     if (existingIndex === -1) {
@@ -543,53 +670,74 @@ class StudentRepository {
       return { success: false, error: parseResult.error.issues[0]?.message || 'Data santri tidak valid.' }
     }
 
-    // Duplicate checks excluding self
-    if (merged.username.toLowerCase() !== existing.username.toLowerCase()) {
-      const isDup = currentStudents.some(
-        (s) => s.id !== id && s.username.toLowerCase() === merged.username.toLowerCase()
-      )
-      if (isDup) {
-        return { success: false, error: `Username '${merged.username}' sudah dipakai santri lain.` }
+    // Global duplicate checks across all campuses excluding self
+    const { usernames: registeredUsernames, emails: registeredEmails } = this.getAllRegisteredUsernamesAndEmails()
+    const newUsername = merged.username.toLowerCase().trim()
+    const newEmail = merged.email.toLowerCase().trim()
+
+    if (newUsername !== existing.username.toLowerCase().trim()) {
+      if (registeredUsernames.has(newUsername)) {
+        const suggestions = this.suggestAvailableUsernames(newUsername)
+        return {
+          success: false,
+          error: `Username '${merged.username}' sudah dipakai santri lain di sistem OGSOreg. Silakan gunakan salah satu alternatif yang tersedia.`,
+          suggestedUsernames: suggestions,
+        }
       }
     }
 
-    if (merged.email.toLowerCase() !== existing.email.toLowerCase()) {
-      const isDup = currentStudents.some(
-        (s) => s.id !== id && s.email.toLowerCase() === merged.email.toLowerCase()
-      )
-      if (isDup) {
-        return { success: false, error: `Email '${merged.email}' sudah dipakai santri lain.` }
+    if (newEmail !== existing.email.toLowerCase().trim()) {
+      if (registeredEmails.has(newEmail)) {
+        return {
+          success: false,
+          error: `Email '${merged.email}' sudah dipakai santri lain di sistem OGSOreg.`,
+        }
       }
     }
 
     const updatedStudent: Student = {
       ...existing,
-      username: merged.username.toLowerCase(),
-      firstname: merged.firstname,
-      lastname: merged.lastname,
-      full_name: `${merged.firstname} ${merged.lastname}`.trim(),
-      email: merged.email.toLowerCase(),
+      username: newUsername,
+      firstname: merged.firstname.trim(),
+      lastname: merged.lastname.trim(),
+      full_name: `${merged.firstname.trim()} ${merged.lastname.trim()}`.trim(),
+      email: newEmail,
       jenjang: merged.jenjang as StudentJenjang,
       kampus: (merged.kampus !== undefined ? merged.kampus : (existing.kampus || '')).trim(),
       source: merged.source as StudentSource,
       sync_status: merged.sync_status as StudentSyncStatus,
       moodle_user_id: merged.moodle_user_id || null,
       last_synced_at: merged.last_synced_at || null,
+      custom_fields: updates.custom_fields !== undefined ? updates.custom_fields : (existing.custom_fields || {}),
       updated_at: new Date().toISOString(),
     }
 
     if (isSupabaseConfigured()) {
       try {
-        const { data: dbData, error } = await supabase
+        let { data: dbData, error } = await supabase
           .from('students')
           .update(updatedStudent)
           .eq('id', id)
           .select()
           .single()
+
+        if (error && error.code === '42703' && error.message?.includes('custom_fields')) {
+          const { custom_fields, ...safeStudent } = updatedStudent
+          const retry = await supabase
+            .from('students')
+            .update(safeStudent)
+            .eq('id', id)
+            .select()
+            .single()
+          dbData = retry.data
+          error = retry.error
+        }
+
         if (!error && dbData) {
-          currentStudents[existingIndex] = dbData as Student
+          const finalStudent = { ...updatedStudent, ...(dbData as any) } as Student
+          currentStudents[existingIndex] = finalStudent
           this.setRawStore(institutionId, currentStudents)
-          return { success: true, student: dbData as Student, ...(dbData as any) }
+          return { success: true, student: finalStudent, ...(finalStudent as any) }
         }
       } catch {
         // Fall back
@@ -698,8 +846,7 @@ class StudentRepository {
       }
     }
     const currentStudents = this.getRawStore(institutionId)
-    const existingUsernames = new Set(currentStudents.map((s) => s.username.toLowerCase()))
-    const existingEmails = new Set(currentStudents.map((s) => s.email.toLowerCase()))
+    const { usernames: globalUsernames, emails: globalEmails } = this.getAllRegisteredUsernamesAndEmails()
 
     // Track intra-batch uniqueness
     const seenUsernames = new Set<string>()
@@ -726,20 +873,20 @@ class StudentRepository {
       }
 
       const valid = parse.data
-      const uKey = valid.username.toLowerCase()
-      const eKey = valid.email.toLowerCase()
+      const uKey = valid.username.toLowerCase().trim()
+      const eKey = valid.email.toLowerCase().trim()
 
-      // Duplicate username check
-      if (existingUsernames.has(uKey) || seenUsernames.has(uKey)) {
+      // Duplicate username check against all existing students across all campuses
+      if (globalUsernames.has(uKey) || seenUsernames.has(uKey)) {
         duplicatesCount++
-        duplicateDetails.push(`Baris ${idx + 1}: Username '${valid.username}' sudah ada.`)
+        duplicateDetails.push(`Baris ${idx + 1}: Username '${valid.username}' sudah terdaftar di sistem OGSOreg.`)
         return
       }
 
-      // Duplicate email check
-      if (existingEmails.has(eKey) || seenEmails.has(eKey)) {
+      // Duplicate email check against all existing students across all campuses
+      if (globalEmails.has(eKey) || seenEmails.has(eKey)) {
         duplicatesCount++
-        duplicateDetails.push(`Baris ${idx + 1}: Email '${valid.email}' sudah ada.`)
+        duplicateDetails.push(`Baris ${idx + 1}: Email '${valid.email}' sudah terdaftar di sistem OGSOreg.`)
         return
       }
 
@@ -749,9 +896,9 @@ class StudentRepository {
       const student: Student = {
         id: `std-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 7)}`,
         username: uKey,
-        firstname: valid.firstname,
-        lastname: valid.lastname,
-        full_name: `${valid.firstname} ${valid.lastname}`.trim(),
+        firstname: valid.firstname.trim(),
+        lastname: (valid.lastname || '').trim(),
+        full_name: `${valid.firstname.trim()} ${(valid.lastname || '').trim()}`.trim(),
         email: eKey,
         jenjang: valid.jenjang as StudentJenjang,
         kampus: (valid.kampus || (raw.kampus ? String(raw.kampus) : '')).trim(),
@@ -763,6 +910,7 @@ class StudentRepository {
         sync_status: 'local_only',
         moodle_user_id: null,
         last_synced_at: null,
+        custom_fields: (raw as any).custom_fields || (valid as any).custom_fields || {},
       }
 
       toInsert.push(student)
@@ -772,7 +920,15 @@ class StudentRepository {
       if (isSupabaseConfigured()) {
         try {
           const dbPayloads = toInsert.map((s) => toSupabaseInsertPayload(s))
-          const { error } = await supabase.from('students').insert(dbPayloads)
+          let { error } = await supabase.from('students').insert(dbPayloads)
+
+          // Handle if custom_fields column is not yet migrated in Supabase
+          if (error && error.code === '42703' && error.message?.includes('custom_fields')) {
+            const stripped = dbPayloads.map(({ custom_fields, ...rest }: any) => rest)
+            const retry = await supabase.from('students').insert(stripped)
+            error = retry.error
+          }
+
           if (error) {
             console.warn('Supabase bulk insert warning, falling back to local adapter:', error.message)
           }

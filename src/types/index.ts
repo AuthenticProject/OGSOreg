@@ -59,4 +59,6 @@ export interface DashboardStats {
 }
 
 export * from './auth'
+export * from './customField'
+export * from './student'
 

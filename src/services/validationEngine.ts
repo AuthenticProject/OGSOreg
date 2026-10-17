@@ -13,6 +13,8 @@ import {
 } from './dataNormalizer'
 import { isValidKampus } from '../types/campus'
 import type { ColumnMappingItem, StagedParticipantRow, ImportStatistics } from '../types/excel'
+import { studentRepository } from './studentRepository'
+import { customFieldService } from './customFieldService'
 
 /**
  * Transforms raw excel rows according to column mappings and performs
@@ -76,6 +78,18 @@ export function processAndValidateRows(
     const teacher_phone = normalizePhone(getValue('teacher_phone'))
     const teacher_email = normalizeString(getValue('teacher_email'))
 
+    // Extract dynamic custom field values from mapped columns
+    const custom_fields: Record<string, any> = {}
+    mappings.forEach((m) => {
+      if (m.targetField && m.targetField.startsWith('custom_')) {
+        const fieldKey = m.targetField.replace(/^custom_/, '')
+        const val = raw[m.excelHeader]
+        if (val !== undefined && val !== null && String(val).trim() !== '') {
+          custom_fields[fieldKey] = normalizeString(val)
+        }
+      }
+    })
+
     const normalized: StagedParticipantRow = {
       _rowId: `row-${idx + 1}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       _rowIndex: idx + 2, // 1-based index (row 1 is header)
@@ -104,12 +118,15 @@ export function processAndValidateRows(
       teacher_name,
       teacher_phone,
       teacher_email,
+
+      // Dynamic Custom Fields
+      custom_fields,
     }
 
     return normalized
   })
 
-  // 2. Perform duplicate detection & Zod validation
+  // 2. Perform global duplicate detection & Zod validation
   return validateAllStagedRows(rows, accessControl)
 }
 
@@ -117,15 +134,24 @@ export function validateAllStagedRows(
   rows: StagedParticipantRow[],
   accessControl?: { userRole?: string; assignedCampus?: string | null }
 ): { stagedRows: StagedParticipantRow[]; stats: ImportStatistics } {
-  // Track occurrences for duplicate detection
+  // Retrieve global registered usernames & emails across all campuses
+  const { usernames: registeredUsernames, emails: registeredEmails } =
+    studentRepository.getAllRegisteredUsernamesAndEmails()
+  const activeCustomFields = customFieldService.getActiveFieldsSync()
+
+  // Track occurrences for intra-batch duplicate detection
   const usernameOccurrences = new Map<string, number[]>()
   const emailOccurrences = new Map<string, number[]>()
   const nisnOccurrences = new Map<string, number[]>()
   const nameSchoolOccurrences = new Map<string, number[]>()
 
+  // Intra-batch all usernames for suggestion collision avoidance
+  const intraBatchUsernames = new Set<string>()
+
   rows.forEach((r, idx) => {
     if (r.username && r.username.trim() !== '') {
       const uKey = r.username.toLowerCase().trim()
+      intraBatchUsernames.add(uKey)
       const list = usernameOccurrences.get(uKey) || []
       list.push(idx)
       usernameOccurrences.set(uKey, list)
@@ -162,6 +188,7 @@ export function validateAllStagedRows(
     const warnings: Record<string, string> = {}
     let isDuplicate = false
     let duplicateReason = ''
+    let usernameSuggestions: string[] | undefined = undefined
 
     // Determine validation schema based on row field presence
     const isMoodleRow = Boolean(
@@ -200,27 +227,45 @@ export function validateAllStagedRows(
         errors['kampus'] = `Akses Ditolak: Anda hanya berwenang mengimpor data santri untuk ${accessControl.assignedCampus}. Santri dengan kampus '${r.kampus}' ditolak.`
       }
 
-      // 2. Duplicate Username Check
+      // 2. Intra-file & Global Duplicate Username Check
       if (r.username && r.username.trim() !== '') {
         const uKey = r.username.toLowerCase().trim()
         const occurrences = usernameOccurrences.get(uKey) || []
+
         if (occurrences.length > 1) {
-          const otherRows = occurrences.filter((i) => i !== idx).map((i) => `baris ${rows[i]._rowIndex}`)
+          const otherRows = occurrences
+            .filter((i) => i !== idx)
+            .map((i) => `baris ${rows[i]._rowIndex}`)
           isDuplicate = true
-          const msg = `Duplikat Username: Username '${r.username}' ditemukan pada ${otherRows.join(', ')}.`
+          const msg = `Duplikat Username: Username '${r.username}' ganda dalam berkas (ditemukan pada ${otherRows.join(', ')}).`
           errors['username'] = msg
           duplicateReason = msg
+          usernameSuggestions = studentRepository.suggestAvailableUsernames(uKey, intraBatchUsernames)
+        } else if (registeredUsernames.has(uKey)) {
+          isDuplicate = true
+          const msg = `Duplikat Username: Username '${r.username}' sudah terdaftar di sistem OGSOreg.`
+          errors['username'] = msg
+          duplicateReason = msg
+          usernameSuggestions = studentRepository.suggestAvailableUsernames(uKey, intraBatchUsernames)
         }
       }
 
-      // 3. Duplicate Email Check
+      // 3. Intra-file & Global Duplicate Email Check
       if (r.email && r.email.trim() !== '') {
         const eKey = r.email.toLowerCase().trim()
         const occurrences = emailOccurrences.get(eKey) || []
+
         if (occurrences.length > 1) {
-          const otherRows = occurrences.filter((i) => i !== idx).map((i) => `baris ${rows[i]._rowIndex}`)
+          const otherRows = occurrences
+            .filter((i) => i !== idx)
+            .map((i) => `baris ${rows[i]._rowIndex}`)
           isDuplicate = true
-          const msg = `Duplikat Email: Email '${r.email}' ditemukan pada ${otherRows.join(', ')}.`
+          const msg = `Duplikat Email: Email '${r.email}' ganda dalam berkas (ditemukan pada ${otherRows.join(', ')}).`
+          errors['email'] = msg
+          if (!duplicateReason) duplicateReason = msg
+        } else if (registeredEmails.has(eKey)) {
+          isDuplicate = true
+          const msg = `Duplikat Email: Email '${r.email}' sudah terdaftar di sistem OGSOreg. Harap gunakan alamat email yang berbeda dan aktif.`
           errors['email'] = msg
           if (!duplicateReason) duplicateReason = msg
         }
@@ -272,6 +317,38 @@ export function validateAllStagedRows(
       }
     }
 
+    // 4. Validate dynamic custom fields
+    if (activeCustomFields.length > 0) {
+      const rowCustomFields = r.custom_fields || {}
+      activeCustomFields.forEach((field) => {
+        const val = rowCustomFields[field.key]
+        const strVal = val !== undefined && val !== null ? String(val).trim() : ''
+
+        if (field.is_required && !strVal) {
+          errors[`custom_${field.key}`] = `${field.label} wajib diisi.`
+        } else if (strVal) {
+          if (field.field_type === 'number') {
+            if (isNaN(Number(strVal))) {
+              errors[`custom_${field.key}`] = `${field.label} harus berupa angka valid.`
+            }
+          } else if (field.field_type === 'email') {
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(strVal)) {
+              errors[`custom_${field.key}`] = `Format email pada ${field.label} tidak valid.`
+            }
+          } else if (field.field_type === 'dropdown') {
+            if (field.options && field.options.length > 0) {
+              const matched = field.options.some(
+                (opt) => opt.toLowerCase().trim() === strVal.toLowerCase()
+              )
+              if (!matched) {
+                errors[`custom_${field.key}`] = `${field.label} harus salah satu pilihan: ${field.options.join(', ')}.`
+              }
+            }
+          }
+        }
+      })
+    }
+
     if (isDuplicate) {
       duplicateCount++
     }
@@ -295,6 +372,7 @@ export function validateAllStagedRows(
       _warnings: warnings,
       _isDuplicate: isDuplicate,
       _duplicateReason: duplicateReason,
+      _usernameSuggestions: usernameSuggestions,
     }
   })
 

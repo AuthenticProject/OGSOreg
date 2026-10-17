@@ -326,7 +326,46 @@ BEGIN
   END LOOP;
 END $$;
 
--- 9. VERIFICATION
+-- 9. DYNAMIC CUSTOM FIELD DEFINITIONS & GLOBAL UNICITY ENFORCEMENT
+CREATE TABLE IF NOT EXISTS public.custom_field_definitions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    key TEXT UNIQUE NOT NULL,
+    label TEXT NOT NULL,
+    field_type TEXT NOT NULL CHECK (field_type IN ('text', 'number', 'date', 'email', 'dropdown', 'checkbox')) DEFAULT 'text',
+    is_required BOOLEAN NOT NULL DEFAULT false,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    display_order INTEGER NOT NULL DEFAULT 1,
+    options JSONB DEFAULT '[]'::jsonb,
+    validation_rules JSONB DEFAULT '{}'::jsonb,
+    include_in_excel BOOLEAN NOT NULL DEFAULT true,
+    include_in_moodle BOOLEAN NOT NULL DEFAULT false,
+    moodle_destination TEXT,
+    version INTEGER NOT NULL DEFAULT 1,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+-- Ensure custom_fields JSONB column exists on public.students
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS custom_fields JSONB DEFAULT '{}'::jsonb;
+
+-- Global uniqueness indexes for username and email across all campuses
+CREATE UNIQUE INDEX IF NOT EXISTS uq_students_global_username_lower ON public.students (LOWER(TRIM(username)));
+CREATE UNIQUE INDEX IF NOT EXISTS uq_students_global_email_lower ON public.students (LOWER(TRIM(email)));
+
+-- RLS for custom_field_definitions
+ALTER TABLE public.custom_field_definitions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Custom fields viewable by all" ON public.custom_field_definitions;
+DROP POLICY IF EXISTS "Custom fields modifiable only by Super Admin" ON public.custom_field_definitions;
+
+CREATE POLICY "Custom fields viewable by all" ON public.custom_field_definitions
+  FOR SELECT TO anon, authenticated USING (true);
+
+CREATE POLICY "Custom fields modifiable only by Super Admin" ON public.custom_field_definitions
+  FOR ALL TO authenticated
+  USING (public.is_current_user_super_admin())
+  WITH CHECK (public.is_current_user_super_admin());
+
+-- 10. VERIFICATION
 SELECT 
   up.username,
   up.role,

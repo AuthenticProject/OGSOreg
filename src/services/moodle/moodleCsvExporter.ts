@@ -4,6 +4,7 @@ import {
   type MoodleUserExportRow,
   type MoodleExportOptions,
 } from './moodleExportMapper'
+import { customFieldService } from '../customFieldService'
 
 /**
  * Escapes a single value according to RFC 4180 CSV specification.
@@ -18,12 +19,22 @@ export function escapeMoodleCsvField(val: unknown): string {
 }
 
 /**
- * Generates an RFC 4180 CSV string for Moodle Upload Users feature with exact 7 columns.
+ * Generates an RFC 4180 CSV string for Moodle Upload Users feature with 7 core columns
+ * plus any dynamic custom fields mapped to Moodle by Super Admin.
  */
 export function generateMoodleUsersCsv(rows: MoodleUserExportRow[]): string {
-  const headerLine = MOODLE_EXPORT_COLUMNS.join(',')
-  const dataLines = rows.map((r) =>
-    [
+  const activeMoodleFields = customFieldService
+    .getActiveFieldsSync()
+    .filter((f) => f.include_in_moodle && f.moodle_destination && f.moodle_destination.trim() !== '')
+
+  const headerColumns = [
+    ...MOODLE_EXPORT_COLUMNS,
+    ...activeMoodleFields.map((f) => f.moodle_destination!.trim()),
+  ]
+  const headerLine = headerColumns.join(',')
+
+  const dataLines = rows.map((r) => {
+    const rowValues = [
       escapeMoodleCsvField(r.username),
       escapeMoodleCsvField(r.firstname),
       escapeMoodleCsvField(r.lastname),
@@ -31,8 +42,15 @@ export function generateMoodleUsersCsv(rows: MoodleUserExportRow[]): string {
       escapeMoodleCsvField(r.course1),
       escapeMoodleCsvField(r.course2),
       escapeMoodleCsvField(r.password),
-    ].join(',')
-  )
+    ]
+
+    activeMoodleFields.forEach((f) => {
+      const val = r.custom_fields?.[f.key] ?? ''
+      rowValues.push(escapeMoodleCsvField(val))
+    })
+
+    return rowValues.join(',')
+  })
 
   return [headerLine, ...dataLines].join('\r\n')
 }

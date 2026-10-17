@@ -24,6 +24,8 @@ export interface StagedParticipantRow {
   _warnings: Record<string, string> // field -> warning message
   _isDuplicate?: boolean
   _duplicateReason?: string
+  _usernameSuggestions?: string[]
+  custom_fields?: Record<string, any>
 
   // Moodle Bulk Registration fields (New workflow)
   username?: string

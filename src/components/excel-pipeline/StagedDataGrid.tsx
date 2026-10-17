@@ -22,11 +22,13 @@ import { Button } from '../ui/Button'
 import { useImportStore } from '../../stores/importStore'
 import { MOODLE_JENJANG_OPTIONS, type StagedParticipantRow } from '../../types/excel'
 import { KAMPUS_OPTIONS } from '../../types/campus'
+import { customFieldService } from '../../services/customFieldService'
+import type { CustomFieldDefinition } from '../../types/customField'
 
 // Editable Cell for Text Fields
 interface EditableCellProps {
   row: StagedParticipantRow
-  field: keyof StagedParticipantRow
+  field: string
   value: string
   onSave: (rowId: string, field: string, value: string) => void
   placeholder?: string
@@ -123,7 +125,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
 // Editable Dropdown Cell specifically for Jenjang and Kampus
 interface EditableDropdownCellProps {
   row: StagedParticipantRow
-  field: keyof StagedParticipantRow
+  field: string
   value: string
   options: readonly string[]
   onSave: (rowId: string, field: string, value: string) => void
@@ -197,6 +199,7 @@ export const StagedDataGrid: React.FC = () => {
     filterStatus,
     searchTerm,
     updateCell,
+    applyUsernameSuggestion,
     deleteSelectedRows,
     deleteSingleRow,
     selectedRowIds,
@@ -204,6 +207,18 @@ export const StagedDataGrid: React.FC = () => {
     toggleSelectAll,
     addManualRow,
   } = useImportStore()
+
+  const [activeCustomFields, setActiveCustomFields] = useState<CustomFieldDefinition[]>(() =>
+    customFieldService.getActiveFieldsSync()
+  )
+
+  React.useEffect(() => {
+    return customFieldService.subscribe((fields) => {
+      setActiveCustomFields(
+        fields.filter((f) => f.is_active).sort((a, b) => a.display_order - b.display_order)
+      )
+    })
+  }, [])
 
   const [pageSize, setPageSize] = useState(25)
 
@@ -335,16 +350,41 @@ export const StagedDataGrid: React.FC = () => {
       {
         accessorKey: 'username',
         header: 'Username *',
-        cell: ({ row }) => (
-          <EditableCell
-            row={row.original}
-            field="username"
-            value={row.original.username || row.original.nisn || ''}
-            onSave={updateCell}
-            placeholder="Username..."
-            widthClass="min-w-[140px] font-mono text-xs"
-          />
-        ),
+        cell: ({ row }) => {
+          const suggestions = row.original._usernameSuggestions
+          const hasError = !!row.original._errors['username']
+          return (
+            <div className="space-y-1">
+              <EditableCell
+                row={row.original}
+                field="username"
+                value={row.original.username || row.original.nisn || ''}
+                onSave={updateCell}
+                placeholder="Username..."
+                widthClass="min-w-[140px] font-mono text-xs"
+              />
+              {hasError && suggestions && suggestions.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1 mt-1 text-[10px]">
+                  <span className="text-slate-500 font-medium">Saran:</span>
+                  {suggestions.map((sug) => (
+                    <button
+                      key={sug}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        applyUsernameSuggestion(row.original._rowId, sug)
+                      }}
+                      className="px-1.5 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-mono font-bold border border-emerald-300 transition-colors shadow-2xs"
+                      title={`Klik untuk memakai saran: ${sug}`}
+                    >
+                      {sug}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        },
       },
       {
         accessorKey: 'firstname',
@@ -418,6 +458,38 @@ export const StagedDataGrid: React.FC = () => {
           />
         ),
       },
+      // Dynamic Custom Fields Columns (Configured by Super Admin)
+      ...activeCustomFields.map((cf) => ({
+        id: `custom_${cf.key}`,
+        header: `${cf.label}${cf.is_required ? ' *' : ''}`,
+        cell: ({ row }: { row: { original: StagedParticipantRow } }) => {
+          const fieldKey = `custom_${cf.key}`
+          const val = row.original.custom_fields?.[cf.key] ?? ''
+          if (cf.field_type === 'dropdown' && cf.options && cf.options.length > 0) {
+            return (
+              <EditableDropdownCell
+                row={row.original}
+                field={fieldKey}
+                value={String(val)}
+                options={cf.options}
+                onSave={updateCell}
+                placeholder={`Pilih ${cf.label}`}
+                widthClass="min-w-[130px]"
+              />
+            )
+          }
+          return (
+            <EditableCell
+              row={row.original}
+              field={fieldKey}
+              value={String(val)}
+              onSave={updateCell}
+              placeholder={`${cf.label}...`}
+              widthClass="min-w-[130px]"
+            />
+          )
+        },
+      })),
       {
         id: 'actions',
         header: '',
@@ -438,6 +510,8 @@ export const StagedDataGrid: React.FC = () => {
     selectedRowIds,
     allFilteredIds,
     updateCell,
+    applyUsernameSuggestion,
+    activeCustomFields,
     deleteSingleRow,
     toggleSelectAll,
     toggleSelectRow,

@@ -9,7 +9,7 @@ import {
 import { Button } from '../ui/Button'
 import { SectionCard } from '../ui/SectionCard'
 import { useImportStore } from '../../stores/importStore'
-import { PARTICIPANT_TARGET_FIELDS } from '../../services/headerMapper'
+import { getAllParticipantTargetFields } from '../../services/headerMapper'
 
 export const ColumnMapper: React.FC = () => {
   const {
@@ -22,8 +22,10 @@ export const ColumnMapper: React.FC = () => {
 
   if (!workbookData) return null
 
+  const targetFieldsList = getAllParticipantTargetFields()
+
   // Required fields that must be mapped to proceed
-  const requiredTargetFields = PARTICIPANT_TARGET_FIELDS.filter((f) => f.isRequired)
+  const requiredTargetFields = targetFieldsList.filter((f) => f.isRequired)
   const mappedTargetFields = new Set(
     columnMappings.map((m) => m.targetField).filter(Boolean)
   )
@@ -124,7 +126,7 @@ export const ColumnMapper: React.FC = () => {
             <tbody className="divide-y divide-border">
               {columnMappings.map((mapping) => {
                 const isMatched = mapping.targetField !== null
-                const matchedFieldDef = PARTICIPANT_TARGET_FIELDS.find(
+                const matchedFieldDef = targetFieldsList.find(
                   (f) => f.key === mapping.targetField
                 )
                 const isRequired = matchedFieldDef?.isRequired
@@ -158,7 +160,7 @@ export const ColumnMapper: React.FC = () => {
                         }`}
                       >
                         <option value="">-- [ Lewati / Tidak Dipetakan ] --</option>
-                        {PARTICIPANT_TARGET_FIELDS.map((field) => (
+                        {targetFieldsList.map((field) => (
                           <option key={field.key} value={field.key}>
                             {field.label} {field.isRequired ? '(Wajib *)' : '(Opsional)'}
                           </option>

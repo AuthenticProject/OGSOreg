@@ -25,8 +25,9 @@ import {
   Square,
   ChevronLeft,
   ChevronRight,
-  Database,
   Building,
+  Database,
+  Sparkles,
 } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatCard } from '../components/ui/StatCard'
@@ -37,6 +38,8 @@ import { ErrorState } from '../components/feedback/ErrorState'
 import { studentRepository } from '../services/studentRepository'
 import { exportStudentsToExcel } from '../services/excelGenerator'
 import { MoodleExportModal } from '../components/moodle/MoodleExportModal'
+import { customFieldService } from '../services/customFieldService'
+import type { CustomFieldDefinition } from '../types/customField'
 import { studentSchema, newStudentSchema } from '../schemas/student.schema'
 import { KAMPUS_OPTIONS } from '../types/campus'
 import { useAuth } from '../context/AuthContext'
@@ -99,6 +102,19 @@ export const StudentsPage: React.FC = () => {
   const [moodleExportStudents, setMoodleExportStudents] = useState<Student[]>([])
   const [moodleExportTitle, setMoodleExportTitle] = useState('Ekspor Pengguna Moodle (Bulk User Upload)')
 
+  // Dynamic Custom Fields State
+  const [activeCustomFields, setActiveCustomFields] = useState<CustomFieldDefinition[]>([])
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([])
+
+  // Subscribe to active custom fields
+  useEffect(() => {
+    const unsub = customFieldService.subscribe((all) => {
+      setActiveCustomFields(all.filter((f) => f.is_active))
+    })
+    customFieldService.getActiveCustomFields().then(setActiveCustomFields)
+    return () => unsub()
+  }, [])
+
   // Form State for Add / Edit
   const [formData, setFormData] = useState({
     username: '',
@@ -107,6 +123,7 @@ export const StudentsPage: React.FC = () => {
     email: '',
     jenjang: 'Kelas 1' as StudentJenjang,
     kampus: 'Gontor 1',
+    custom_fields: {} as Record<string, any>,
   })
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -203,6 +220,10 @@ export const StudentsPage: React.FC = () => {
 
   // Open Add Modal
   const openAddModal = () => {
+    const initialCustom: Record<string, any> = {}
+    activeCustomFields.forEach((cf) => {
+      initialCustom[cf.key] = cf.field_type === 'checkbox' ? false : ''
+    })
     setFormData({
       username: '',
       firstname: '',
@@ -210,7 +231,9 @@ export const StudentsPage: React.FC = () => {
       email: '',
       jenjang: 'Kelas 1',
       kampus: !isSuperAdmin && assignedCampus ? assignedCampus : 'Gontor 1',
+      custom_fields: initialCustom,
     })
+    setUsernameSuggestions([])
     setFormErrors({})
     setIsAddModalOpen(true)
   }
@@ -218,6 +241,15 @@ export const StudentsPage: React.FC = () => {
   // Open Edit Modal
   const openEditModal = (student: Student) => {
     setEditingStudent(student)
+    const initialCustom: Record<string, any> = {}
+    activeCustomFields.forEach((cf) => {
+      initialCustom[cf.key] =
+        student.custom_fields?.[cf.key] !== undefined
+          ? student.custom_fields[cf.key]
+          : cf.field_type === 'checkbox'
+          ? false
+          : ''
+    })
     setFormData({
       username: student.username,
       firstname: student.firstname,
@@ -225,7 +257,9 @@ export const StudentsPage: React.FC = () => {
       email: student.email,
       jenjang: student.jenjang,
       kampus: student.kampus || (!isSuperAdmin && assignedCampus ? assignedCampus : ''),
+      custom_fields: initialCustom,
     })
+    setUsernameSuggestions([])
     setFormErrors({})
   }
 
@@ -233,6 +267,7 @@ export const StudentsPage: React.FC = () => {
   const handleSaveAdd = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormErrors({})
+    setUsernameSuggestions([])
 
     const targetKampus = !isSuperAdmin && assignedCampus ? assignedCampus : formData.kampus
 
@@ -243,6 +278,7 @@ export const StudentsPage: React.FC = () => {
       created_by: user?.id || 'system',
       source: 'manual',
       sync_status: 'local_only',
+      custom_fields: formData.custom_fields,
     })
 
     if (!validation.success) {
@@ -255,6 +291,23 @@ export const StudentsPage: React.FC = () => {
       return
     }
 
+    // Dynamic Custom Field Validation
+    const cfErrors: Record<string, string> = {}
+    for (const cf of activeCustomFields) {
+      const val = formData.custom_fields?.[cf.key]
+      if (cf.is_required && (val === undefined || val === null || String(val).trim() === '' || val === false)) {
+        cfErrors[`custom_${cf.key}`] = `${cf.label} wajib diisi.`
+      } else if (val && cf.field_type === 'number' && isNaN(Number(val))) {
+        cfErrors[`custom_${cf.key}`] = `${cf.label} harus berupa angka.`
+      } else if (val && cf.field_type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(val))) {
+        cfErrors[`custom_${cf.key}`] = `${cf.label} harus berformat email valid.`
+      }
+    }
+    if (Object.keys(cfErrors).length > 0) {
+      setFormErrors(cfErrors)
+      return
+    }
+
     setIsSubmitting(true)
     const res = await studentRepository.saveStudent(
       {
@@ -264,6 +317,7 @@ export const StudentsPage: React.FC = () => {
         created_by: user?.id || 'system',
         source: 'manual',
         sync_status: 'local_only',
+        custom_fields: formData.custom_fields,
       },
       institutionId,
       user?.id,
@@ -272,6 +326,9 @@ export const StudentsPage: React.FC = () => {
     setIsSubmitting(false)
 
     if (!res.success) {
+      if ((res as any).suggestedUsernames && Array.isArray((res as any).suggestedUsernames)) {
+        setUsernameSuggestions((res as any).suggestedUsernames)
+      }
       setFormErrors({ global: res.error || 'Gagal menyimpan santri.' })
       return
     }
@@ -287,6 +344,7 @@ export const StudentsPage: React.FC = () => {
     e.preventDefault()
     if (!editingStudent) return
     setFormErrors({})
+    setUsernameSuggestions([])
 
     const targetKampus = !isSuperAdmin && assignedCampus ? assignedCampus : formData.kampus
 
@@ -298,6 +356,7 @@ export const StudentsPage: React.FC = () => {
       sync_status: editingStudent.sync_status,
       moodle_user_id: editingStudent.moodle_user_id,
       last_synced_at: editingStudent.last_synced_at,
+      custom_fields: formData.custom_fields,
     })
 
     if (!validation.success) {
@@ -310,16 +369,36 @@ export const StudentsPage: React.FC = () => {
       return
     }
 
+    // Dynamic Custom Field Validation
+    const cfErrors: Record<string, string> = {}
+    for (const cf of activeCustomFields) {
+      const val = formData.custom_fields?.[cf.key]
+      if (cf.is_required && (val === undefined || val === null || String(val).trim() === '' || val === false)) {
+        cfErrors[`custom_${cf.key}`] = `${cf.label} wajib diisi.`
+      } else if (val && cf.field_type === 'number' && isNaN(Number(val))) {
+        cfErrors[`custom_${cf.key}`] = `${cf.label} harus berupa angka.`
+      } else if (val && cf.field_type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(val))) {
+        cfErrors[`custom_${cf.key}`] = `${cf.label} harus berformat email valid.`
+      }
+    }
+    if (Object.keys(cfErrors).length > 0) {
+      setFormErrors(cfErrors)
+      return
+    }
+
     setIsSubmitting(true)
     const res = await studentRepository.updateStudent(
       editingStudent.id,
-      { ...formData, kampus: targetKampus },
+      { ...formData, kampus: targetKampus, custom_fields: formData.custom_fields },
       institutionId,
       { userRole: isSuperAdmin ? 'super_admin' : 'campus_admin', assignedCampus }
     )
     setIsSubmitting(false)
 
     if (!res.success) {
+      if ((res as any).suggestedUsernames && Array.isArray((res as any).suggestedUsernames)) {
+        setUsernameSuggestions((res as any).suggestedUsernames)
+      }
       setFormErrors({ global: res.error || 'Gagal memperbarui santri.' })
       return
     }
@@ -576,6 +655,28 @@ export const StudentsPage: React.FC = () => {
           )
         },
       },
+      ...activeCustomFields.map((cf) => ({
+        id: `custom_${cf.key}`,
+        header: cf.label,
+        cell: ({ row }: { row: { original: Student } }) => {
+          const val = row.original.custom_fields?.[cf.key]
+          if (val === undefined || val === null || val === '') {
+            return <span className="text-slate-400 text-xs">-</span>
+          }
+          if (typeof val === 'boolean') {
+            return (
+              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${val ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                {val ? 'Ya' : 'Tidak'}
+              </span>
+            )
+          }
+          return (
+            <span className="text-xs text-slate-800 font-medium truncate max-w-[150px] block" title={String(val)}>
+              {String(val)}
+            </span>
+          )
+        },
+      })),
       {
         accessorKey: 'created_at',
         header: 'Tanggal Input',
@@ -686,7 +787,7 @@ export const StudentsPage: React.FC = () => {
         },
       },
     ],
-    [selectedIds, students, currentPage, pageSize, isAllOnPageSelected]
+    [selectedIds, currentPage, pageSize, isAllOnPageSelected, activeCustomFields, isSuperAdmin]
   )
 
   const table = useReactTable({
@@ -1238,6 +1339,42 @@ export const StudentsPage: React.FC = () => {
                   </p>
                 </div>
               </div>
+
+              {/* Dynamic Custom Fields Section */}
+              {activeCustomFields.length > 0 && (
+                <div className="pt-2 border-t border-border space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">
+                      Bidang Pendaftaran Tambahan (Custom Fields)
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-medium">
+                      {activeCustomFields.length} Bidang Dikonfigurasi
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {activeCustomFields.map((cf) => {
+                      const val = detailStudent.custom_fields?.[cf.key]
+                      return (
+                        <div key={cf.key} className="p-2.5 rounded-lg bg-slate-50 border border-border">
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground block truncate" title={cf.label}>
+                            {cf.label}
+                          </span>
+                          <span className="font-semibold text-slate-900 mt-0.5 block text-xs">
+                            {val === undefined || val === null || String(val).trim() === ''
+                              ? '-'
+                              : typeof val === 'boolean'
+                              ? val
+                                ? '✓ Ya'
+                                : '✗ Tidak'
+                              : String(val)}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-between px-5 py-3.5 border-t border-border bg-slate-50">
@@ -1312,11 +1449,46 @@ export const StudentsPage: React.FC = () => {
                     required
                     placeholder="misal: ahmad_faiz"
                     value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, username: e.target.value })
+                      if (usernameSuggestions.length > 0) setUsernameSuggestions([])
+                    }}
                     className="w-full px-3 py-2 rounded-lg border border-border font-mono text-xs focus:outline-none focus:ring-2 focus:ring-brand-maroon"
                   />
                   {formErrors.username && (
                     <p className="text-rose-600 text-[11px] mt-0.5">{formErrors.username}</p>
+                  )}
+
+                  {/* Suggestions for available usernames */}
+                  {usernameSuggestions.length > 0 && (
+                    <div className="mt-2 p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 space-y-1.5 animate-in fade-in">
+                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-900">
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>Saran Nama Pengguna Tersedia (Klik untuk Menggunakan):</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {usernameSuggestions.map((sug) => (
+                          <button
+                            key={sug}
+                            type="button"
+                            onClick={() => {
+                              setFormData({ ...formData, username: sug })
+                              setUsernameSuggestions([])
+                              setFormErrors((prev) => {
+                                const next = { ...prev }
+                                delete next.username
+                                delete next.global
+                                return next
+                              })
+                            }}
+                            className="px-2.5 py-1 bg-white hover:bg-emerald-600 hover:text-white text-emerald-900 font-mono font-bold text-xs rounded-md border border-emerald-300 shadow-xs transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>{sug}</span>
+                            <span className="text-[10px] text-emerald-600 hover:text-white font-sans font-normal">(pilih)</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
 
@@ -1414,6 +1586,91 @@ export const StudentsPage: React.FC = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Dynamic Custom Fields Inputs */}
+                {activeCustomFields.length > 0 && (
+                  <div className="pt-2 border-t border-border space-y-3">
+                    <p className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">
+                      Bidang Pendaftaran Tambahan
+                    </p>
+                    {activeCustomFields.map((cf) => {
+                      const val = formData.custom_fields?.[cf.key] ?? ''
+                      const errKey = `custom_${cf.key}`
+                      return (
+                        <div key={cf.key}>
+                          <label className="block font-semibold text-slate-700 mb-1">
+                            {cf.label} {cf.is_required && <span className="text-rose-500">*</span>}
+                          </label>
+
+                          {cf.field_type === 'dropdown' ? (
+                            <select
+                              value={val}
+                              required={cf.is_required}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  custom_fields: { ...formData.custom_fields, [cf.key]: e.target.value },
+                                })
+                              }
+                              className="w-full px-3 py-2 rounded-lg border border-border bg-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-maroon"
+                            >
+                              <option value="">-- Pilih {cf.label} --</option>
+                              {cf.options?.map((opt) => (
+                                <option key={opt} value={opt}>
+                                  {opt}
+                                </option>
+                              ))}
+                            </select>
+                          ) : cf.field_type === 'checkbox' ? (
+                            <label className="flex items-center gap-2 cursor-pointer mt-1">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(val)}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    custom_fields: { ...formData.custom_fields, [cf.key]: e.target.checked },
+                                  })
+                                }
+                                className="rounded text-brand-maroon focus:ring-brand-maroon w-4 h-4"
+                              />
+                              <span className="text-slate-800 text-xs font-medium">Ya / Aktif</span>
+                            </label>
+                          ) : (
+                            <input
+                              type={
+                                cf.field_type === 'number'
+                                  ? 'number'
+                                  : cf.field_type === 'date'
+                                  ? 'date'
+                                  : cf.field_type === 'email'
+                                  ? 'email'
+                                  : 'text'
+                              }
+                              value={val}
+                              required={cf.is_required}
+                              placeholder={cf.validation_rules?.placeholder || `Masukkan ${cf.label}`}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  custom_fields: { ...formData.custom_fields, [cf.key]: e.target.value },
+                                })
+                              }
+                              className="w-full px-3 py-2 rounded-lg border border-border text-xs focus:outline-none focus:ring-2 focus:ring-brand-maroon"
+                            />
+                          )}
+
+                          {formErrors[errKey] && (
+                            <p className="text-rose-600 text-[11px] mt-0.5">{formErrors[errKey]}</p>
+                          )}
+                          {cf.validation_rules?.helperText && (
+                            <p className="text-slate-400 text-[10px] mt-0.5">{cf.validation_rules.helperText}</p>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-border bg-slate-50">
@@ -1464,11 +1721,46 @@ export const StudentsPage: React.FC = () => {
                     type="text"
                     required
                     value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, username: e.target.value })
+                      if (usernameSuggestions.length > 0) setUsernameSuggestions([])
+                    }}
                     className="w-full px-3 py-2 rounded-lg border border-border font-mono text-xs focus:outline-none focus:ring-2 focus:ring-brand-maroon"
                   />
                   {formErrors.username && (
                     <p className="text-rose-600 text-[11px] mt-0.5">{formErrors.username}</p>
+                  )}
+
+                  {/* Suggestions for available usernames */}
+                  {usernameSuggestions.length > 0 && (
+                    <div className="mt-2 p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 space-y-1.5 animate-in fade-in">
+                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-900">
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>Saran Nama Pengguna Tersedia (Klik untuk Menggunakan):</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {usernameSuggestions.map((sug) => (
+                          <button
+                            key={sug}
+                            type="button"
+                            onClick={() => {
+                              setFormData({ ...formData, username: sug })
+                              setUsernameSuggestions([])
+                              setFormErrors((prev) => {
+                                const next = { ...prev }
+                                delete next.username
+                                delete next.global
+                                return next
+                              })
+                            }}
+                            className="px-2.5 py-1 bg-white hover:bg-emerald-600 hover:text-white text-emerald-900 font-mono font-bold text-xs rounded-md border border-emerald-300 shadow-xs transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>{sug}</span>
+                            <span className="text-[10px] text-emerald-600 hover:text-white font-sans font-normal">(pilih)</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
 
@@ -1484,6 +1776,9 @@ export const StudentsPage: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, firstname: e.target.value })}
                       className="w-full px-3 py-2 rounded-lg border border-border text-xs focus:outline-none focus:ring-2 focus:ring-brand-maroon"
                     />
+                    {formErrors.firstname && (
+                      <p className="text-rose-600 text-[11px] mt-0.5">{formErrors.firstname}</p>
+                    )}
                   </div>
 
                   <div>
@@ -1556,6 +1851,91 @@ export const StudentsPage: React.FC = () => {
                     </select>
                   </div>
                 </div>
+
+                {/* Dynamic Custom Fields Inputs */}
+                {activeCustomFields.length > 0 && (
+                  <div className="pt-2 border-t border-border space-y-3">
+                    <p className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">
+                      Bidang Pendaftaran Tambahan
+                    </p>
+                    {activeCustomFields.map((cf) => {
+                      const val = formData.custom_fields?.[cf.key] ?? ''
+                      const errKey = `custom_${cf.key}`
+                      return (
+                        <div key={cf.key}>
+                          <label className="block font-semibold text-slate-700 mb-1">
+                            {cf.label} {cf.is_required && <span className="text-rose-500">*</span>}
+                          </label>
+
+                          {cf.field_type === 'dropdown' ? (
+                            <select
+                              value={val}
+                              required={cf.is_required}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  custom_fields: { ...formData.custom_fields, [cf.key]: e.target.value },
+                                })
+                              }
+                              className="w-full px-3 py-2 rounded-lg border border-border bg-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-maroon"
+                            >
+                              <option value="">-- Pilih {cf.label} --</option>
+                              {cf.options?.map((opt) => (
+                                <option key={opt} value={opt}>
+                                  {opt}
+                                </option>
+                              ))}
+                            </select>
+                          ) : cf.field_type === 'checkbox' ? (
+                            <label className="flex items-center gap-2 cursor-pointer mt-1">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(val)}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    custom_fields: { ...formData.custom_fields, [cf.key]: e.target.checked },
+                                  })
+                                }
+                                className="rounded text-brand-maroon focus:ring-brand-maroon w-4 h-4"
+                              />
+                              <span className="text-slate-800 text-xs font-medium">Ya / Aktif</span>
+                            </label>
+                          ) : (
+                            <input
+                              type={
+                                cf.field_type === 'number'
+                                  ? 'number'
+                                  : cf.field_type === 'date'
+                                  ? 'date'
+                                  : cf.field_type === 'email'
+                                  ? 'email'
+                                  : 'text'
+                              }
+                              value={val}
+                              required={cf.is_required}
+                              placeholder={cf.validation_rules?.placeholder || `Masukkan ${cf.label}`}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  custom_fields: { ...formData.custom_fields, [cf.key]: e.target.value },
+                                })
+                              }
+                              className="w-full px-3 py-2 rounded-lg border border-border text-xs focus:outline-none focus:ring-2 focus:ring-brand-maroon"
+                            />
+                          )}
+
+                          {formErrors[errKey] && (
+                            <p className="text-rose-600 text-[11px] mt-0.5">{formErrors[errKey]}</p>
+                          )}
+                          {cf.validation_rules?.helperText && (
+                            <p className="text-slate-400 text-[10px] mt-0.5">{cf.validation_rules.helperText}</p>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-border bg-slate-50">

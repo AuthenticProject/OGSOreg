@@ -10,6 +10,7 @@ import { ImportWizardPage } from './pages/ImportWizardPage'
 import { ExportStationPage } from './pages/ExportStationPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { CustomFieldsPage } from './pages/CustomFieldsPage'
 import { UsersManagementPage } from './pages/UsersManagementPage'
 import { LoginPage } from './pages/LoginPage'
 
@@ -33,6 +34,7 @@ export function App() {
             <Route path="/schools" element={<SchoolsPage />} />
             <Route path="/imports" element={<ImportWizardPage />} />
             <Route path="/exports" element={<ExportStationPage />} />
+            <Route path="/custom-fields" element={<CustomFieldsPage />} />
             <Route path="/users" element={<UsersManagementPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

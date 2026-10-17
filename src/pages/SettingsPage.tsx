@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Save,
   Building2,
@@ -10,6 +11,8 @@ import {
   RotateCcw,
   AlertCircle,
   Copy,
+  Sliders,
+  ArrowRight,
 } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
@@ -286,6 +289,34 @@ export const SettingsPage: React.FC = () => {
           </div>
         </form>
       </SectionCard>
+
+      {/* Bidang Pendaftaran Dinamis (Khusus Super Admin) */}
+      {isSuperAdmin && (
+        <SectionCard
+          title="Bidang Pendaftaran Dinamis (Custom Fields)"
+          subtitle="Atur kolom pendaftaran bebas tanpa batas, tipe input, template Excel, dan integrasi pemetaan Moodle CSV."
+          action={
+            <Link
+              to="/custom-fields"
+              className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-700 text-white hover:bg-emerald-800 transition-colors shadow-sm"
+            >
+              <Sliders className="w-3.5 h-3.5 mr-1.5" />
+              <span>Kelola Bidang Pendaftaran</span>
+              <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+            </Link>
+          }
+        >
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 text-xs text-slate-700 space-y-2.5">
+            <p className="leading-relaxed">
+              Super Admin dapat menambahkan kolom kustom apapun (misalnya <em>Nomor Induk, Daerah, Tempat Lahir, Tanggal Lahir, Nama Pembimbing</em>, dll). Kolom yang dibuat akan otomatis tampil pada formulir manual, template Excel, validasi impor, tabel santri, dan ekspor CSV Moodle.
+            </p>
+            <div className="flex items-center gap-2 text-emerald-800 font-semibold text-xs">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Dukungan penuh tipe Teks Bebas (default), Angka, Tanggal, Email, Dropdown, dan Checkbox.</span>
+            </div>
+          </div>
+        </SectionCard>
+      )}
 
       {/* Status Database Supabase Cloud */}
       <SectionCard

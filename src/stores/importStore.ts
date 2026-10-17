@@ -53,6 +53,7 @@ interface ImportState {
   addManualRow: (data?: Partial<StagedParticipantRow>) => void
   handlePasteFromSpreadsheet: (text: string) => { success: boolean; count: number; error?: string }
   updateCell: (rowId: string, field: string, value: string) => void
+  applyUsernameSuggestion: (rowId: string, suggestion: string) => void
   deleteSelectedRows: () => void
   deleteSingleRow: (rowId: string) => void
   setSelectedRowIds: (ids: string[]) => void
@@ -215,6 +216,7 @@ export const useImportStore = create<ImportState>((set, get) => ({
       school_name: customData?.school_name || '',
       competition_category: customData?.competition_category || '',
       teacher_name: customData?.teacher_name || '',
+      custom_fields: customData?.custom_fields || {},
     }
 
     const updated = [...stagedRows, newRow]
@@ -326,6 +328,30 @@ export const useImportStore = create<ImportState>((set, get) => ({
   updateCell: (rowId: string, field: string, rawValue: string) => {
     const { stagedRows } = get()
 
+    // Handle dynamic custom fields (prefixed with custom_)
+    if (field.startsWith('custom_')) {
+      const customKey = field.replace(/^custom_/, '')
+      const cleanVal = normalizeString(rawValue)
+      const updatedRows = stagedRows.map((row) => {
+        if (row._rowId === rowId) {
+          return {
+            ...row,
+            custom_fields: {
+              ...(row.custom_fields || {}),
+              [customKey]: cleanVal,
+            },
+          }
+        }
+        return row
+      })
+      const { stagedRows: validatedRows, stats } = validateAllStagedRows(
+        updatedRows,
+        get().accessControl || undefined
+      )
+      set({ stagedRows: validatedRows, stats })
+      return
+    }
+
     // Normalize value according to field rules
     let cleanVal = normalizeString(rawValue)
     if (field === 'username') cleanVal = normalizeUsername(rawValue)
@@ -361,6 +387,10 @@ export const useImportStore = create<ImportState>((set, get) => ({
       stagedRows: validatedRows,
       stats,
     })
+  },
+
+  applyUsernameSuggestion: (rowId: string, suggestion: string) => {
+    get().updateCell(rowId, 'username', suggestion)
   },
 
   deleteSelectedRows: () => {
@@ -438,6 +468,7 @@ export const useImportStore = create<ImportState>((set, get) => ({
       jenjang: (r.jenjang || 'Kelas 1') as StudentJenjang,
       kampus: (r.kampus || '').trim(),
       institution_id: institutionId,
+      custom_fields: r.custom_fields || {},
     }))
 
     const result = await studentRepository.bulkSaveStudents(

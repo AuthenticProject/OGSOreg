@@ -1,4 +1,6 @@
 import type { ColumnMappingItem } from '../types/excel'
+import { customFieldService } from './customFieldService'
+import type { CustomFieldDefinition } from '../types/customField'
 
 export interface TargetFieldDef {
   key: string
@@ -147,6 +149,31 @@ export const PARTICIPANT_TARGET_FIELDS: TargetFieldDef[] = [
   ...LEGACY_PARTICIPANT_TARGET_FIELDS.filter((f) => !MOODLE_TARGET_FIELDS.some((m) => m.key === f.key)),
 ]
 
+/**
+ * Converts dynamic custom field definitions into TargetFieldDef objects
+ */
+export function getCustomTargetFields(customFields?: CustomFieldDefinition[]): TargetFieldDef[] {
+  const fields = customFields || customFieldService.getActiveFieldsSync()
+  return fields.map((f) => ({
+    key: `custom_${f.key}`,
+    label: f.label,
+    isRequired: f.is_required,
+    description: `Bidang Kustom: ${f.label} (${f.field_type})`,
+    aliases: [
+      f.label.toLowerCase(),
+      f.key.toLowerCase(),
+      `custom_${f.key.toLowerCase()}`,
+      f.label.toLowerCase().replace(/[^a-z0-9]/g, ''),
+      f.key.toLowerCase().replace(/[^a-z0-9]/g, ''),
+    ],
+  }))
+}
+
+export function getAllParticipantTargetFields(customFields?: CustomFieldDefinition[]): TargetFieldDef[] {
+  const dynamic = getCustomTargetFields(customFields)
+  return [...PARTICIPANT_TARGET_FIELDS, ...dynamic]
+}
+
 export function cleanHeaderString(header: string): string {
   return header
     .toLowerCase()
@@ -171,13 +198,15 @@ export function detectHeaderSchema(headers: string[]): 'MOODLE' | 'LEGACY' {
 
 export function autoMapHeaders(
   excelHeaders: string[],
-  sampleRows?: Record<string, unknown>[]
+  sampleRows?: Record<string, unknown>[],
+  customFields?: CustomFieldDefinition[]
 ): ColumnMappingItem[] {
   const usedTargetKeys = new Set<string>()
   const schema = detectHeaderSchema(excelHeaders)
+  const customDefs = getCustomTargetFields(customFields)
   const targetFieldDefs = schema === 'MOODLE'
-    ? [...MOODLE_TARGET_FIELDS, ...LEGACY_PARTICIPANT_TARGET_FIELDS]
-    : [...LEGACY_PARTICIPANT_TARGET_FIELDS, ...MOODLE_TARGET_FIELDS]
+    ? [...MOODLE_TARGET_FIELDS, ...customDefs, ...LEGACY_PARTICIPANT_TARGET_FIELDS]
+    : [...LEGACY_PARTICIPANT_TARGET_FIELDS, ...customDefs, ...MOODLE_TARGET_FIELDS]
 
   return excelHeaders.map((rawHeader) => {
     const cleaned = cleanHeaderString(rawHeader)

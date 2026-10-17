@@ -28,6 +28,7 @@ export interface MoodleUserExportRow {
   course1: string
   course2: string
   password: string
+  custom_fields?: Record<string, any>
 }
 
 export interface MoodleExportIssue {
@@ -245,6 +246,7 @@ export function mapStudentsToMoodleExport(
       course1: course1 || '',
       course2,
       password: passwordToUse,
+      custom_fields: raw.custom_fields || {},
     })
   })
 

@@ -42,6 +42,7 @@ export interface Student {
   sync_status: StudentSyncStatus
   moodle_user_id: string | null
   last_synced_at: string | null
+  custom_fields?: Record<string, any>
 }
 
 export interface StudentStats {

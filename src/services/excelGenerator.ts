@@ -2,22 +2,39 @@ import ExcelJS from 'exceljs'
 import { MOODLE_JENJANG_OPTIONS } from '../types/excel'
 import { KAMPUS_OPTIONS } from '../types/campus'
 import type { AppUserProfile } from '../types/auth'
+import { customFieldService } from './customFieldService'
+import type { CustomFieldDefinition } from '../types/customField'
+
+function getColumnLetter(colIndex: number): string {
+  let letter = ''
+  let temp = colIndex
+  while (temp > 0) {
+    const rem = (temp - 1) % 26
+    letter = String.fromCharCode(65 + rem) + letter
+    temp = Math.floor((temp - 1) / 26)
+  }
+  return letter
+}
 
 /**
- * Builds the official OGSOreg collective bulk registration template (Phase 7)
- * with columns: Username, Nama Depan, Nama Belakang, Email, Jenjang, Kampus.
- * Includes Jenjang dropdown validation (Kelas 1 - Kelas 5), Kampus dropdown (20 options),
- * hidden reference sheet, Contoh sheet, and Petunjuk sheet.
- * Validation covers at least 5,000 input rows.
+ * Builds the official OGSOreg collective bulk registration template
+ * with base columns: Username, Nama Depan, Nama Belakang, Email, Jenjang, Kampus
+ * plus UNLIMITED dynamic custom fields configured by Super Admin (where include_in_excel = true).
+ * Includes dropdown validation for Jenjang, Kampus, and custom dropdown fields.
  */
-export async function buildRegistrationWorkbook(): Promise<ExcelJS.Workbook> {
+export async function buildRegistrationWorkbook(
+  customFieldsParam?: CustomFieldDefinition[]
+): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook()
   workbook.creator = 'OGSOreg LMS Moodle Portal'
   workbook.lastModifiedBy = 'OGSOreg'
   workbook.created = new Date()
 
+  const allActiveFields = customFieldsParam || customFieldService.getActiveFieldsSync()
+  const excelCustomFields = allActiveFields.filter((f) => f.include_in_excel)
+
   // ----------------------------------------------------
-  // 1. SHEET REFERENSI (Hidden reference sheet for 20 campuses & 5 grades)
+  // 1. SHEET REFERENSI (Hidden reference sheet for 20 campuses, 5 grades & custom dropdowns)
   // ----------------------------------------------------
   const wsRef = workbook.addWorksheet('_REFERENSI', {
     state: 'hidden',
@@ -34,6 +51,22 @@ export async function buildRegistrationWorkbook(): Promise<ExcelJS.Workbook> {
     row.getCell(2).value = j
   })
 
+  // Reference columns for custom dropdowns (starting at column C = index 3)
+  const dropdownRefMap = new Map<string, { refColLetter: string; count: number }>()
+  let currentRefColIdx = 3
+
+  excelCustomFields.forEach((cf) => {
+    if (cf.field_type === 'dropdown' && cf.options && cf.options.length > 0) {
+      const refColLetter = getColumnLetter(currentRefColIdx)
+      cf.options.forEach((opt, optIdx) => {
+        const row = wsRef.getRow(optIdx + 1)
+        row.getCell(currentRefColIdx).value = opt
+      })
+      dropdownRefMap.set(cf.key, { refColLetter, count: cf.options.length })
+      currentRefColIdx++
+    }
+  })
+
   // ----------------------------------------------------
   // 2. SHEET PENDAFTARAN (Main Input Form)
   // ----------------------------------------------------
@@ -41,7 +74,7 @@ export async function buildRegistrationWorkbook(): Promise<ExcelJS.Workbook> {
     views: [{ state: 'frozen', ySplit: 1 }],
   })
 
-  ws.columns = [
+  const baseColumns = [
     { header: 'Username', key: 'username', width: 24 },
     { header: 'Nama Depan', key: 'firstname', width: 24 },
     { header: 'Nama Belakang', key: 'lastname', width: 24 },
@@ -49,6 +82,14 @@ export async function buildRegistrationWorkbook(): Promise<ExcelJS.Workbook> {
     { header: 'Jenjang', key: 'jenjang', width: 20 },
     { header: 'Kampus', key: 'kampus', width: 24 },
   ]
+
+  const customColumns = excelCustomFields.map((cf) => ({
+    header: cf.label,
+    key: cf.key,
+    width: Math.max(22, cf.label.length + 6),
+  }))
+
+  ws.columns = [...baseColumns, ...customColumns]
 
   // Style Header Row
   const headerRow = ws.getRow(1)
@@ -62,7 +103,6 @@ export async function buildRegistrationWorkbook(): Promise<ExcelJS.Workbook> {
   headerRow.height = 26
 
   // Apply dropdown data validation to column E (Jenjang) and column F (Kampus)
-  // Covers at least 5,000 input rows (rows 2 to 5001)
   for (let r = 2; r <= 5001; r++) {
     // Column E: Jenjang
     ws.getCell(`E${r}`).dataValidation = {
@@ -83,23 +123,34 @@ export async function buildRegistrationWorkbook(): Promise<ExcelJS.Workbook> {
       errorTitle: 'Pilihan Kampus Tidak Valid',
       error: 'Pilih salah satu dari 20 Kampus Gontor resmi (misal: Gontor 1, Gontor Putri 1).',
     }
+
+    // Custom dropdown validations
+    excelCustomFields.forEach((cf, cfIdx) => {
+      const colIdx = 7 + cfIdx // Base columns are 1 to 6
+      const colLetter = getColumnLetter(colIdx)
+      const refInfo = dropdownRefMap.get(cf.key)
+
+      if (refInfo) {
+        ws.getCell(`${colLetter}${r}`).dataValidation = {
+          type: 'list',
+          allowBlank: !cf.is_required,
+          formulae: [`_REFERENSI!$${refInfo.refColLetter}$1:$${refInfo.refColLetter}$${refInfo.count}`],
+          showErrorMessage: true,
+          errorTitle: `Pilihan ${cf.label} Tidak Valid`,
+          error: `Pilih salah satu opsi yang tersedia untuk ${cf.label}.`,
+        }
+      }
+    })
   }
 
   // ----------------------------------------------------
-  // 3. SHEET CONTOH (Sample Data demonstrating mixed campus & mixed classes)
+  // 3. SHEET CONTOH (Sample Data demonstrating mixed campus, mixed classes & custom fields)
   // ----------------------------------------------------
   const wsContoh = workbook.addWorksheet('Contoh', {
     views: [{ state: 'frozen', ySplit: 1 }],
   })
 
-  wsContoh.columns = [
-    { header: 'Username', key: 'username', width: 24 },
-    { header: 'Nama Depan', key: 'firstname', width: 24 },
-    { header: 'Nama Belakang', key: 'lastname', width: 24 },
-    { header: 'Email', key: 'email', width: 32 },
-    { header: 'Jenjang', key: 'jenjang', width: 20 },
-    { header: 'Kampus', key: 'kampus', width: 24 },
-  ]
+  wsContoh.columns = [...baseColumns, ...customColumns]
 
   const headerContoh = wsContoh.getRow(1)
   headerContoh.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 }
@@ -111,7 +162,7 @@ export async function buildRegistrationWorkbook(): Promise<ExcelJS.Workbook> {
   headerContoh.alignment = { vertical: 'middle', horizontal: 'center' }
   headerContoh.height = 26
 
-  const sampleParticipants = [
+  const sampleBase = [
     {
       username: 'budi_santoso',
       firstname: 'Budi',
@@ -154,8 +205,29 @@ export async function buildRegistrationWorkbook(): Promise<ExcelJS.Workbook> {
     },
   ]
 
-  sampleParticipants.forEach((sample) => {
-    wsContoh.addRow(sample)
+  sampleBase.forEach((base, sIdx) => {
+    const rowObj: Record<string, any> = { ...base }
+    excelCustomFields.forEach((cf) => {
+      if (cf.key === 'daerah') {
+        const sampleDaerah = ['Konsulat Ponorogo', 'Konsulat Jakarta', 'Konsulat Surabaya', 'Konsulat Bandung', 'Konsulat Medan']
+        rowObj[cf.key] = sampleDaerah[sIdx % sampleDaerah.length]
+      } else if (cf.key === 'nomor_induk') {
+        rowObj[cf.key] = `2026${sIdx + 101}`
+      } else if (cf.field_type === 'number') {
+        rowObj[cf.key] = 1000 + sIdx + 1
+      } else if (cf.field_type === 'date') {
+        rowObj[cf.key] = '2010-06-15'
+      } else if (cf.field_type === 'email') {
+        rowObj[cf.key] = `kontak${sIdx + 1}@sekolah.sch.id`
+      } else if (cf.field_type === 'dropdown' && cf.options && cf.options.length > 0) {
+        rowObj[cf.key] = cf.options[sIdx % cf.options.length]
+      } else if (cf.field_type === 'checkbox') {
+        rowObj[cf.key] = sIdx % 2 === 0 ? 'Ya' : 'Tidak'
+      } else {
+        rowObj[cf.key] = `Contoh ${cf.label}`
+      }
+    })
+    wsContoh.addRow(rowObj)
   })
 
   // ----------------------------------------------------
@@ -254,6 +326,13 @@ export async function exportStudentsToExcel(
     views: [{ state: 'frozen', ySplit: 1 }],
   })
 
+  const activeCustomFields = customFieldService.getActiveFieldsSync()
+  const customCols = activeCustomFields.map((cf) => ({
+    header: cf.label,
+    key: `custom_${cf.key}`,
+    width: Math.max(18, cf.label.length + 5),
+  }))
+
   ws.columns = [
     { header: 'No.', key: 'no', width: 8 },
     { header: 'Nama Lengkap', key: 'full_name', width: 28 },
@@ -261,6 +340,7 @@ export async function exportStudentsToExcel(
     { header: 'Email', key: 'email', width: 30 },
     { header: 'Jenjang', key: 'jenjang', width: 16 },
     { header: 'Kampus', key: 'kampus', width: 22 },
+    ...customCols,
     { header: 'Sumber', key: 'source', width: 14 },
     { header: 'Status Moodle', key: 'sync_status', width: 20 },
     { header: 'Moodle User ID', key: 'moodle_user_id', width: 18 },
@@ -278,6 +358,11 @@ export async function exportStudentsToExcel(
   headerRow.height = 26
 
   students.forEach((s, idx) => {
+    const customData: Record<string, any> = {}
+    activeCustomFields.forEach((cf) => {
+      customData[`custom_${cf.key}`] = (s as any).custom_fields?.[cf.key] ?? '-'
+    })
+
     const row = ws.addRow({
       no: idx + 1,
       full_name: s.full_name || `${s.firstname} ${s.lastname || ''}`.trim(),
@@ -285,6 +370,7 @@ export async function exportStudentsToExcel(
       email: s.email,
       jenjang: s.jenjang,
       kampus: s.kampus || 'Belum Diisi',
+      ...customData,
       source: s.source.toUpperCase(),
       sync_status:
         s.sync_status === 'synced'
@@ -353,6 +439,13 @@ export async function buildAdminReportWorkbook(
 
   // Sheet 2: Daftar Santri & Kampus
   const wsList = workbook.addWorksheet('Daftar Santri & Kampus')
+  const activeCustomFields = customFieldService.getActiveFieldsSync()
+  const customListColumns = activeCustomFields.map((cf) => ({
+    header: cf.label,
+    key: `custom_${cf.key}`,
+    width: Math.max(18, cf.label.length + 5),
+  }))
+
   wsList.columns = [
     { header: 'No.', key: 'no', width: 8 },
     { header: 'Nama Lengkap', key: 'full_name', width: 28 },
@@ -360,6 +453,7 @@ export async function buildAdminReportWorkbook(
     { header: 'Email', key: 'email', width: 30 },
     { header: 'Jenjang', key: 'jenjang', width: 16 },
     { header: 'Kampus', key: 'kampus', width: 22 },
+    ...customListColumns,
     { header: 'Status Moodle', key: 'sync_status', width: 22 },
     { header: 'Tanggal Input', key: 'created_at', width: 20 },
   ]
@@ -368,6 +462,11 @@ export async function buildAdminReportWorkbook(
   listHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF166534' } }
 
   students.forEach((s, idx) => {
+    const customRowData: Record<string, any> = {}
+    activeCustomFields.forEach((cf) => {
+      customRowData[`custom_${cf.key}`] = (s as any).custom_fields?.[cf.key] ?? '-'
+    })
+
     wsList.addRow({
       no: idx + 1,
       full_name: s.full_name || `${s.firstname} ${s.lastname || ''}`.trim(),
@@ -375,6 +474,7 @@ export async function buildAdminReportWorkbook(
       email: s.email,
       jenjang: s.jenjang,
       kampus: s.kampus || 'Belum Diisi',
+      ...customRowData,
       sync_status:
         s.sync_status === 'enrolled'
           ? 'Enrolment Terverifikasi'

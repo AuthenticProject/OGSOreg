@@ -52,6 +52,7 @@ export const studentSchema = z.object({
   sync_status: z.enum(['local_only', 'exported', 'synced', 'enrolled', 'failed']).default('local_only'),
   moodle_user_id: z.string().nullable().optional(),
   last_synced_at: z.string().nullable().optional(),
+  custom_fields: z.record(z.any()).optional().default({}),
 })
 
 /**
