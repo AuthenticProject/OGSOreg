@@ -58,7 +58,7 @@ export const ForcePasswordChangeModal: React.FC = () => {
           <h2 className="text-xl font-bold tracking-tight">Wajib Ganti Kata Sandi</h2>
           <p className="text-xs text-emerald-100/80 mt-1 leading-relaxed">
             Demi keamanan kontingen <strong>{appProfile.display_name}</strong>, Anda wajib mengganti kata sandi
-            sementara sebelum dapat mengakses dasbor OGSOreg.
+            sementara sebelum dapat mengakses dashboard OGSOreg.
           </p>
         </div>
 

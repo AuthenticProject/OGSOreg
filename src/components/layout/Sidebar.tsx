@@ -253,7 +253,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
         {/* Scrollable Navigation Tree */}
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-3 custom-scrollbar">
-          {/* STANDALONE: DASBOR */}
+          {/* STANDALONE: DASHBOARD */}
           <div>
             <NavLink
               to="/dashboard"
@@ -281,7 +281,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                         isActive ? 'text-[#22C55E]' : 'text-emerald-200/70 group-hover:text-white'
                       )}
                     />
-                    <span>DASBOR</span>
+                    <span>DASHBOARD</span>
                   </div>
                 </>
               )}

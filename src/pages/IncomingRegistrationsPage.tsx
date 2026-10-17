@@ -58,7 +58,7 @@ export const IncomingRegistrationsPage: React.FC = () => {
           Halaman Pendaftaran Masuk seluruh kampus hanya dapat diakses oleh Super Admin.
         </p>
         <Button variant="primary" onClick={() => navigate('/dashboard')} className="mt-2 bg-emerald-700 text-white">
-          Kembali ke Dasbor
+          Kembali ke Dashboard
         </Button>
       </div>
     )

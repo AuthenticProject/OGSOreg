@@ -78,7 +78,7 @@ export const PublicNavbar: React.FC = () => {
               className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-sm font-semibold shadow-xs transition-colors"
             >
               <LayoutDashboard className="w-4 h-4" />
-              Buka Dasbor
+              Buka Dashboard
             </Link>
           ) : (
             <Link
@@ -98,7 +98,7 @@ export const PublicNavbar: React.FC = () => {
               to="/dashboard"
               className="p-2 bg-emerald-700 text-white rounded-lg text-xs font-semibold"
             >
-              Dasbor
+              Dashboard
             </Link>
           ) : (
             <Link
