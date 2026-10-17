@@ -435,20 +435,20 @@ export const FileDropzone: React.FC<FileDropzoneProps> = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* 1. Username */}
+              {/* 1. Stambuk */}
               <div>
                 <label className="block text-xs font-semibold text-foreground mb-1.5">
-                  Username <span className="text-rose-500">*</span>
+                  Nomor Stambuk <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="contoh: ahmad_faiz"
-                  value={manualForm.username}
-                  onChange={(e) => setManualForm({ ...manualForm, username: e.target.value.toLowerCase().trim() })}
+                  placeholder="contoh: 67845"
+                  value={manualForm.stambuk}
+                  onChange={(e) => setManualForm({ ...manualForm, stambuk: e.target.value })}
                   className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-[#166534] focus:outline-none font-mono"
                 />
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  ID akun login di LMS Moodle (tanpa spasi).
+                  Nomor induk santri (Stambuk).
                 </p>
               </div>
 
@@ -480,21 +480,41 @@ export const FileDropzone: React.FC<FileDropzoneProps> = () => {
                 />
               </div>
 
-              {/* 4. Email */}
+              {/* 4. Username */}
               <div>
                 <label className="block text-xs font-semibold text-foreground mb-1.5">
-                  Alamat Email <span className="text-rose-500">*</span>
+                  Username <span className="text-rose-500">*</span>
                 </label>
                 <input
-                  type="email"
-                  placeholder="santri@gontor.ac.id"
-                  value={manualForm.email}
-                  onChange={(e) => setManualForm({ ...manualForm, email: e.target.value })}
+                  type="text"
+                  placeholder="contoh: ahmad_faiz"
+                  value={manualForm.username}
+                  onChange={(e) => setManualForm({ ...manualForm, username: e.target.value.toLowerCase().trim() })}
                   className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-[#166534] focus:outline-none font-mono"
                 />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  ID akun login di LMS Moodle (tanpa spasi).
+                </p>
               </div>
 
-              {/* 5. Jenjang */}
+              {/* 5. Kelas */}
+              <div>
+                <label className="block text-xs font-semibold text-foreground mb-1.5">
+                  Kelas <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="contoh: 5-B, 3-C, 3 int F"
+                  value={manualForm.kelas}
+                  onChange={(e) => setManualForm({ ...manualForm, kelas: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-[#166534] focus:outline-none font-medium"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Format: angka-abjad (misal: 5-B) atau intensif (misal: 3 int F).
+                </p>
+              </div>
+
+              {/* 6. Jenjang */}
               <div>
                 <label className="block text-xs font-semibold text-foreground mb-1.5">
                   Jenjang <span className="text-rose-500">*</span>
@@ -515,7 +535,38 @@ export const FileDropzone: React.FC<FileDropzoneProps> = () => {
                 </p>
               </div>
 
-              {/* 6. Kampus */}
+              {/* 7. Email */}
+              <div>
+                <label className="block text-xs font-semibold text-foreground mb-1.5">
+                  Alamat Email <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  placeholder="santri@gontor.ac.id"
+                  value={manualForm.email}
+                  onChange={(e) => setManualForm({ ...manualForm, email: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-[#166534] focus:outline-none font-mono"
+                />
+              </div>
+
+              {/* 8. Daerah */}
+              <div>
+                <label className="block text-xs font-semibold text-foreground mb-1.5">
+                  Daerah / Konsulat <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="contoh: Banyuwangi, Konsulat Surabaya"
+                  value={manualForm.daerah}
+                  onChange={(e) => setManualForm({ ...manualForm, daerah: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-[#166534] focus:outline-none"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Asal konsulat atau daerah santri.
+                </p>
+              </div>
+
+              {/* 9. Kampus */}
               <div>
                 <label className="block text-xs font-semibold text-foreground mb-1.5">
                   Kampus <span className="text-rose-500">*</span>
@@ -541,57 +592,6 @@ export const FileDropzone: React.FC<FileDropzoneProps> = () => {
                     Pilih salah satu dari 20 Kampus Resmi Gontor.
                   </p>
                 )}
-              </div>
-
-              {/* 7. Kelas */}
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-1.5">
-                  Kelas <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="contoh: 5-B, 3-C, 3 int F"
-                  value={manualForm.kelas}
-                  onChange={(e) => setManualForm({ ...manualForm, kelas: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-[#166534] focus:outline-none font-medium"
-                />
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  Format: angka-abjad (misal: 5-B) atau intensif (misal: 3 int F).
-                </p>
-              </div>
-
-              {/* 8. Daerah */}
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-1.5">
-                  Daerah / Konsulat <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="contoh: Banyuwangi, Konsulat Surabaya"
-                  value={manualForm.daerah}
-                  onChange={(e) => setManualForm({ ...manualForm, daerah: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-[#166534] focus:outline-none"
-                />
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  Asal konsulat atau daerah santri.
-                </p>
-              </div>
-
-              {/* 9. Stambuk */}
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-1.5">
-                  Nomor Stambuk <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="contoh: 67845"
-                  value={manualForm.stambuk}
-                  onChange={(e) => setManualForm({ ...manualForm, stambuk: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-[#166534] focus:outline-none font-mono"
-                />
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  Nomor induk santri (Stambuk).
-                </p>
               </div>
 
               {/* Extra Dynamic Custom Fields (if configured beyond Daerah & Stambuk) */}

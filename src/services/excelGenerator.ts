@@ -359,13 +359,8 @@ export async function exportStudentsToExcel(
         !STANDARD_FIELD_KEYS.includes(cf.label.toLowerCase().trim())
     )
   const customCols = activeCustomFields
-    .sort((a, b) => {
-      if (a.key === 'daerah') return -1
-      if (b.key === 'daerah') return 1
-      if (a.key === 'stambuk') return -1
-      if (b.key === 'stambuk') return 1
-      return a.display_order - b.display_order
-    })
+    .filter((cf) => cf.key !== 'daerah' && cf.key !== 'stambuk')
+    .sort((a, b) => a.display_order - b.display_order)
     .map((cf) => ({
       header: cf.label,
       key: `custom_${cf.key}`,
@@ -374,13 +369,15 @@ export async function exportStudentsToExcel(
 
   ws.columns = [
     { header: 'No.', key: 'no', width: 8 },
-    { header: 'Username', key: 'username', width: 20 },
+    { header: 'Stambuk', key: 'stambuk', width: 16 },
     { header: 'Nama Depan', key: 'firstname', width: 22 },
     { header: 'Nama Belakang', key: 'lastname', width: 22 },
-    { header: 'Email', key: 'email', width: 30 },
-    { header: 'Jenjang', key: 'jenjang', width: 16 },
-    { header: 'Kampus', key: 'kampus', width: 22 },
+    { header: 'Username', key: 'username', width: 20 },
     { header: 'Kelas', key: 'kelas', width: 16 },
+    { header: 'Jenjang', key: 'jenjang', width: 16 },
+    { header: 'Email', key: 'email', width: 30 },
+    { header: 'Daerah', key: 'daerah', width: 22 },
+    { header: 'Kampus', key: 'kampus', width: 22 },
     ...customCols,
     { header: 'Sumber', key: 'source', width: 14 },
     { header: 'Status Moodle', key: 'sync_status', width: 20 },
@@ -400,22 +397,28 @@ export async function exportStudentsToExcel(
 
   students.forEach((s, idx) => {
     const customData: Record<string, any> = {}
-    activeCustomFields.forEach((cf) => {
-      customData[`custom_${cf.key}`] = (s as any).custom_fields?.[cf.key] ?? '-'
-    })
+    activeCustomFields
+      .filter((cf) => cf.key !== 'daerah' && cf.key !== 'stambuk')
+      .forEach((cf) => {
+        customData[`custom_${cf.key}`] = (s as any).custom_fields?.[cf.key] ?? '-'
+      })
 
     const fn = s.firstname || (s.full_name ? s.full_name.split(' ')[0] : '')
     const ln = s.lastname || (s.full_name ? s.full_name.split(' ').slice(1).join(' ') || '' : '')
+    const stb = (s as any).stambuk || (s as any).custom_fields?.stambuk || '-'
+    const dr = (s as any).daerah || (s as any).custom_fields?.daerah || '-'
 
     const row = ws.addRow({
       no: idx + 1,
-      username: s.username,
+      stambuk: stb,
       firstname: fn,
       lastname: ln,
-      email: s.email,
-      jenjang: s.jenjang,
-      kampus: s.kampus || 'Belum Diisi',
+      username: s.username,
       kelas: s.kelas || '-',
+      jenjang: s.jenjang,
+      email: s.email,
+      daerah: dr,
+      kampus: s.kampus || 'Belum Diisi',
       ...customData,
       source: s.source.toUpperCase(),
       sync_status:
@@ -493,13 +496,8 @@ export async function buildAdminReportWorkbook(
         !STANDARD_FIELD_KEYS.includes(cf.label.toLowerCase().trim())
     )
   const customListColumns = activeCustomFields
-    .sort((a, b) => {
-      if (a.key === 'daerah') return -1
-      if (b.key === 'daerah') return 1
-      if (a.key === 'stambuk') return -1
-      if (b.key === 'stambuk') return 1
-      return a.display_order - b.display_order
-    })
+    .filter((cf) => cf.key !== 'daerah' && cf.key !== 'stambuk')
+    .sort((a, b) => a.display_order - b.display_order)
     .map((cf) => ({
       header: cf.label,
       key: `custom_${cf.key}`,
@@ -508,13 +506,15 @@ export async function buildAdminReportWorkbook(
 
   wsList.columns = [
     { header: 'No.', key: 'no', width: 8 },
-    { header: 'Username', key: 'username', width: 20 },
+    { header: 'Stambuk', key: 'stambuk', width: 16 },
     { header: 'Nama Depan', key: 'firstname', width: 22 },
     { header: 'Nama Belakang', key: 'lastname', width: 22 },
-    { header: 'Email', key: 'email', width: 30 },
-    { header: 'Jenjang', key: 'jenjang', width: 16 },
-    { header: 'Kampus', key: 'kampus', width: 22 },
+    { header: 'Username', key: 'username', width: 20 },
     { header: 'Kelas', key: 'kelas', width: 16 },
+    { header: 'Jenjang', key: 'jenjang', width: 16 },
+    { header: 'Email', key: 'email', width: 30 },
+    { header: 'Daerah', key: 'daerah', width: 22 },
+    { header: 'Kampus', key: 'kampus', width: 22 },
     ...customListColumns,
     { header: 'Status Moodle', key: 'sync_status', width: 22 },
     { header: 'Tanggal Input', key: 'created_at', width: 20 },
@@ -525,22 +525,28 @@ export async function buildAdminReportWorkbook(
 
   students.forEach((s, idx) => {
     const customRowData: Record<string, any> = {}
-    activeCustomFields.forEach((cf) => {
-      customRowData[`custom_${cf.key}`] = (s as any).custom_fields?.[cf.key] ?? '-'
-    })
+    activeCustomFields
+      .filter((cf) => cf.key !== 'daerah' && cf.key !== 'stambuk')
+      .forEach((cf) => {
+        customRowData[`custom_${cf.key}`] = (s as any).custom_fields?.[cf.key] ?? '-'
+      })
 
     const fn = s.firstname || (s.full_name ? s.full_name.split(' ')[0] : '')
     const ln = s.lastname || (s.full_name ? s.full_name.split(' ').slice(1).join(' ') || '' : '')
+    const stb = (s as any).stambuk || (s as any).custom_fields?.stambuk || '-'
+    const dr = (s as any).daerah || (s as any).custom_fields?.daerah || '-'
 
     wsList.addRow({
       no: idx + 1,
-      username: s.username,
+      stambuk: stb,
       firstname: fn,
       lastname: ln,
-      email: s.email,
-      jenjang: s.jenjang,
-      kampus: s.kampus || 'Belum Diisi',
+      username: s.username,
       kelas: s.kelas || '-',
+      jenjang: s.jenjang,
+      email: s.email,
+      daerah: dr,
+      kampus: s.kampus || 'Belum Diisi',
       ...customRowData,
       sync_status:
         s.sync_status === 'enrolled'

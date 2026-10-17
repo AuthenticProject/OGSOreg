@@ -390,6 +390,48 @@ export const StagedDataGrid: React.FC = () => {
         size: 95,
       },
       {
+        id: 'stambuk',
+        header: 'Stambuk *',
+        cell: ({ row }) => (
+          <EditableCell
+            row={row.original}
+            field="custom_stambuk"
+            value={row.original.stambuk || row.original.custom_fields?.stambuk || ''}
+            onSave={updateCell}
+            placeholder="67845..."
+            widthClass="min-w-[110px] font-mono text-xs"
+          />
+        ),
+      },
+      {
+        accessorKey: 'firstname',
+        header: 'Nama Depan *',
+        cell: ({ row }) => (
+          <EditableCell
+            row={row.original}
+            field="firstname"
+            value={row.original.firstname || (row.original.full_name ? row.original.full_name.split(' ')[0] : '')}
+            onSave={updateCell}
+            placeholder="Nama Depan..."
+            widthClass="min-w-[140px]"
+          />
+        ),
+      },
+      {
+        accessorKey: 'lastname',
+        header: 'Nama Belakang *',
+        cell: ({ row }) => (
+          <EditableCell
+            row={row.original}
+            field="lastname"
+            value={row.original.lastname || (row.original.full_name ? row.original.full_name.split(' ').slice(1).join(' ') || row.original.full_name : '')}
+            onSave={updateCell}
+            placeholder="Nama Belakang..."
+            widthClass="min-w-[140px]"
+          />
+        ),
+      },
+      {
         accessorKey: 'username',
         header: 'Username *',
         cell: ({ row }) => {
@@ -429,44 +471,16 @@ export const StagedDataGrid: React.FC = () => {
         },
       },
       {
-        accessorKey: 'firstname',
-        header: 'Nama Depan *',
+        accessorKey: 'kelas',
+        header: 'Kelas *',
         cell: ({ row }) => (
           <EditableCell
             row={row.original}
-            field="firstname"
-            value={row.original.firstname || (row.original.full_name ? row.original.full_name.split(' ')[0] : '')}
+            field="kelas"
+            value={normalizeKelas(row.original.kelas) || row.original.grade_level || ''}
             onSave={updateCell}
-            placeholder="Nama Depan..."
-            widthClass="min-w-[140px]"
-          />
-        ),
-      },
-      {
-        accessorKey: 'lastname',
-        header: 'Nama Belakang *',
-        cell: ({ row }) => (
-          <EditableCell
-            row={row.original}
-            field="lastname"
-            value={row.original.lastname || (row.original.full_name ? row.original.full_name.split(' ').slice(1).join(' ') || row.original.full_name : '')}
-            onSave={updateCell}
-            placeholder="Nama Belakang..."
-            widthClass="min-w-[140px]"
-          />
-        ),
-      },
-      {
-        accessorKey: 'email',
-        header: 'Email *',
-        cell: ({ row }) => (
-          <EditableCell
-            row={row.original}
-            field="email"
-            value={row.original.email || row.original.teacher_email || ''}
-            onSave={updateCell}
-            placeholder="Wajib diisi"
-            widthClass="min-w-[180px] font-mono"
+            placeholder="Contoh: 5-B, 3 int F"
+            widthClass="min-w-[125px] font-medium"
           />
         ),
       },
@@ -486,6 +500,34 @@ export const StagedDataGrid: React.FC = () => {
         ),
       },
       {
+        accessorKey: 'email',
+        header: 'Email *',
+        cell: ({ row }) => (
+          <EditableCell
+            row={row.original}
+            field="email"
+            value={row.original.email || row.original.teacher_email || ''}
+            onSave={updateCell}
+            placeholder="Wajib diisi"
+            widthClass="min-w-[180px] font-mono"
+          />
+        ),
+      },
+      {
+        id: 'daerah',
+        header: 'Daerah *',
+        cell: ({ row }) => (
+          <EditableCell
+            row={row.original}
+            field="custom_daerah"
+            value={row.original.daerah || row.original.custom_fields?.daerah || ''}
+            onSave={updateCell}
+            placeholder="Daerah/Konsulat..."
+            widthClass="min-w-[130px]"
+          />
+        ),
+      },
+      {
         accessorKey: 'kampus',
         header: 'Kampus *',
         cell: ({ row }) => (
@@ -500,35 +542,15 @@ export const StagedDataGrid: React.FC = () => {
           />
         ),
       },
-      {
-        accessorKey: 'kelas',
-        header: 'Kelas *',
-        cell: ({ row }) => (
-          <EditableCell
-            row={row.original}
-            field="kelas"
-            value={normalizeKelas(row.original.kelas) || row.original.grade_level || ''}
-            onSave={updateCell}
-            placeholder="Contoh: 5-B, 3 int F"
-            widthClass="min-w-[125px] font-medium"
-          />
-        ),
-      },
-      // Dynamic Custom Fields Columns (Configured by Super Admin, excluding standard keys)
+      // Dynamic Extra Custom Fields Columns (Configured by Super Admin, excluding standard keys, stambuk, and daerah)
       ...[...activeCustomFields]
         .filter(
           (cf) =>
-            !['kelas', 'jenjang', 'kampus', 'username', 'firstname', 'lastname', 'email', 'full_name', 'nisn'].includes(
+            !['kelas', 'jenjang', 'kampus', 'username', 'firstname', 'lastname', 'email', 'full_name', 'nisn', 'daerah', 'stambuk'].includes(
               cf.key.toLowerCase()
             )
         )
-        .sort((a, b) => {
-          if (a.key === 'daerah') return -1
-          if (b.key === 'daerah') return 1
-          if (a.key === 'stambuk') return -1
-          if (b.key === 'stambuk') return 1
-          return a.display_order - b.display_order
-        })
+        .sort((a, b) => a.display_order - b.display_order)
         .map((cf) => ({
           id: `custom_${cf.key}`,
           header: `${cf.label}${cf.is_required ? ' *' : ''}`,
