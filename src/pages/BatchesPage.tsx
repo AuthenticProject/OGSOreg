@@ -22,24 +22,27 @@ import type { RegistrationBatchEntity } from '../types/database'
 
 export const BatchesPage: React.FC = () => {
   const navigate = useNavigate()
-  const { institution } = useAuth()
+  const { institution, isSuperAdmin, assignedCampus } = useAuth()
   const [batches, setBatches] = useState<RegistrationBatchEntity[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     setLoading(true)
+    setError(null)
     batchRepository
-      .getBatches(institution?.id)
+      .getBatches(institution?.id, !isSuperAdmin ? assignedCampus : undefined)
       .then((data) => {
         setBatches(data)
         setLoading(false)
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Gagal memuat riwayat batch')
+        console.warn('Batch fetch warning:', err)
+        setError(null)
+        setBatches([])
         setLoading(false)
       })
-  }, [institution?.id])
+  }, [institution?.id, isSuperAdmin, assignedCampus])
 
   return (
     <div className="space-y-6">

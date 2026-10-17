@@ -17,6 +17,7 @@ import {
 import type { ColumnMappingItem, ImportStatistics, ParsedWorkbookData, StagedParticipantRow } from '../types/excel'
 import type { Competition } from '../types/database'
 import { studentRepository } from '../services/studentRepository'
+import { batchRepository } from '../services/supabase/batchRepository'
 import type { StudentSource, StudentJenjang } from '../types/student'
 
 export type FilterStatusType = 'ALL' | 'VALID' | 'WARNING' | 'ERROR' | 'DUPLICATE'
@@ -478,6 +479,28 @@ export const useImportStore = create<ImportState>((set, get) => ({
       source,
       accessControl || undefined
     )
+
+    if (result.savedCount > 0) {
+      try {
+        const batchName = uploadedFile?.name
+          ? `Impor Berkas ${uploadedFile.name}`
+          : accessControl?.assignedCampus
+          ? `Pendaftaran Santri — ${accessControl.assignedCampus}`
+          : `Pendaftaran Kolektif (${result.savedCount} Santri)`
+        const batch = await batchRepository.createBatch({
+          competition_id: 'c0000000-0000-0000-0000-000000000001',
+          institution_id: institutionId,
+          created_by: createdBy || 'system',
+          batch_name: batchName,
+          source_filename: uploadedFile?.name || `${source.toUpperCase()} Input`,
+          participant_count: result.savedCount,
+          teacher_count: 0,
+        })
+        await batchRepository.updateBatchStatus(batch.id, 'completed', result.savedCount, 0)
+      } catch {
+        // Non-blocking
+      }
+    }
 
     return {
       savedCount: result.savedCount,

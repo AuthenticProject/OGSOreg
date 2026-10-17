@@ -64,7 +64,26 @@ CREATE INDEX IF NOT EXISTS idx_students_kampus ON public.students(kampus);
 CREATE INDEX IF NOT EXISTS idx_students_sync_status ON public.students(sync_status);
 CREATE INDEX IF NOT EXISTS idx_students_created_at ON public.students(created_at DESC);
 
--- 3. USER PROFILES TABLE (21 Official OGSOreg Accounts)
+-- 3. REGISTRATION BATCHES TABLE (Riwayat Transaksi Impor & Pendaftaran)
+CREATE TABLE IF NOT EXISTS public.registration_batches (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    competition_id UUID,
+    institution_id UUID NOT NULL REFERENCES public.institutions(id) ON DELETE CASCADE,
+    created_by UUID,
+    batch_name TEXT NOT NULL,
+    source_filename TEXT,
+    participant_count INTEGER DEFAULT 0,
+    teacher_count INTEGER DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'completed',
+    error_message TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    completed_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_batches_institution_id ON public.registration_batches(institution_id);
+CREATE INDEX IF NOT EXISTS idx_batches_created_at ON public.registration_batches(created_at DESC);
+
+-- 4. USER PROFILES TABLE (21 Official OGSOreg Accounts)
 CREATE TABLE IF NOT EXISTS public.user_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     auth_user_id UUID UNIQUE,
