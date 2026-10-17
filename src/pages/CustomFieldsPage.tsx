@@ -20,6 +20,7 @@ import {
   Sparkles,
   Check,
   RotateCcw,
+  GripVertical,
 } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
@@ -199,6 +200,90 @@ export const CustomFieldsPage: React.FC = () => {
   const handleResetTemplateToDefault = () => {
     templateConfigService.resetToDefault()
     showFeedback('success', 'Nama dan urutan kolom standar template Excel dikembalikan ke bawaan.')
+  }
+
+  // Drag & Drop State for Tab 1 (Template Columns)
+  const [draggedTemplateIndex, setDraggedTemplateIndex] = useState<number | null>(null)
+  const [dragOverTemplateIndex, setDragOverTemplateIndex] = useState<number | null>(null)
+
+  const handleTemplateDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedTemplateIndex(index)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', String(index))
+  }
+
+  const handleTemplateDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (dragOverTemplateIndex !== index) {
+      setDragOverTemplateIndex(index)
+    }
+  }
+
+  const handleTemplateDragEnd = () => {
+    setDraggedTemplateIndex(null)
+    setDragOverTemplateIndex(null)
+  }
+
+  const handleTemplateDrop = async (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault()
+    if (draggedTemplateIndex === null || draggedTemplateIndex === targetIndex) {
+      handleTemplateDragEnd()
+      return
+    }
+
+    const newCols = [...templateColumns]
+    const [draggedItem] = newCols.splice(draggedTemplateIndex, 1)
+    newCols.splice(targetIndex, 0, draggedItem)
+
+    setTemplateColumns(newCols)
+    handleTemplateDragEnd()
+
+    const idsInOrder = newCols.map((c) => c.id)
+    await templateConfigService.reorderColumns(idsInOrder)
+    showFeedback('success', `Kolom '${draggedItem.label}' dipindahkan ke posisi ${targetIndex + 1}.`)
+  }
+
+  // Drag & Drop State for Tab 2 & Tab 3 (Fields)
+  const [draggedFieldIndex, setDraggedFieldIndex] = useState<number | null>(null)
+  const [dragOverFieldIndex, setDragOverFieldIndex] = useState<number | null>(null)
+
+  const handleFieldDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedFieldIndex(index)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', String(index))
+  }
+
+  const handleFieldDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (dragOverFieldIndex !== index) {
+      setDragOverFieldIndex(index)
+    }
+  }
+
+  const handleFieldDragEnd = () => {
+    setDraggedFieldIndex(null)
+    setDragOverFieldIndex(null)
+  }
+
+  const handleFieldDrop = async (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault()
+    if (draggedFieldIndex === null || draggedFieldIndex === targetIndex) {
+      handleFieldDragEnd()
+      return
+    }
+
+    const newFields = [...fields]
+    const [draggedItem] = newFields.splice(draggedFieldIndex, 1)
+    newFields.splice(targetIndex, 0, draggedItem)
+
+    setFields(newFields)
+    handleFieldDragEnd()
+
+    const idsInOrder = newFields.map((f) => f.id)
+    await customFieldService.reorderCustomFields(idsInOrder)
+    showFeedback('success', `Bidang '${draggedItem.label}' dipindahkan ke posisi ${targetIndex + 1}.`)
   }
 
   // Subscribe to templateConfigService
@@ -627,7 +712,7 @@ export const CustomFieldsPage: React.FC = () => {
           {/* Matrix of Columns in Excel Template */}
           <SectionCard
             title="Daftar Kolom Template Excel Pendaftaran"
-            subtitle="Atur seluruh kolom Excel (bawaan & kustom): ubah nama kolom langsung, atur urutan posisi naik/turun, tentukan wajib/opsional, atau nonaktifkan dari template."
+            subtitle="Atur seluruh kolom Excel (bawaan & kustom): seret dengan mouse (drag & drop) atau gunakan panah untuk ubah urutan, ubah nama kolom langsung, tentukan wajib/opsional, atau nonaktifkan."
             action={
               <div className="flex items-center gap-2">
                 <Button
@@ -653,34 +738,55 @@ export const CustomFieldsPage: React.FC = () => {
             <div className="divide-y divide-slate-100 text-xs">
               {templateColumns.map((col, index) => {
                 const isEditingLabel = editingTemplateColId === col.id
+                const isDragging = draggedTemplateIndex === index
+                const isOver = dragOverTemplateIndex === index && draggedTemplateIndex !== index
                 return (
                   <div
                     key={col.id}
-                    className={`py-3 px-3 flex flex-col md:flex-row md:items-center justify-between gap-3 transition-colors ${
-                      col.include_in_excel ? 'bg-white' : 'bg-slate-50/70 opacity-60'
+                    draggable={!isEditingLabel}
+                    onDragStart={(e) => handleTemplateDragStart(e, index)}
+                    onDragOver={(e) => handleTemplateDragOver(e, index)}
+                    onDragEnd={handleTemplateDragEnd}
+                    onDrop={(e) => handleTemplateDrop(e, index)}
+                    className={`py-3 px-3 flex flex-col md:flex-row md:items-center justify-between gap-3 transition-all duration-150 ${
+                      isDragging
+                        ? 'opacity-40 scale-[0.99] border-2 border-dashed border-emerald-400 bg-emerald-50/40 rounded-lg'
+                        : isOver
+                        ? 'border-t-2 border-emerald-600 bg-emerald-50/70'
+                        : col.include_in_excel
+                        ? 'bg-white'
+                        : 'bg-slate-50/70 opacity-60'
                     }`}
                   >
                     <div className="flex items-start gap-2.5">
-                      {/* Reorder Buttons: Enabled for ALL columns */}
-                      <div className="flex flex-col gap-0.5 shrink-0 mt-0.5">
-                        <button
-                          type="button"
-                          disabled={index === 0}
-                          onClick={() => handleMoveTemplateOrder(index, 'up')}
-                          className="p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
-                          title="Pindah Posisi ke Atas"
+                      {/* Drag Handle & Reorder Buttons */}
+                      <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                        <div
+                          className="p-1 text-slate-400 hover:text-emerald-700 rounded cursor-grab active:cursor-grabbing shrink-0 select-none"
+                          title="Seret dengan mouse untuk ubah posisi urutan kolom"
                         >
-                          <ArrowUp className="w-3 h-3" />
-                        </button>
-                        <button
-                          type="button"
-                          disabled={index === templateColumns.length - 1}
-                          onClick={() => handleMoveTemplateOrder(index, 'down')}
-                          className="p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
-                          title="Pindah Posisi ke Bawah"
-                        >
-                          <ArrowDown className="w-3 h-3" />
-                        </button>
+                          <GripVertical className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <button
+                            type="button"
+                            disabled={index === 0}
+                            onClick={() => handleMoveTemplateOrder(index, 'up')}
+                            className="p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                            title="Pindah Posisi ke Atas"
+                          >
+                            <ArrowUp className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={index === templateColumns.length - 1}
+                            onClick={() => handleMoveTemplateOrder(index, 'down')}
+                            className="p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                            title="Pindah Posisi ke Bawah"
+                          >
+                            <ArrowDown className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
 
                       <div
@@ -861,7 +967,7 @@ export const CustomFieldsPage: React.FC = () => {
           {/* Matrix of Columns in Moodle CSV */}
           <SectionCard
             title="Daftar Kolom Ekspor Berkas CSV Moodle"
-            subtitle="Ubah header Moodle langsung, atur urutan ekspor, edit nama bidang, atau tentukan kolom yang disertakan."
+            subtitle="Seret baris dengan mouse (drag & drop) atau gunakan panah untuk atur urutan ekspor, ubah header Moodle langsung, edit nama bidang, atau tentukan kolom yang disertakan."
             action={
               <Button
                 size="sm"
@@ -905,34 +1011,55 @@ export const CustomFieldsPage: React.FC = () => {
               {fields.map((field, index) => {
                 const isEditingMoodle = editingMoodleFieldId === field.id
                 const isEditingLabel = editingLabelFieldId === field.id
+                const isDragging = draggedFieldIndex === index
+                const isOver = dragOverFieldIndex === index && draggedFieldIndex !== index
                 return (
                   <div
                     key={field.id}
-                    className={`py-3 px-3 flex flex-col md:flex-row md:items-center justify-between gap-3 transition-colors ${
-                      field.include_in_moodle ? 'bg-white' : 'bg-slate-50/70 opacity-60'
+                    draggable={!isEditingMoodle && !isEditingLabel}
+                    onDragStart={(e) => handleFieldDragStart(e, index)}
+                    onDragOver={(e) => handleFieldDragOver(e, index)}
+                    onDragEnd={handleFieldDragEnd}
+                    onDrop={(e) => handleFieldDrop(e, index)}
+                    className={`py-3 px-3 flex flex-col md:flex-row md:items-center justify-between gap-3 transition-all duration-150 ${
+                      isDragging
+                        ? 'opacity-40 scale-[0.99] border-2 border-dashed border-emerald-400 bg-emerald-50/40 rounded-lg'
+                        : isOver
+                        ? 'border-t-2 border-emerald-600 bg-emerald-50/70'
+                        : field.include_in_moodle
+                        ? 'bg-white'
+                        : 'bg-slate-50/70 opacity-60'
                     }`}
                   >
                     <div className="flex items-start gap-2.5">
-                      {/* Reorder Buttons */}
-                      <div className="flex flex-col gap-0.5 shrink-0 mt-0.5">
-                        <button
-                          type="button"
-                          disabled={index === 0}
-                          onClick={() => handleMoveOrder(index, 'up')}
-                          className="p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
-                          title="Pindah ke Atas"
+                      {/* Drag Handle & Reorder Buttons */}
+                      <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                        <div
+                          className="p-1 text-slate-400 hover:text-emerald-700 rounded cursor-grab active:cursor-grabbing shrink-0 select-none"
+                          title="Seret dengan mouse untuk ubah posisi urutan kolom"
                         >
-                          <ArrowUp className="w-3 h-3" />
-                        </button>
-                        <button
-                          type="button"
-                          disabled={index === fields.length - 1}
-                          onClick={() => handleMoveOrder(index, 'down')}
-                          className="p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
-                          title="Pindah ke Bawah"
-                        >
-                          <ArrowDown className="w-3 h-3" />
-                        </button>
+                          <GripVertical className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <button
+                            type="button"
+                            disabled={index === 0}
+                            onClick={() => handleMoveOrder(index, 'up')}
+                            className="p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                            title="Pindah ke Atas"
+                          >
+                            <ArrowUp className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={index === fields.length - 1}
+                            onClick={() => handleMoveOrder(index, 'down')}
+                            className="p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                            title="Pindah ke Bawah"
+                          >
+                            <ArrowDown className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
 
                       <div
@@ -1167,7 +1294,7 @@ export const CustomFieldsPage: React.FC = () => {
           {/* Custom Fields List */}
           <SectionCard
             title={`Daftar Bidang Pendaftaran Tambahan (${fields.length} Bidang)`}
-            subtitle="Urutan tampilan di bawah ini menentukan urutan kolom pada tabel dan template Excel."
+            subtitle="Urutan tampilan di bawah ini menentukan urutan kolom pada tabel dan template Excel. Seret baris dengan mouse (drag & drop) atau gunakan panah untuk ubah urutan."
           >
             {isLoading ? (
               <div className="py-8 text-center text-xs text-slate-500">Memuat konfigurasi bidang...</div>
@@ -1185,36 +1312,58 @@ export const CustomFieldsPage: React.FC = () => {
               </div>
             ) : (
               <div className="divide-y divide-slate-100">
-                {fields.map((field, index) => (
-                  <div
-                    key={field.id}
-                    className={`py-3.5 px-3 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-3 transition-colors ${
-                      field.is_active ? 'hover:bg-slate-50/70' : 'bg-slate-50/50 opacity-60'
-                    }`}
-                  >
-                    {/* Field Info */}
-                    <div className="flex items-start gap-3">
-                      {/* Reorder Buttons */}
-                      <div className="flex flex-col gap-0.5 pt-0.5">
-                        <button
-                          type="button"
-                          disabled={index === 0}
-                          onClick={() => handleMoveOrder(index, 'up')}
-                          className="p-1 rounded text-slate-400 hover:text-slate-700 disabled:opacity-20 hover:bg-slate-100"
-                          title="Geser ke Atas"
-                        >
-                          <ArrowUp className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          disabled={index === fields.length - 1}
-                          onClick={() => handleMoveOrder(index, 'down')}
-                          className="p-1 rounded text-slate-400 hover:text-slate-700 disabled:opacity-20 hover:bg-slate-100"
-                          title="Geser ke Bawah"
-                        >
-                          <ArrowDown className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                {fields.map((field, index) => {
+                  const isDragging = draggedFieldIndex === index
+                  const isOver = dragOverFieldIndex === index && draggedFieldIndex !== index
+                  return (
+                    <div
+                      key={field.id}
+                      draggable
+                      onDragStart={(e) => handleFieldDragStart(e, index)}
+                      onDragOver={(e) => handleFieldDragOver(e, index)}
+                      onDragEnd={handleFieldDragEnd}
+                      onDrop={(e) => handleFieldDrop(e, index)}
+                      className={`py-3.5 px-3 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-3 transition-all duration-150 ${
+                        isDragging
+                          ? 'opacity-40 scale-[0.99] border-2 border-dashed border-emerald-400 bg-emerald-50/40'
+                          : isOver
+                          ? 'border-t-2 border-emerald-600 bg-emerald-50/70'
+                          : field.is_active
+                          ? 'hover:bg-slate-50/70'
+                          : 'bg-slate-50/50 opacity-60'
+                      }`}
+                    >
+                      {/* Field Info */}
+                      <div className="flex items-start gap-3">
+                        {/* Drag Handle & Reorder Buttons */}
+                        <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                          <div
+                            className="p-1 text-slate-400 hover:text-emerald-700 rounded cursor-grab active:cursor-grabbing shrink-0 select-none"
+                            title="Seret dengan mouse untuk ubah posisi urutan bidang"
+                          >
+                            <GripVertical className="w-4 h-4" />
+                          </div>
+                          <div className="flex flex-col gap-0.5">
+                            <button
+                              type="button"
+                              disabled={index === 0}
+                              onClick={() => handleMoveOrder(index, 'up')}
+                              className="p-1 rounded text-slate-400 hover:text-slate-700 disabled:opacity-20 hover:bg-slate-100 cursor-pointer disabled:cursor-not-allowed"
+                              title="Geser ke Atas"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={index === fields.length - 1}
+                              onClick={() => handleMoveOrder(index, 'down')}
+                              className="p-1 rounded text-slate-400 hover:text-slate-700 disabled:opacity-20 hover:bg-slate-100 cursor-pointer disabled:cursor-not-allowed"
+                              title="Geser ke Bawah"
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
 
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
@@ -1327,7 +1476,8 @@ export const CustomFieldsPage: React.FC = () => {
                       </Button>
                     </div>
                   </div>
-                ))}
+                )
+              })}
               </div>
             )}
           </SectionCard>
