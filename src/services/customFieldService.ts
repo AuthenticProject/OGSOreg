@@ -35,9 +35,9 @@ const INITIAL_DEMO_FIELDS: CustomFieldDefinition[] = [
   {
     id: 'cf-daerah-default',
     key: 'daerah',
-    label: 'Daerah / Asal Konsulat',
+    label: 'Daerah',
     field_type: 'text',
-    is_required: false,
+    is_required: true,
     is_active: true,
     display_order: 1,
     include_in_excel: true,
@@ -48,16 +48,16 @@ const INITIAL_DEMO_FIELDS: CustomFieldDefinition[] = [
     updated_at: new Date().toISOString(),
   },
   {
-    id: 'cf-nomor-induk-default',
-    key: 'nomor_induk',
-    label: 'Nomor Induk Santri',
+    id: 'cf-stambuk-default',
+    key: 'stambuk',
+    label: 'Stambuk',
     field_type: 'text',
-    is_required: false,
+    is_required: true,
     is_active: true,
     display_order: 2,
     include_in_excel: true,
-    include_in_moodle: false,
-    moodle_destination: 'profile_field_nomor_induk',
+    include_in_moodle: true,
+    moodle_destination: 'profile_field_stambuk',
     version: 1,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -95,6 +95,20 @@ class CustomFieldService {
           const parsed = JSON.parse(stored) as CustomFieldDefinition[]
           if (Array.isArray(parsed) && parsed.length > 0) {
             this.cache = parsed
+              .filter(
+                (f) =>
+                  !SYSTEM_RESERVED_KEYS.has(f.key.toLowerCase().trim()) &&
+                  !SYSTEM_RESERVED_KEYS.has(f.label.toLowerCase().trim())
+              )
+              .map((f) => {
+                if (f.key === 'nomor_induk') {
+                  return { ...f, key: 'stambuk', label: 'Stambuk', moodle_destination: 'profile_field_stambuk' }
+                }
+                if (f.key === 'daerah' && f.label === 'Daerah / Asal Konsulat') {
+                  return { ...f, label: 'Daerah' }
+                }
+                return f
+              })
             return
           }
         }

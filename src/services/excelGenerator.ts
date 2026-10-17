@@ -358,20 +358,29 @@ export async function exportStudentsToExcel(
         !STANDARD_FIELD_KEYS.includes(cf.key.toLowerCase().trim()) &&
         !STANDARD_FIELD_KEYS.includes(cf.label.toLowerCase().trim())
     )
-  const customCols = activeCustomFields.map((cf) => ({
-    header: cf.label,
-    key: `custom_${cf.key}`,
-    width: Math.max(18, cf.label.length + 5),
-  }))
+  const customCols = activeCustomFields
+    .sort((a, b) => {
+      if (a.key === 'daerah') return -1
+      if (b.key === 'daerah') return 1
+      if (a.key === 'stambuk') return -1
+      if (b.key === 'stambuk') return 1
+      return a.display_order - b.display_order
+    })
+    .map((cf) => ({
+      header: cf.label,
+      key: `custom_${cf.key}`,
+      width: Math.max(18, cf.label.length + 5),
+    }))
 
   ws.columns = [
     { header: 'No.', key: 'no', width: 8 },
-    { header: 'Nama Lengkap', key: 'full_name', width: 28 },
     { header: 'Username', key: 'username', width: 20 },
+    { header: 'Nama Depan', key: 'firstname', width: 22 },
+    { header: 'Nama Belakang', key: 'lastname', width: 22 },
     { header: 'Email', key: 'email', width: 30 },
-    { header: 'Jenjang Lomba', key: 'jenjang', width: 16 },
-    { header: 'Kelas Santri', key: 'kelas', width: 16 },
+    { header: 'Jenjang', key: 'jenjang', width: 16 },
     { header: 'Kampus', key: 'kampus', width: 22 },
+    { header: 'Kelas', key: 'kelas', width: 16 },
     ...customCols,
     { header: 'Sumber', key: 'source', width: 14 },
     { header: 'Status Moodle', key: 'sync_status', width: 20 },
@@ -395,14 +404,18 @@ export async function exportStudentsToExcel(
       customData[`custom_${cf.key}`] = (s as any).custom_fields?.[cf.key] ?? '-'
     })
 
+    const fn = s.firstname || (s.full_name ? s.full_name.split(' ')[0] : '')
+    const ln = s.lastname || (s.full_name ? s.full_name.split(' ').slice(1).join(' ') || '' : '')
+
     const row = ws.addRow({
       no: idx + 1,
-      full_name: s.full_name || `${s.firstname} ${s.lastname || ''}`.trim(),
       username: s.username,
+      firstname: fn,
+      lastname: ln,
       email: s.email,
       jenjang: s.jenjang,
-      kelas: s.kelas || '-',
       kampus: s.kampus || 'Belum Diisi',
+      kelas: s.kelas || '-',
       ...customData,
       source: s.source.toUpperCase(),
       sync_status:
@@ -479,20 +492,29 @@ export async function buildAdminReportWorkbook(
         !STANDARD_FIELD_KEYS.includes(cf.key.toLowerCase().trim()) &&
         !STANDARD_FIELD_KEYS.includes(cf.label.toLowerCase().trim())
     )
-  const customListColumns = activeCustomFields.map((cf) => ({
-    header: cf.label,
-    key: `custom_${cf.key}`,
-    width: Math.max(18, cf.label.length + 5),
-  }))
+  const customListColumns = activeCustomFields
+    .sort((a, b) => {
+      if (a.key === 'daerah') return -1
+      if (b.key === 'daerah') return 1
+      if (a.key === 'stambuk') return -1
+      if (b.key === 'stambuk') return 1
+      return a.display_order - b.display_order
+    })
+    .map((cf) => ({
+      header: cf.label,
+      key: `custom_${cf.key}`,
+      width: Math.max(18, cf.label.length + 5),
+    }))
 
   wsList.columns = [
     { header: 'No.', key: 'no', width: 8 },
-    { header: 'Nama Lengkap', key: 'full_name', width: 28 },
     { header: 'Username', key: 'username', width: 20 },
+    { header: 'Nama Depan', key: 'firstname', width: 22 },
+    { header: 'Nama Belakang', key: 'lastname', width: 22 },
     { header: 'Email', key: 'email', width: 30 },
-    { header: 'Jenjang Lomba', key: 'jenjang', width: 16 },
-    { header: 'Kelas Santri', key: 'kelas', width: 16 },
+    { header: 'Jenjang', key: 'jenjang', width: 16 },
     { header: 'Kampus', key: 'kampus', width: 22 },
+    { header: 'Kelas', key: 'kelas', width: 16 },
     ...customListColumns,
     { header: 'Status Moodle', key: 'sync_status', width: 22 },
     { header: 'Tanggal Input', key: 'created_at', width: 20 },
@@ -507,14 +529,18 @@ export async function buildAdminReportWorkbook(
       customRowData[`custom_${cf.key}`] = (s as any).custom_fields?.[cf.key] ?? '-'
     })
 
+    const fn = s.firstname || (s.full_name ? s.full_name.split(' ')[0] : '')
+    const ln = s.lastname || (s.full_name ? s.full_name.split(' ').slice(1).join(' ') || '' : '')
+
     wsList.addRow({
       no: idx + 1,
-      full_name: s.full_name || `${s.firstname} ${s.lastname || ''}`.trim(),
       username: s.username,
+      firstname: fn,
+      lastname: ln,
       email: s.email,
       jenjang: s.jenjang,
-      kelas: s.kelas || '-',
       kampus: s.kampus || 'Belum Diisi',
+      kelas: s.kelas || '-',
       ...customRowData,
       sync_status:
         s.sync_status === 'enrolled'

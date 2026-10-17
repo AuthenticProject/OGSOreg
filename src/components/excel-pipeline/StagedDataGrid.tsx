@@ -515,19 +515,30 @@ export const StagedDataGrid: React.FC = () => {
         ),
       },
       // Dynamic Custom Fields Columns (Configured by Super Admin, excluding standard keys)
-      ...activeCustomFields
+      ...[...activeCustomFields]
         .filter(
           (cf) =>
             !['kelas', 'jenjang', 'kampus', 'username', 'firstname', 'lastname', 'email', 'full_name', 'nisn'].includes(
               cf.key.toLowerCase()
             )
         )
+        .sort((a, b) => {
+          if (a.key === 'daerah') return -1
+          if (b.key === 'daerah') return 1
+          if (a.key === 'stambuk') return -1
+          if (b.key === 'stambuk') return 1
+          return a.display_order - b.display_order
+        })
         .map((cf) => ({
           id: `custom_${cf.key}`,
           header: `${cf.label}${cf.is_required ? ' *' : ''}`,
           cell: ({ row }: { row: { original: StagedParticipantRow } }) => {
             const fieldKey = `custom_${cf.key}`
-            const val = row.original.custom_fields?.[cf.key] ?? ''
+            const val =
+              row.original.custom_fields?.[cf.key] ??
+              (cf.key === 'daerah' ? (row.original as any).daerah : '') ??
+              (cf.key === 'stambuk' ? (row.original as any).stambuk : '') ??
+              ''
             if (cf.field_type === 'dropdown' && cf.options && cf.options.length > 0) {
               return (
                 <EditableDropdownCell

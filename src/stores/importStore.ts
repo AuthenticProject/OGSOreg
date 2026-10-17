@@ -192,9 +192,19 @@ export const useImportStore = create<ImportState>((set, get) => ({
     })
   },
 
-  addManualRow: (customData?: Partial<StagedParticipantRow>) => {
+  addManualRow: (customData?: Partial<StagedParticipantRow> & { daerah?: string; stambuk?: string }) => {
     const { stagedRows, accessControl } = get()
     const newIndex = stagedRows.length + 1
+    const kl = customData?.kelas ? normalizeKelas(customData.kelas) : ''
+    const jn = customData?.jenjang ? normalizeJenjang(customData.jenjang) : 'Jenjang 1'
+    const kp = customData?.kampus ? normalizeKampus(customData.kampus) : (accessControl?.assignedCampus || '')
+    const u = customData?.username ? normalizeUsername(customData.username) : ''
+    const em = customData?.email ? normalizeEmail(customData.email) : ''
+    const fn = customData?.firstname ? normalizeString(customData.firstname) : ''
+    const ln = customData?.lastname ? normalizeString(customData.lastname) : ''
+    const dr = (customData?.custom_fields?.['daerah'] || customData?.daerah || '') as string
+    const stb = (customData?.custom_fields?.['stambuk'] || customData?.stambuk || '') as string
+
     const newRow: StagedParticipantRow = {
       _rowId: `manual-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       _rowIndex: newIndex + 1,
@@ -203,23 +213,32 @@ export const useImportStore = create<ImportState>((set, get) => ({
       _warnings: {},
       _isDuplicate: false,
 
-      username: customData?.username || '',
-      firstname: customData?.firstname || '',
-      lastname: customData?.lastname || '',
-      email: customData?.email || '',
-      kelas: customData?.kelas || 'Kelas 1',
-      jenjang: customData?.jenjang || 'Jenjang 1',
-      kampus: customData?.kampus || accessControl?.assignedCampus || '',
+      username: u,
+      firstname: fn,
+      lastname: ln,
+      email: em,
+      kelas: kl,
+      jenjang: jn,
+      kampus: kp,
 
       no: String(newIndex),
-      full_name: [customData?.firstname, customData?.lastname].filter(Boolean).join(' '),
+      full_name: [fn, ln].filter(Boolean).join(' '),
       nisn: customData?.nisn || '',
       gender: customData?.gender || 'L',
-      grade_level: customData?.kelas || 'Kelas 1',
+      grade_level: kl,
       school_name: customData?.school_name || '',
       competition_category: customData?.competition_category || '',
       teacher_name: customData?.teacher_name || '',
-      custom_fields: customData?.custom_fields || {},
+      custom_fields: {
+        ...(customData?.custom_fields || {}),
+        daerah: dr,
+        stambuk: stb,
+        kelas: kl,
+        jenjang: jn,
+        kampus: kp,
+        username: u,
+        email: em,
+      },
     }
 
     const updated = [...stagedRows, newRow]

@@ -11,6 +11,11 @@ import { Button } from '../ui/Button'
 import { SectionCard } from '../ui/SectionCard'
 import { useImportStore } from '../../stores/importStore'
 import { MOODLE_JENJANG_OPTIONS, type MoodleJenjang } from '../../types/excel'
+import { KAMPUS_OPTIONS } from '../../types/campus'
+import { customFieldService } from '../../services/customFieldService'
+import type { CustomFieldDefinition } from '../../types/customField'
+import { useAuth } from '../../context/AuthContext'
+import { STANDARD_FIELD_KEYS } from '../../services/validationEngine'
 
 interface FileDropzoneProps {
   onBackToTemplate?: () => void
@@ -26,6 +31,36 @@ export const FileDropzone: React.FC<FileDropzoneProps> = () => {
   const [pasteText, setPasteText] = useState('')
   const [pasteError, setPasteError] = useState<string | null>(null)
 
+  const { assignedCampus, isSuperAdmin } = useAuth()
+  const {
+    handleFileUpload,
+    handlePasteFromSpreadsheet,
+    addManualRow,
+    isParsing,
+    parseError,
+    accessControl,
+  } = useImportStore()
+
+  const [activeCustomFields, setActiveCustomFields] = useState<CustomFieldDefinition[]>(() =>
+    customFieldService.getActiveFieldsSync()
+  )
+
+  React.useEffect(() => {
+    return customFieldService.subscribe((fields) => {
+      setActiveCustomFields(
+        fields.filter(
+          (f) =>
+            f.is_active &&
+            !STANDARD_FIELD_KEYS.includes(f.key.toLowerCase().trim()) &&
+            !STANDARD_FIELD_KEYS.includes(f.label.toLowerCase().trim())
+        )
+      )
+    })
+  }, [])
+
+  const defaultCampus = accessControl?.assignedCampus || assignedCampus || 'Gontor 1'
+  const isLockedCampus = Boolean((accessControl?.assignedCampus || assignedCampus) && !isSuperAdmin)
+
   // Manual form state
   const [manualForm, setManualForm] = useState({
     username: '',
@@ -33,16 +68,19 @@ export const FileDropzone: React.FC<FileDropzoneProps> = () => {
     lastname: '',
     email: '',
     jenjang: 'Jenjang 1' as MoodleJenjang,
+    kampus: defaultCampus,
+    kelas: '',
+    daerah: '',
+    stambuk: '',
+    custom_fields: {} as Record<string, any>,
   })
   const [manualFormError, setManualFormError] = useState<string | null>(null)
 
-  const {
-    handleFileUpload,
-    handlePasteFromSpreadsheet,
-    addManualRow,
-    isParsing,
-    parseError,
-  } = useImportStore()
+  React.useEffect(() => {
+    if (defaultCampus && (!manualForm.kampus || manualForm.kampus === 'Gontor 1')) {
+      setManualForm((prev) => ({ ...prev, kampus: defaultCampus }))
+    }
+  }, [defaultCampus])
 
   const validateAndProcessFile = (file: File) => {
     setLocalError(null)
@@ -113,24 +151,96 @@ export const FileDropzone: React.FC<FileDropzoneProps> = () => {
     e.preventDefault()
     setManualFormError(null)
 
-    if (!manualForm.username.trim()) {
+    const u = manualForm.username.trim()
+    const fn = manualForm.firstname.trim()
+    const ln = manualForm.lastname.trim()
+    const em = manualForm.email.trim()
+    const jn = manualForm.jenjang.trim()
+    const kp = (manualForm.kampus || defaultCampus).trim()
+    const kl = manualForm.kelas.trim()
+    const dr = manualForm.daerah.trim()
+    const stb = manualForm.stambuk.trim()
+
+    if (!u) {
       setManualFormError('Username wajib diisi.')
       return
     }
-    if (!manualForm.firstname.trim()) {
+    if (/\s/.test(u)) {
+      setManualFormError('Username tidak boleh mengandung spasi (gunakan huruf kecil, angka, atau garis bawah).')
+      return
+    }
+    if (!fn) {
       setManualFormError('Nama depan wajib diisi.')
       return
     }
-    if (!manualForm.lastname.trim()) {
+    if (!ln) {
       setManualFormError('Nama belakang wajib diisi.')
       return
     }
-    if (!manualForm.email.trim()) {
-      setManualFormError('Email wajib diisi.')
+    if (!em) {
+      setManualFormError('Alamat email wajib diisi.')
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) {
+      setManualFormError('Format alamat email tidak valid (contoh: santri@gontor.ac.id atau nama@ogso.ac.id).')
+      return
+    }
+    if (!jn) {
+      setManualFormError('Jenjang perlombaan wajib dipilih.')
+      return
+    }
+    if (!kp) {
+      setManualFormError('Kampus wajib dipilih.')
+      return
+    }
+    if (!kl) {
+      setManualFormError('Kelas santri wajib diisi (contoh: 5-B, 3-C atau untuk intensif: 3 int F, 1 int C).')
       return
     }
 
-    addManualRow(manualForm)
+    // Check custom fields that may be required
+    const daerahField = activeCustomFields.find((f) => f.key === 'daerah')
+    if (daerahField?.is_required && !dr) {
+      setManualFormError('Daerah / Asal Konsulat wajib diisi.')
+      return
+    }
+    const stambukField = activeCustomFields.find((f) => f.key === 'stambuk')
+    if (stambukField?.is_required && !stb) {
+      setManualFormError('Nomor Stambuk santri wajib diisi.')
+      return
+    }
+
+    for (const cf of activeCustomFields) {
+      if (cf.key !== 'daerah' && cf.key !== 'stambuk' && cf.is_required) {
+        const val = manualForm.custom_fields[cf.key]
+        if (!val || String(val).trim() === '') {
+          setManualFormError(`${cf.label} wajib diisi.`)
+          return
+        }
+      }
+    }
+
+    addManualRow({
+      username: u,
+      firstname: fn,
+      lastname: ln,
+      email: em,
+      jenjang: jn,
+      kampus: kp,
+      kelas: kl,
+      daerah: dr,
+      stambuk: stb,
+      custom_fields: {
+        ...(manualForm.custom_fields || {}),
+        daerah: dr,
+        stambuk: stb,
+        kelas: kl,
+        jenjang: jn,
+        kampus: kp,
+        username: u,
+        email: em,
+      },
+    })
   }
 
   const currentError = localError || parseError
@@ -313,8 +423,19 @@ export const FileDropzone: React.FC<FileDropzoneProps> = () => {
 
         {/* TAB 3: MANUAL FORM */}
         {activeTab === 'MANUAL' && (
-          <form onSubmit={handleAddManualParticipant} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <form onSubmit={handleAddManualParticipant} className="space-y-5">
+            <div className="p-3.5 bg-emerald-50/70 border border-emerald-200/80 rounded-xl text-xs text-emerald-900 flex items-start gap-2.5">
+              <Info className="w-4 h-4 text-[#166534] shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-[#166534]">Form Pendaftaran Manual Santri</p>
+                <p className="text-[11px] text-emerald-800 mt-0.5 leading-relaxed">
+                  Lengkapi data santri peserta sesuai kolom resmi (Username, Nama, Email, Jenjang, Kampus, Kelas, Daerah, dan Stambuk). Data yang disimpan akan langsung masuk ke tabel pratinjau & validasi.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* 1. Username */}
               <div>
                 <label className="block text-xs font-semibold text-foreground mb-1.5">
                   Username <span className="text-rose-500">*</span>
@@ -323,14 +444,57 @@ export const FileDropzone: React.FC<FileDropzoneProps> = () => {
                   type="text"
                   placeholder="contoh: ahmad_faiz"
                   value={manualForm.username}
-                  onChange={(e) => setManualForm({ ...manualForm, username: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-brand-maroon focus:outline-none"
+                  onChange={(e) => setManualForm({ ...manualForm, username: e.target.value.toLowerCase().trim() })}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-[#166534] focus:outline-none font-mono"
                 />
                 <p className="text-[10px] text-muted-foreground mt-1">
                   ID akun login di LMS Moodle (tanpa spasi).
                 </p>
               </div>
 
+              {/* 2. Nama Depan */}
+              <div>
+                <label className="block text-xs font-semibold text-foreground mb-1.5">
+                  Nama Depan <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Nama awal santri"
+                  value={manualForm.firstname}
+                  onChange={(e) => setManualForm({ ...manualForm, firstname: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-[#166534] focus:outline-none"
+                />
+              </div>
+
+              {/* 3. Nama Belakang */}
+              <div>
+                <label className="block text-xs font-semibold text-foreground mb-1.5">
+                  Nama Belakang <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Nama akhir / marga santri"
+                  value={manualForm.lastname}
+                  onChange={(e) => setManualForm({ ...manualForm, lastname: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-[#166534] focus:outline-none"
+                />
+              </div>
+
+              {/* 4. Email */}
+              <div>
+                <label className="block text-xs font-semibold text-foreground mb-1.5">
+                  Alamat Email <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  placeholder="santri@gontor.ac.id"
+                  value={manualForm.email}
+                  onChange={(e) => setManualForm({ ...manualForm, email: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-[#166534] focus:outline-none font-mono"
+                />
+              </div>
+
+              {/* 5. Jenjang */}
               <div>
                 <label className="block text-xs font-semibold text-foreground mb-1.5">
                   Jenjang <span className="text-rose-500">*</span>
@@ -338,7 +502,7 @@ export const FileDropzone: React.FC<FileDropzoneProps> = () => {
                 <select
                   value={manualForm.jenjang}
                   onChange={(e) => setManualForm({ ...manualForm, jenjang: e.target.value as MoodleJenjang })}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-brand-maroon focus:outline-none bg-white"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-[#166534] focus:outline-none bg-white font-medium"
                 >
                   {MOODLE_JENJANG_OPTIONS.map((opt) => (
                     <option key={opt} value={opt}>
@@ -351,54 +515,140 @@ export const FileDropzone: React.FC<FileDropzoneProps> = () => {
                 </p>
               </div>
 
+              {/* 6. Kampus */}
               <div>
                 <label className="block text-xs font-semibold text-foreground mb-1.5">
-                  Nama Depan <span className="text-rose-500">*</span>
+                  Kampus <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={manualForm.kampus}
+                  disabled={isLockedCampus}
+                  onChange={(e) => setManualForm({ ...manualForm, kampus: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-[#166534] focus:outline-none bg-white font-medium disabled:bg-slate-100 disabled:text-slate-600"
+                >
+                  {KAMPUS_OPTIONS.map((kp) => (
+                    <option key={kp} value={kp}>
+                      {kp}
+                    </option>
+                  ))}
+                </select>
+                {isLockedCampus ? (
+                  <p className="text-[10px] text-emerald-700 font-medium mt-1">
+                    Terkunci otomatis ke kontingen Anda ({manualForm.kampus}).
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Pilih salah satu dari 20 Kampus Resmi Gontor.
+                  </p>
+                )}
+              </div>
+
+              {/* 7. Kelas */}
+              <div>
+                <label className="block text-xs font-semibold text-foreground mb-1.5">
+                  Kelas <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="Nama awal siswa"
-                  value={manualForm.firstname}
-                  onChange={(e) => setManualForm({ ...manualForm, firstname: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-brand-maroon focus:outline-none"
+                  placeholder="contoh: 5-B, 3-C, 3 int F"
+                  value={manualForm.kelas}
+                  onChange={(e) => setManualForm({ ...manualForm, kelas: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-[#166534] focus:outline-none font-medium"
                 />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Format: angka-abjad (misal: 5-B) atau intensif (misal: 3 int F).
+                </p>
               </div>
 
+              {/* 8. Daerah */}
               <div>
                 <label className="block text-xs font-semibold text-foreground mb-1.5">
-                  Nama Belakang <span className="text-rose-500">*</span>
+                  Daerah / Konsulat <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="Nama akhir / marga siswa"
-                  value={manualForm.lastname}
-                  onChange={(e) => setManualForm({ ...manualForm, lastname: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-brand-maroon focus:outline-none"
+                  placeholder="contoh: Banyuwangi, Konsulat Surabaya"
+                  value={manualForm.daerah}
+                  onChange={(e) => setManualForm({ ...manualForm, daerah: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-[#166534] focus:outline-none"
                 />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Asal konsulat atau daerah santri.
+                </p>
               </div>
 
-              <div className="sm:col-span-2">
+              {/* 9. Stambuk */}
+              <div>
                 <label className="block text-xs font-semibold text-foreground mb-1.5">
-                  Alamat Email <span className="text-rose-500">*</span>
+                  Nomor Stambuk <span className="text-rose-500">*</span>
                 </label>
                 <input
-                  type="email"
-                  placeholder="user@sekolah.sch.id"
-                  value={manualForm.email}
-                  onChange={(e) => setManualForm({ ...manualForm, email: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-brand-maroon focus:outline-none"
+                  type="text"
+                  placeholder="contoh: 67845"
+                  value={manualForm.stambuk}
+                  onChange={(e) => setManualForm({ ...manualForm, stambuk: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-[#166534] focus:outline-none font-mono"
                 />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Nomor induk santri (Stambuk).
+                </p>
               </div>
+
+              {/* Extra Dynamic Custom Fields (if configured beyond Daerah & Stambuk) */}
+              {activeCustomFields
+                .filter((cf) => cf.key !== 'daerah' && cf.key !== 'stambuk')
+                .map((cf) => (
+                  <div key={cf.id}>
+                    <label className="block text-xs font-semibold text-foreground mb-1.5">
+                      {cf.label} {cf.is_required && <span className="text-rose-500">*</span>}
+                    </label>
+                    {cf.field_type === 'dropdown' && cf.options && cf.options.length > 0 ? (
+                      <select
+                        value={manualForm.custom_fields[cf.key] || ''}
+                        onChange={(e) =>
+                          setManualForm({
+                            ...manualForm,
+                            custom_fields: { ...manualForm.custom_fields, [cf.key]: e.target.value },
+                          })
+                        }
+                        className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-[#166534] focus:outline-none bg-white font-medium"
+                      >
+                        <option value="">Pilih {cf.label}</option>
+                        {cf.options.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type={cf.field_type === 'number' ? 'number' : cf.field_type === 'email' ? 'email' : 'text'}
+                        placeholder={`${cf.label}...`}
+                        value={manualForm.custom_fields[cf.key] || ''}
+                        onChange={(e) =>
+                          setManualForm({
+                            ...manualForm,
+                            custom_fields: { ...manualForm.custom_fields, [cf.key]: e.target.value },
+                          })
+                        }
+                        className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:ring-2 focus:ring-[#166534] focus:outline-none"
+                      />
+                    )}
+                  </div>
+                ))}
             </div>
 
             {manualFormError && (
               <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                <span>{manualFormError}</span>
+                <span className="font-medium">{manualFormError}</span>
               </div>
             )}
 
-            <div className="flex justify-end pt-2">
+            <div className="flex items-center justify-between pt-2 border-t border-border/60">
+              <span className="text-[11px] text-muted-foreground">
+                Santri yang ditambahkan akan otomatis dianalisis dan divalidasi ke tabel pratinjau.
+              </span>
               <Button
                 type="submit"
                 variant="primary"

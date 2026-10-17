@@ -46,6 +46,8 @@ export interface StagedParticipantRow {
   jenjang?: string // 'Jenjang 1' | 'Jenjang 2' | 'Jenjang 3' | 'Jenjang 4' | 'Jenjang 5'
   kelas?: string // 'Kelas 1' | 'Kelas 2' | 'Kelas 1 Int' | 'Kelas 3' | 'Kelas 3 Int' | 'Kelas 4' | 'Kelas 5'
   kampus?: string // Gontor 1 - 12, Gontor Putri 1 - 8
+  daerah?: string
+  stambuk?: string
   _source?: string
   source?: string
 
