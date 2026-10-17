@@ -20,6 +20,23 @@ export function normalizeInstitutionId(id?: string | null): string {
   return CANONICAL_INSTITUTION_ID
 }
 
+let isCustomFieldsSupportedInSupabase: boolean | null = null
+
+export function isMissingColumnError(error: any, columnName: string): boolean {
+  if (!error) return false
+  const code = String(error.code || '')
+  const msg = String(error.message || '').toLowerCase()
+  const details = String(error.details || '').toLowerCase()
+  const hint = String(error.hint || '').toLowerCase()
+  return (
+    code === '42703' ||
+    code === 'PGRST204' ||
+    msg.includes(columnName.toLowerCase()) ||
+    details.includes(columnName.toLowerCase()) ||
+    hint.includes(columnName.toLowerCase())
+  )
+}
+
 function toSupabaseInsertPayload(s: Partial<Student>): any {
   const payload: Record<string, any> = {
     username: s.username?.toLowerCase().trim(),
@@ -36,7 +53,7 @@ function toSupabaseInsertPayload(s: Partial<Student>): any {
     last_synced_at: s.last_synced_at || null,
   }
 
-  if (s.custom_fields && Object.keys(s.custom_fields).length > 0) {
+  if (isCustomFieldsSupportedInSupabase !== false && s.custom_fields && Object.keys(s.custom_fields).length > 0) {
     payload.custom_fields = s.custom_fields
   }
 
@@ -144,10 +161,18 @@ class StudentRepository {
 
       // Upload siswa lokal ke Supabase Cloud
       if (toUpload.length > 0) {
-        const { data: inserted, error: insertErr } = await supabase
+        let { data: inserted, error: insertErr } = await supabase
           .from('students')
           .insert(toUpload)
           .select()
+
+        if (insertErr && isMissingColumnError(insertErr, 'custom_fields')) {
+          isCustomFieldsSupportedInSupabase = false
+          const stripped = toUpload.map(({ custom_fields, ...rest }: any) => rest)
+          const retry = await supabase.from('students').insert(stripped).select()
+          inserted = retry.data
+          insertErr = retry.error
+        }
 
         if (!insertErr && inserted) {
           inserted.forEach((ins) => {
@@ -156,8 +181,18 @@ class StudentRepository {
         }
       }
 
-      // Simpan gabungan lengkap ke local cache
-      const mergedList = Array.from(cloudMap.values())
+      // Simpan gabungan lengkap ke local cache TANPA menghapus data lokal yang belum tersinkron
+      const mergedMap = new Map<string, Student>()
+      localStudents.forEach((loc) => {
+        const key = (loc.username || loc.id).toLowerCase().trim()
+        mergedMap.set(key, loc)
+      })
+      cloudMap.forEach((cloudS, key) => {
+        const existing = mergedMap.get(key)
+        mergedMap.set(key, { ...existing, ...cloudS })
+      })
+
+      const mergedList = Array.from(mergedMap.values())
       if (mergedList.length > 0) {
         this.inMemoryStore.set(canonicalId, mergedList)
         this.persistLocalStorage()
@@ -399,14 +434,38 @@ class StudentRepository {
         query = query.range(from, to)
 
         const { data, count, error } = await query
-        if (!error && data && data.length > 0) {
-          const stats = await this.getStats(CANONICAL_INSTITUTION_ID, assignedCampus)
-          return {
-            data: data as Student[],
-            students: data as Student[],
-            total: count || 0,
-            totalAll: stats.total,
-            stats,
+        if (!error && data) {
+          const localStudents = this.getRawStore(CANONICAL_INSTITUTION_ID)
+          const cloudKeys = new Set((data || []).map((s: any) => (s.username || s.id).toLowerCase().trim()))
+
+          const missingLocals = localStudents.filter((loc) => {
+            const key = (loc.username || loc.id).toLowerCase().trim()
+            if (cloudKeys.has(key)) return false
+            if (assignedCampus && loc.kampus !== assignedCampus) return false
+            if (kampus && kampus !== 'all' && kampus !== 'ALL' && loc.kampus !== kampus) return false
+            if (jenjang && jenjang !== 'all' && jenjang !== 'ALL' && loc.jenjang !== jenjang) return false
+            if (searchTerm) {
+              const q = searchTerm.toLowerCase()
+              const matches =
+                loc.full_name?.toLowerCase().includes(q) ||
+                loc.username?.toLowerCase().includes(q) ||
+                loc.email?.toLowerCase().includes(q) ||
+                (loc.kampus && loc.kampus.toLowerCase().includes(q))
+              if (!matches) return false
+            }
+            return true
+          })
+
+          const combinedData = [...missingLocals, ...(data as Student[])]
+          if (combinedData.length > 0) {
+            const stats = await this.getStats(CANONICAL_INSTITUTION_ID, assignedCampus)
+            return {
+              data: combinedData,
+              students: combinedData,
+              total: (count || 0) + missingLocals.length,
+              totalAll: stats.total,
+              stats,
+            }
           }
         }
       } catch {
@@ -602,7 +661,8 @@ class StudentRepository {
           .single()
 
         // Handle case if custom_fields column is not yet migrated in Supabase
-        if (error && error.code === '42703' && error.message?.includes('custom_fields')) {
+        if (error && isMissingColumnError(error, 'custom_fields')) {
+          isCustomFieldsSupportedInSupabase = false
           const { custom_fields, ...safePayload } = dbPayload
           const retry = await supabase.from('students').insert(safePayload).select().single()
           dbData = retry.data
@@ -721,7 +781,8 @@ class StudentRepository {
           .select()
           .single()
 
-        if (error && error.code === '42703' && error.message?.includes('custom_fields')) {
+        if (error && isMissingColumnError(error, 'custom_fields')) {
+          isCustomFieldsSupportedInSupabase = false
           const { custom_fields, ...safeStudent } = updatedStudent
           const retry = await supabase
             .from('students')
@@ -923,7 +984,8 @@ class StudentRepository {
           let { error } = await supabase.from('students').insert(dbPayloads)
 
           // Handle if custom_fields column is not yet migrated in Supabase
-          if (error && error.code === '42703' && error.message?.includes('custom_fields')) {
+          if (error && isMissingColumnError(error, 'custom_fields')) {
+            isCustomFieldsSupportedInSupabase = false
             const stripped = dbPayloads.map(({ custom_fields, ...rest }: any) => rest)
             const retry = await supabase.from('students').insert(stripped)
             error = retry.error

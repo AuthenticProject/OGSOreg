@@ -52,6 +52,9 @@ CREATE TABLE IF NOT EXISTS public.students (
     CONSTRAINT unique_institution_student_username UNIQUE (institution_id, username)
 );
 
+-- Ensure dynamic custom fields column exists
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS custom_fields JSONB DEFAULT '{}'::jsonb;
+
 -- Indexes for fast query performance
 CREATE INDEX IF NOT EXISTS idx_students_institution_id ON public.students(institution_id);
 CREATE INDEX IF NOT EXISTS idx_students_username ON public.students(username);
