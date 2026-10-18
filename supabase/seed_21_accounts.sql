@@ -136,7 +136,7 @@ BEGIN
       v_role,
       v_campus,
       true,
-      false, -- ga harus ubah password pas pertama login
+      CASE WHEN v_role = 'super_admin' THEN false ELSE true END, -- Wajibkan 20 admin kampus ganti password pada login pertama
       now()
     )
     ON CONFLICT (username) DO UPDATE SET
@@ -144,7 +144,7 @@ BEGIN
       email = EXCLUDED.email,
       role = EXCLUDED.role,
       campus_id = EXCLUDED.campus_id,
-      must_change_password = false,
+      must_change_password = EXCLUDED.must_change_password,
       updated_at = now();
       
   END LOOP;

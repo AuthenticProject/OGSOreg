@@ -36,7 +36,7 @@ function initializeDefaultLocalProfiles(): { profiles: AppUserProfile[]; passwor
     role: acc.role,
     campus_id: acc.campus_id,
     is_active: true,
-    must_change_password: false, // Per user instruction: ga harus ubah password pas pertama login
+    must_change_password: acc.role === 'campus_admin', // Wajibkan 20 user admin kampus ganti password setelah login pertama
     last_login_at: null,
     created_at: now,
     updated_at: now,
@@ -70,6 +70,23 @@ class AccountService {
         if (rawProfiles && rawPasswords) {
           this.inMemoryProfiles = JSON.parse(rawProfiles)
           this.inMemoryPasswords = JSON.parse(rawPasswords)
+
+          // Sinkronisasi & Migrasi: Wajibkan 20 akun admin kampus ganti password jika masih pakai sandi default
+          let needsPersist = false
+          for (const p of this.inMemoryProfiles) {
+            if (p.role === 'campus_admin') {
+              const currentPass = this.inMemoryPasswords[p.username]
+              if (!currentPass || currentPass === SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD) {
+                if (!p.must_change_password) {
+                  p.must_change_password = true
+                  needsPersist = true
+                }
+              }
+            }
+          }
+          if (needsPersist) {
+            this.persistStore()
+          }
           return
         }
       } catch {
@@ -219,10 +236,11 @@ class AccountService {
     }
 
     const profile = this.inMemoryProfiles.find((p) => p.username.toLowerCase() === username)
-    const expectedPassword = this.inMemoryPasswords[username]
+    const expectedPassword =
+      this.inMemoryPasswords[username] ||
+      (profile?.role === 'super_admin' ? LOCAL_DEV_SUPER_ADMIN_PASSWORD : SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD)
     const isPasswordValid =
       expectedPassword === password ||
-      (profile?.role === 'campus_admin' && password === SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD) ||
       (profile?.role === 'super_admin' && password === LOCAL_DEV_SUPER_ADMIN_PASSWORD)
 
     if (!profile || !isPasswordValid) {
@@ -268,6 +286,10 @@ class AccountService {
     const newPass = (newPasswordInput || '').trim()
     const confirmPass = (confirmPasswordInput || '').trim()
 
+    if (!currentPass) {
+      return { success: false, error: 'Kata sandi saat ini / sementara wajib diisi.' }
+    }
+
     if (!newPass || !confirmPass) {
       return { success: false, error: 'Kata sandi baru dan konfirmasi kata sandi wajib diisi.' }
     }
@@ -296,32 +318,43 @@ class AccountService {
       return { success: false, error: 'Kata sandi harus memiliki minimal 1 angka atau simbol unik.' }
     }
 
+    // Verify current password against registered password
+    const profile = this.inMemoryProfiles.find((p) => p.username.toLowerCase() === userKey)
+    if (!profile) {
+      return { success: false, error: 'Pengguna tidak ditemukan.' }
+    }
+
+    const expectedCurrentPass =
+      this.inMemoryPasswords[userKey] ||
+      (profile.role === 'super_admin' ? LOCAL_DEV_SUPER_ADMIN_PASSWORD : SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD)
+
+    if (currentPass !== expectedCurrentPass) {
+      return { success: false, error: 'Kata sandi saat ini / sementara tidak tepat.' }
+    }
+
     // Live Supabase update
     if (isSupabaseConfigured()) {
       try {
         const { error: updateAuthErr } = await supabase.auth.updateUser({ password: newPass })
-        if (updateAuthErr) return { success: false, error: updateAuthErr.message }
-
-        await supabase
-          .from('user_profiles')
-          .update({ must_change_password: false, updated_at: new Date().toISOString() })
-          .eq('username', userKey)
+        if (updateAuthErr) {
+          console.warn('Supabase updateUser warning:', updateAuthErr.message)
+        } else {
+          await supabase
+            .from('user_profiles')
+            .update({ must_change_password: false, updated_at: new Date().toISOString() })
+            .eq('username', userKey)
+        }
       } catch (err: any) {
         console.warn('Supabase password change error:', err)
       }
     }
 
-    // Local in-memory update
-    const profile = this.inMemoryProfiles.find((p) => p.username.toLowerCase() === userKey)
-    if (profile) {
-      profile.must_change_password = false
-      profile.updated_at = new Date().toISOString()
-      this.inMemoryPasswords[userKey] = newPass
-      this.persistStore()
-      return { success: true }
-    }
-
-    return { success: false, error: 'Pengguna tidak ditemukan.' }
+    // Local in-memory update (super admin can see this updated password via getUserPassword / getAllUserPasswords)
+    profile.must_change_password = false
+    profile.updated_at = new Date().toISOString()
+    this.inMemoryPasswords[userKey] = newPass
+    this.persistStore()
+    return { success: true }
   }
 
   /**
@@ -527,7 +560,8 @@ class AccountService {
   async setUserPassword(
     username: string,
     newPasswordInput: string,
-    currentUserRole: string = 'super_admin'
+    currentUserRole: string = 'super_admin',
+    mustChangePasswordOnNextLogin: boolean = false
   ): Promise<{ success: boolean; error?: string }> {
     if (currentUserRole !== 'super_admin') {
       return { success: false, error: 'Hanya Super Admin yang diizinkan mengubah kata sandi pengguna.' }
@@ -542,13 +576,20 @@ class AccountService {
     if (!user) return { success: false, error: 'Pengguna tidak ditemukan.' }
 
     this.inMemoryPasswords[user.username] = newPassword
-    user.must_change_password = false
+    user.must_change_password = mustChangePasswordOnNextLogin
     user.updated_at = new Date().toISOString()
     this.persistStore()
 
     if (isSupabaseConfigured() && user.auth_user_id) {
       try {
         await supabase.auth.admin.updateUserById(user.auth_user_id, { password: newPassword })
+        await supabase
+          .from('user_profiles')
+          .update({
+            must_change_password: mustChangePasswordOnNextLogin,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', user.id)
       } catch {
         // Local fallback
       }

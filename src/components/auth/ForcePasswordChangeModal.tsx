@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
-import { KeyRound, Check, Eye, EyeOff, Lock, AlertCircle } from 'lucide-react'
+import { KeyRound, Check, Eye, EyeOff, Lock, AlertCircle, LogOut } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { useAuth } from '../../context/AuthContext'
 
 export const ForcePasswordChangeModal: React.FC = () => {
-  const { appProfile, changePassword, mustChangePassword } = useAuth()
+  const { appProfile, changePassword, mustChangePassword, signOut } = useAuth()
 
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -43,7 +43,7 @@ export const ForcePasswordChangeModal: React.FC = () => {
     if (!res.success) {
       setErrorMsg(res.error || 'Gagal mengubah kata sandi.')
     } else {
-      setSuccessMsg('Kata sandi berhasil diperbarui! Anda sekarang dapat mengakses dashboard.')
+      setSuccessMsg('Kata sandi berhasil diperbarui! Mengalihkan ke dashboard...')
     }
   }
 
@@ -185,10 +185,21 @@ export const ForcePasswordChangeModal: React.FC = () => {
             variant="primary"
             isLoading={isSubmitting}
             disabled={!isFormValid || isSubmitting}
-            className="w-full h-11 text-sm shadow-md mt-2"
+            className="w-full h-11 text-sm shadow-md mt-2 font-bold bg-[#166534] hover:bg-[#14532D]"
           >
             Simpan Kata Sandi Baru & Buka Akses
           </Button>
+
+          <div className="pt-2 text-center border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => signOut()}
+              className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors py-1"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Keluar / Batal Login
+            </button>
+          </div>
         </form>
       </div>
     </div>

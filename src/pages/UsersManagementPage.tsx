@@ -51,6 +51,7 @@ export const UsersManagementPage: React.FC = () => {
 
   // Password modal form
   const [newPassword, setNewPassword] = useState('')
+  const [forceChangeNextLogin, setForceChangeNextLogin] = useState(false)
 
   // Edit User modal form
   const [editDisplayName, setEditDisplayName] = useState('')
@@ -135,12 +136,12 @@ export const UsersManagementPage: React.FC = () => {
       return
     }
 
-    const confirmMsg = `Reset kata sandi untuk '${user.username}' (${user.display_name})?\n\nKata sandi akan dikembalikan ke sandi standar resmi ('OGSO2026').`
+    const confirmMsg = `Reset kata sandi untuk '${user.username}' (${user.display_name})?\n\nKata sandi akan dikembalikan ke sandi standar resmi ('OGSO2026') dan pengguna DIWAJIBKAN mengganti kata sandi pada login pertama berikutnya.`
 
     if (window.confirm(confirmMsg)) {
       const res = await accountService.resetUserAccess(user.id, appProfile?.role || '')
       if (res.success) {
-        showFeedback('success', `Kata sandi akun '${user.username}' berhasil direset ke 'OGSO2026'.`)
+        showFeedback('success', `Kata sandi akun '${user.username}' berhasil direset ke 'OGSO2026' & wajib ganti sandi pada login.`)
         loadData()
       } else {
         showFeedback('error', res.error || 'Gagal mereset kata sandi.')
@@ -151,7 +152,9 @@ export const UsersManagementPage: React.FC = () => {
   // Handle Open Password Modal
   const handleOpenPasswordModal = (user: AppUserProfile) => {
     setSelectedUser(user)
-    setNewPassword(passwords[user.username] || 'OGSO2026')
+    const currentPass = passwords[user.username] || (user.role === 'super_admin' ? 'OGSOreg_SuperAdmin2026!' : 'OGSO2026')
+    setNewPassword(currentPass)
+    setForceChangeNextLogin(user.must_change_password)
     setIsPasswordModalOpen(true)
   }
 
@@ -164,7 +167,8 @@ export const UsersManagementPage: React.FC = () => {
     const res = await accountService.setUserPassword(
       selectedUser.username,
       newPassword,
-      appProfile?.role || 'super_admin'
+      appProfile?.role || 'super_admin',
+      forceChangeNextLogin
     )
     setIsSubmitting(false)
 
@@ -519,19 +523,38 @@ export const UsersManagementPage: React.FC = () => {
                         {u.email}
                       </td>
 
-                      {/* 5. Status Akun */}
+                      {/* 5. Status Akun & Sandi */}
                       <td className="py-3 px-4 text-center">
-                        {u.is_active ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <CheckCircle2 className="w-3 h-3 text-[#22C55E]" />
-                            Aktif
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                            <XCircle className="w-3 h-3 text-rose-500" />
-                            Nonaktif
-                          </span>
-                        )}
+                        <div className="flex flex-col items-center gap-1">
+                          {u.is_active ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <CheckCircle2 className="w-3 h-3 text-[#22C55E]" />
+                              Aktif
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                              <XCircle className="w-3 h-3 text-rose-500" />
+                              Nonaktif
+                            </span>
+                          )}
+
+                          {u.must_change_password ? (
+                            <span
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200"
+                              title="Wajib ganti password pada login pertama"
+                            >
+                              <KeyRound className="w-3 h-3 text-amber-600" />
+                              Wajib Ganti Sandi
+                            </span>
+                          ) : (
+                            <span
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-50 text-slate-500 border border-slate-200"
+                              title="Sandi kustom telah tersimpan"
+                            >
+                              Sandi Sudah Diatur
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* 6. Last Login */}
@@ -742,6 +765,12 @@ export const UsersManagementPage: React.FC = () => {
                 <span className="text-slate-500 block text-[11px]">Akun yang akan diubah:</span>
                 <p className="font-mono font-bold text-slate-900 text-sm">{selectedUser.username}</p>
                 <p className="text-slate-600 text-[11px]">{selectedUser.display_name}</p>
+                <div className="pt-2 mt-2 border-t border-slate-200 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-500 font-medium">Kata Sandi Saat Ini:</span>
+                  <span className="font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 select-all">
+                    {passwords[selectedUser.username] || (selectedUser.role === 'super_admin' ? 'OGSOreg_SuperAdmin2026!' : 'OGSO2026')}
+                  </span>
+                </div>
               </div>
 
               <div>
@@ -758,13 +787,30 @@ export const UsersManagementPage: React.FC = () => {
                 />
               </div>
 
+              {/* Force Password Change on Next Login Option */}
+              <div className="flex items-center gap-2.5 p-3 rounded-xl bg-amber-50/70 border border-amber-200/70">
+                <input
+                  type="checkbox"
+                  id="forceChangeNextLogin"
+                  checked={forceChangeNextLogin}
+                  onChange={(e) => setForceChangeNextLogin(e.target.checked)}
+                  className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4 cursor-pointer"
+                />
+                <label htmlFor="forceChangeNextLogin" className="text-[11px] font-semibold text-slate-700 cursor-pointer select-none">
+                  Wajibkan pengguna mengganti kata sandi ini setelah login pertama kali
+                </label>
+              </div>
+
               {/* Quick Presets */}
               <div className="space-y-1.5">
                 <span className="text-[11px] text-slate-500 block">Pilihan Cepat:</span>
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    onClick={() => setNewPassword('OGSO2026')}
+                    onClick={() => {
+                      setNewPassword('OGSO2026')
+                      setForceChangeNextLogin(true)
+                    }}
                     className="px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
                   >
                     Gunakan Sandi Standar (OGSO2026)

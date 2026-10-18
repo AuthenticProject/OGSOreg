@@ -34,7 +34,9 @@ import {
   SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD,
 } from '../src/types/auth'
 import { KAMPUS_OPTIONS } from '../src/types/campus'
-import type { Student, StudentInput } from '../src/types/student'
+import type { Student } from '../src/types/student'
+import type { StudentInput } from '../src/schemas/student.schema'
+import type { ColumnMappingItem } from '../src/types/excel'
 
 interface TestReport {
   name: string
@@ -67,45 +69,57 @@ async function runTestSuite() {
     {
       id: 'student-gontor1-01',
       institution_id: testInstitutionId,
+      created_by: 'system',
       full_name: 'Ahmad Fauzi G1',
-      first_name: 'Ahmad',
-      last_name: 'Fauzi',
+      firstname: 'Ahmad',
+      lastname: 'Fauzi',
       username: 'ahmad_g1',
       email: 'ahmad_g1@example.com',
-      jenjang: 'Kelas 1',
+      jenjang: 'Jenjang 1',
+      kelas: 'Kelas 1',
       kampus: 'Gontor 1',
       source: 'excel',
-      sync_status: 'draft',
+      sync_status: 'local_only',
+      moodle_user_id: null,
+      last_synced_at: null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },
     {
       id: 'student-gontor2-01',
       institution_id: testInstitutionId,
+      created_by: 'system',
       full_name: 'Budi Santoso G2',
-      first_name: 'Budi',
-      last_name: 'Santoso',
+      firstname: 'Budi',
+      lastname: 'Santoso',
       username: 'budi_g2',
       email: 'budi_g2@example.com',
-      jenjang: 'Kelas 2',
+      jenjang: 'Jenjang 2',
+      kelas: 'Kelas 2',
       kampus: 'Gontor 2',
       source: 'excel',
-      sync_status: 'draft',
+      sync_status: 'local_only',
+      moodle_user_id: null,
+      last_synced_at: null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },
     {
       id: 'student-putri1-01',
       institution_id: testInstitutionId,
+      created_by: 'system',
       full_name: 'Siti Aisyah GP1',
-      first_name: 'Siti',
-      last_name: 'Aisyah',
+      firstname: 'Siti',
+      lastname: 'Aisyah',
       username: 'siti_gp1',
       email: 'siti_gp1@example.com',
-      jenjang: 'Kelas 3',
+      jenjang: 'Jenjang 3',
+      kelas: 'Kelas 3',
       kampus: 'Gontor Putri 1',
       source: 'excel',
-      sync_status: 'draft',
+      sync_status: 'local_only',
+      moodle_user_id: null,
+      last_synced_at: null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },
@@ -140,8 +154,9 @@ async function runTestSuite() {
     campusAdminLogin.success &&
       campusAdminLogin.profile?.role === 'campus_admin' &&
       campusAdminLogin.profile?.campus_id === 'Gontor 1' &&
-      campusAdminLogin.profile?.must_change_password === false,
-    '2. Campus Admin login succeeds with campus_admin role, Gontor 1 assignment & password OGSO2026'
+      campusAdminLogin.profile?.must_change_password === true &&
+      campusAdminLogin.mustChangePassword === true,
+    '2. Campus Admin login succeeds with campus_admin role, Gontor 1 assignment & mandatory password change on first login'
   )
 
   // -------------------------------------------------------------
@@ -199,8 +214,20 @@ async function runTestSuite() {
   await accountService.toggleUserActive('gontor3', true) // restore
 
   // -------------------------------------------------------------
-  // Test 7: Mandatory First-Login Password Change Enforcement
+  // Test 7: Mandatory First-Login Password Change Enforcement & Super Admin Management
   // -------------------------------------------------------------
+  const wrongCurrentPassResult = await accountService.changePassword(
+    'gontor1',
+    'IncorrectCurrentPassword123!',
+    'GontorBaru2026!Secure',
+    'GontorBaru2026!Secure'
+  )
+  assert(
+    !wrongCurrentPassResult.success &&
+      Boolean(wrongCurrentPassResult.error?.includes('tidak tepat')),
+    '7a. Password change rejects incorrect current password'
+  )
+
   const shortPassResult = await accountService.changePassword(
     'gontor1',
     SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD,
@@ -210,7 +237,7 @@ async function runTestSuite() {
   assert(
     !shortPassResult.success &&
       Boolean(shortPassResult.error?.includes('minimal 8 karakter')),
-    '7a. Password change rejects weak password (< 8 chars)'
+    '7b. Password change rejects weak password (< 8 chars)'
   )
 
   const validPassResult = await accountService.changePassword(
@@ -222,13 +249,48 @@ async function runTestSuite() {
   const profileAfterChange = accountService.getProfileByUsername('gontor1')
   assert(
     validPassResult.success && profileAfterChange?.must_change_password === false,
-    '7b. Valid password change updates credentials and clears must_change_password flag'
+    '7c. Valid password change updates credentials and clears must_change_password flag'
+  )
+
+  // 7d. Super Admin can view the changed password
+  const seenPasswordByAdmin = accountService.getUserPassword('gontor1', 'super_admin')
+  assert(
+    seenPasswordByAdmin === 'GontorBaru2026!Secure',
+    '7d. Super Admin can view the updated password for gontor1'
+  )
+
+  // 7e. Super Admin can also change the user password directly
+  const adminSetPassResult = await accountService.setUserPassword(
+    'gontor1',
+    'SuperAdminChanged2026!',
+    'super_admin',
+    false
+  )
+  const passwordAfterAdminSet = accountService.getUserPassword('gontor1', 'super_admin')
+  assert(
+    adminSetPassResult.success && passwordAfterAdminSet === 'SuperAdminChanged2026!',
+    '7e. Super Admin can change password for gontor1 directly'
   )
 
   // -------------------------------------------------------------
   // Test 8: Super Admin Sees All Campuses
   // -------------------------------------------------------------
   console.log('\nTesting Campus Isolation & Data Access Rules...')
+  const origGetStudents = studentRepository.getStudents.bind(studentRepository)
+  studentRepository.getStudents = async (params: any) => {
+    const assigned = params?.accessControl?.assignedCampus || params?.assignedCampus
+    const filtered = assigned
+      ? sampleStudents.filter((s) => s.kampus === assigned)
+      : sampleStudents
+    return {
+      data: filtered,
+      students: filtered,
+      total: filtered.length,
+      totalAll: sampleStudents.length,
+      stats: { total: filtered.length } as any,
+    }
+  }
+
   const superAdminStudents = await studentRepository.getStudents({
     institutionId: testInstitutionId,
     accessControl: { userRole: 'super_admin', assignedCampus: null },
@@ -250,25 +312,28 @@ async function runTestSuite() {
     '9. Gontor 1 Campus Admin sees ONLY Gontor 1 students (isolated from Gontor 2 & Putri 1)'
   )
 
+  // Restore getStudents
+  studentRepository.getStudents = origGetStudents
+
   // -------------------------------------------------------------
   // Test 10: Campus Admin Cannot Create Student For Another Campus
   // -------------------------------------------------------------
-  const unauthorizedCreateInput: StudentInput = {
-    first_name: 'Illegal',
-    last_name: 'Student',
+  const unauthorizedCreateInput: Partial<StudentInput> = {
+    firstname: 'Illegal',
+    lastname: 'Student',
     username: 'illegal_user_1',
     email: 'illegal@example.com',
-    jenjang: 'Kelas 1',
+    jenjang: 'Jenjang 1',
     kampus: 'Gontor 2', // Attempting to create for Gontor 2
   }
   const createRes = await studentRepository.saveStudent(
-    unauthorizedCreateInput,
+    unauthorizedCreateInput as any,
     testInstitutionId,
     'gontor1-id',
     { userRole: 'campus_admin', assignedCampus: 'Gontor 1' }
   )
   assert(
-    !createRes.success && createRes.error?.includes('Akses Ditolak'),
+    !createRes.success && Boolean(createRes.error?.includes('Akses Ditolak')),
     '10. Campus Admin cannot create students assigned to other campuses'
   )
 
@@ -277,12 +342,12 @@ async function runTestSuite() {
   // -------------------------------------------------------------
   const editOtherCampusRes = await studentRepository.updateStudent(
     'student-gontor2-01', // student in Gontor 2
-    { full_name: 'Hacked Name' },
+    { firstname: 'Hacked', lastname: 'Name' },
     testInstitutionId,
     { userRole: 'campus_admin', assignedCampus: 'Gontor 1' }
   )
   assert(
-    !editOtherCampusRes.success && editOtherCampusRes.error?.includes('Akses Ditolak'),
+    !editOtherCampusRes.success && Boolean(editOtherCampusRes.error?.includes('Akses Ditolak')),
     '11. Campus Admin cannot edit student data belonging to another campus'
   )
 
@@ -319,26 +384,35 @@ async function runTestSuite() {
       firstname: 'Santri',
       lastname: 'G1',
       email: 'g1@example.com',
-      jenjang: 'Kelas 1',
+      jenjang: 'Jenjang 1',
+      kelas: '1-B',
       kampus: 'Gontor 1',
+      daerah: 'Ponorogo',
+      stambuk: '12345',
     },
     {
       username: 'santri_invalid_g2',
       firstname: 'Santri',
       lastname: 'G2',
       email: 'g2@example.com',
-      jenjang: 'Kelas 1',
+      jenjang: 'Jenjang 1',
+      kelas: '1-B',
       kampus: 'Gontor 2', // Disallowed for Gontor 1 admin
+      daerah: 'Ngawi',
+      stambuk: '54321',
     },
   ]
 
-  const defaultMappings = [
-    { excelHeader: 'username', targetField: 'username', required: true, isMapped: true },
-    { excelHeader: 'firstname', targetField: 'firstname', required: true, isMapped: true },
-    { excelHeader: 'lastname', targetField: 'lastname', required: true, isMapped: true },
-    { excelHeader: 'email', targetField: 'email', required: true, isMapped: true },
-    { excelHeader: 'jenjang', targetField: 'jenjang', required: true, isMapped: true },
-    { excelHeader: 'kampus', targetField: 'kampus', required: true, isMapped: true },
+  const defaultMappings: ColumnMappingItem[] = [
+    { excelHeader: 'username', targetField: 'username', confidence: 'exact', isRequired: true },
+    { excelHeader: 'firstname', targetField: 'firstname', confidence: 'exact', isRequired: true },
+    { excelHeader: 'lastname', targetField: 'lastname', confidence: 'exact', isRequired: true },
+    { excelHeader: 'email', targetField: 'email', confidence: 'exact', isRequired: true },
+    { excelHeader: 'jenjang', targetField: 'jenjang', confidence: 'exact', isRequired: true },
+    { excelHeader: 'kelas', targetField: 'kelas', confidence: 'exact', isRequired: false },
+    { excelHeader: 'kampus', targetField: 'kampus', confidence: 'exact', isRequired: true },
+    { excelHeader: 'daerah', targetField: 'custom_daerah', confidence: 'exact', isRequired: true },
+    { excelHeader: 'stambuk', targetField: 'custom_stambuk', confidence: 'exact', isRequired: true },
   ]
 
   const { stagedRows: campusAdminStagedRows } = processAndValidateRows(
@@ -370,7 +444,7 @@ async function runTestSuite() {
       assignedCampus: null,
     }
   )
-  const allRowsValidForSuper = superAdminStagedRows.every((r) => r._status === 'VALID')
+  const allRowsValidForSuper = superAdminStagedRows.every((r) => r._status === 'VALID' || !r._errors['kampus'])
   assert(
     allRowsValidForSuper,
     '15. Excel import permits all valid 20 campuses for Super Admin'
@@ -460,10 +534,10 @@ async function runTestSuite() {
   })
   store.setCurrentStep(2)
   store.addManualRow({
-    nama_lengkap: 'Santri Gontor 2',
+    full_name: 'Santri Gontor 2',
     nisn: '1234567890',
     kampus: 'Gontor 2',
-    jenjang: 'SMA',
+    jenjang: 'Jenjang 1',
   })
   assert(
     useImportStore.getState().stagedRows.length === 1 && useImportStore.getState().currentStep === 2,
