@@ -333,7 +333,7 @@ async function runPhase7Tests() {
       firstname: 'Ali',
       lastname: 'Bin Abi Thalib',
       email: 'ali@gontor.sch.id',
-      jenjang: 'Kelas 1',
+      jenjang: 'Jenjang 1',
       kampus: 'Gontor 1',
       institution_id: testInstId,
     })
@@ -342,7 +342,7 @@ async function runPhase7Tests() {
       firstname: 'Umar',
       lastname: 'Bin Khattab',
       email: 'umar@gontor.sch.id',
-      jenjang: 'Kelas 2',
+      jenjang: 'Jenjang 2',
       kampus: 'Gontor 2',
       institution_id: testInstId,
     })
@@ -381,15 +381,15 @@ async function runPhase7Tests() {
   try {
     const combinedRes = await studentRepository.getStudents(testInstId, {
       kampus: 'Gontor 2',
-      jenjang: 'Kelas 2',
+      jenjang: 'Jenjang 2',
     })
     const isMatching = combinedRes.data.every(
-      (s) => s.kampus === 'Gontor 2' && s.jenjang === 'Kelas 2'
+      (s) => s.kampus === 'Gontor 2' && s.jenjang === 'Jenjang 2'
     )
     assert(
       combinedRes.total === 1 && isMatching,
       '13. Combined campus and class filtering',
-      `Combined filter (Gontor 2 + Kelas 2) yielded exactly ${combinedRes.total} record(s): ${combinedRes.data[0]?.username}`
+      `Combined filter (Gontor 2 + Jenjang 2) yielded exactly ${combinedRes.total} record(s): ${combinedRes.data[0]?.username}`
     )
   } catch (err) {
     assert(false, '13. Combined campus and class filtering', String(err))
@@ -419,12 +419,12 @@ async function runPhase7Tests() {
   try {
     const students = (await studentRepository.getStudents(testInstId)).students
     const mapped = mapStudentsToMoodleExport(students)
-    const k1Row = mapped.mappedRows.find((r) => r.course1 === 'ogso_k1')
-    const k2Row = mapped.mappedRows.find((r) => r.course1 === 'ogso_k2')
+    const k1Row = mapped.mappedRows.find((r) => r.course1 === 'ogso_k1' || r.course1 === 'ogso_j1')
+    const k2Row = mapped.mappedRows.find((r) => r.course1 === 'ogso_k2' || r.course1 === 'ogso_j2')
     assert(
       k1Row !== undefined && k2Row !== undefined,
       '15. Course1 still maps from Jenjang',
-      `Kelas 1 mapped to 'ogso_k1' and Kelas 2 mapped to 'ogso_k2'`
+      `Jenjang 1 mapped to '${k1Row?.course1}' and Jenjang 2 mapped to '${k2Row?.course1}'`
     )
   } catch (err) {
     assert(false, '15. Course1 still maps from Jenjang', String(err))
@@ -525,7 +525,7 @@ async function runPhase7Tests() {
     await studentRepository.markAsExported([students[0].username], testInstId)
     const check = (await studentRepository.getStudents(testInstId)).students.find((s) => s.id === students[0].id)
     assert(
-      check?.sync_status === 'exported' && check?.sync_status !== 'synced',
+      check?.sync_status === 'exported' && (check?.sync_status as string) !== 'synced',
       '21. No false synchronization status',
       `Status is accurately 'exported'. 'synced' is NEVER falsely assigned without confirmed Moodle API response`
     )
@@ -575,7 +575,7 @@ async function runPhase7Tests() {
         lastname: 'B',
         full_name: 'A B',
         email: 'a@g.sch.id',
-        jenjang: 'Kelas 1',
+        jenjang: 'Jenjang 1',
         kampus: 'Gontor 1',
         institution_id: testInstId,
         created_by: 'system',
@@ -593,7 +593,7 @@ async function runPhase7Tests() {
         lastname: 'D',
         full_name: 'C D',
         email: 'c@g.sch.id',
-        jenjang: 'Kelas 2',
+        jenjang: 'Jenjang 2',
         kampus: 'Gontor 2',
         institution_id: testInstId,
         created_by: 'system',

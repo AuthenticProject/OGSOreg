@@ -19,7 +19,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as crypto from 'crypto'
 import { INITIAL_ACCOUNT_ROSTER, SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD } from '../src/types/auth'
-import { KAMPUS_OPTIONS } from '../src/types/campus'
+import { KAMPUS_OPTIONS, type StudentKampus } from '../src/types/campus'
 
 // Load .env natively if present
 try {
@@ -75,7 +75,7 @@ async function runProvisioning() {
   console.log('1. Validating Campus Master Data...')
   const rosterCampuses = INITIAL_ACCOUNT_ROSTER
     .map((acc) => acc.campus_id)
-    .filter((c): c is string => c !== null)
+    .filter((c): c is StudentKampus => c !== null)
 
   const missingFromOptions = rosterCampuses.filter((c) => !KAMPUS_OPTIONS.includes(c as any))
   if (missingFromOptions.length > 0) {

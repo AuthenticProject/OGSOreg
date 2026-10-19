@@ -75,7 +75,7 @@ async function runPhase5Tests() {
       firstname: 'Fatih',
       lastname: 'Al-Farouq',
       email: 'fatih@gontor.sch.id',
-      jenjang: 'Kelas 3',
+      jenjang: 'Jenjang 3',
       institution_id: TEST_INSTITUTION_A,
       source: 'excel',
       sync_status: 'local_only',
@@ -94,7 +94,7 @@ async function runPhase5Tests() {
   // Test 2: Jenjang Kelas 1–5 acceptance
   // ----------------------------------------------------
   try {
-    const validGrades: StudentJenjang[] = ['Kelas 1', 'Kelas 2', 'Kelas 3', 'Kelas 4', 'Kelas 5']
+    const validGrades: StudentJenjang[] = ['Jenjang 1', 'Jenjang 2', 'Jenjang 3', 'Jenjang 4', 'Jenjang 5']
     const allValid = validGrades.every((grade) => {
       const p = studentSchema.safeParse({
         username: `user_${grade.replace(' ', '_').toLowerCase()}`,
@@ -108,8 +108,8 @@ async function runPhase5Tests() {
     })
     assert(
       allValid,
-      '2. Jenjang Kelas 1–5 acceptance',
-      'Kelas 1, Kelas 2, Kelas 3, Kelas 4, and Kelas 5 are all accepted'
+      '2. Jenjang 1–5 acceptance',
+      'Jenjang 1, Jenjang 2, Jenjang 3, Jenjang 4, and Jenjang 5 are all accepted'
     )
   } catch (err) {
     assert(false, '2. Jenjang Kelas 1–5 acceptance', `Exception: ${err}`)
@@ -149,7 +149,7 @@ async function runPhase5Tests() {
       firstname: 'Hamzah',
       lastname: 'Ali',
       email: 'hamzah.ali@gontor.sch.id',
-      jenjang: 'Kelas 1',
+      jenjang: 'Jenjang 1',
       institution_id: TEST_INSTITUTION_A,
       created_by: TEST_USER,
       source: 'manual',
@@ -195,11 +195,11 @@ async function runPhase5Tests() {
       firstname: 'Hamzah',
       lastname: 'Dua',
       email: 'hamzah.other@gontor.sch.id',
-      jenjang: 'Kelas 2',
+      jenjang: 'Jenjang 2',
       institution_id: TEST_INSTITUTION_A,
     })
     assert(
-      dupRes.success === false && dupRes.error?.includes('Username'),
+      dupRes.success === false && Boolean(dupRes.error?.includes('Username')),
       '6. Duplicate username detection',
       `Duplicate username blocked: ${dupRes.error}`
     )
@@ -216,11 +216,11 @@ async function runPhase5Tests() {
       firstname: 'Beda',
       lastname: 'User',
       email: 'hamzah.ali@gontor.sch.id', // duplicate email
-      jenjang: 'Kelas 2',
+      jenjang: 'Jenjang 2',
       institution_id: TEST_INSTITUTION_A,
     })
     assert(
-      dupEmailRes.success === false && dupEmailRes.error?.includes('Email'),
+      dupEmailRes.success === false && Boolean(dupEmailRes.error?.includes('Email')),
       '7. Duplicate email warning',
       `Duplicate email detected and blocked: ${dupEmailRes.error}`
     )
@@ -238,7 +238,7 @@ async function runPhase5Tests() {
         firstname: 'Raihan',
         lastname: 'Akbar',
         email: 'raihan@gontor.sch.id',
-        jenjang: 'Kelas 2' as StudentJenjang,
+        jenjang: 'Jenjang 2' as StudentJenjang,
         institution_id: TEST_INSTITUTION_A,
       },
       {
@@ -246,7 +246,7 @@ async function runPhase5Tests() {
         firstname: 'Ilyas',
         lastname: 'Zulkarnain',
         email: 'ilyas@gontor.sch.id',
-        jenjang: 'Kelas 3' as StudentJenjang,
+        jenjang: 'Jenjang 3' as StudentJenjang,
         institution_id: TEST_INSTITUTION_A,
       },
     ]
@@ -275,7 +275,7 @@ async function runPhase5Tests() {
         firstname: 'Azzam',
         lastname: 'Mujahid',
         email: 'azzam@gontor.sch.id',
-        jenjang: 'Kelas 4' as StudentJenjang,
+        jenjang: 'Jenjang 4' as StudentJenjang,
         institution_id: TEST_INSTITUTION_A,
       },
     ]
@@ -303,7 +303,7 @@ async function runPhase5Tests() {
       firstname: 'Tariq',
       lastname: 'Ziyad',
       email: 'tariq.ziyad@gontor.sch.id',
-      jenjang: 'Kelas 5',
+      jenjang: 'Jenjang 5',
       institution_id: TEST_INSTITUTION_A,
       created_by: TEST_USER,
       source: 'manual',
@@ -327,14 +327,14 @@ async function runPhase5Tests() {
       {
         firstname: 'Hamzah',
         lastname: 'Ali Updated',
-        jenjang: 'Kelas 2',
+        jenjang: 'Jenjang 2',
       },
       TEST_INSTITUTION_A
     )
     assert(
       updateRes.success === true &&
         updateRes.student?.full_name === 'Hamzah Ali Updated' &&
-        updateRes.student?.jenjang === 'Kelas 2',
+        updateRes.student?.jenjang === 'Jenjang 2',
       '11. Student editing',
       updateRes.success
         ? `Updated student: ${updateRes.student?.full_name}, Jenjang: ${updateRes.student?.jenjang}`
@@ -366,8 +366,8 @@ async function runPhase5Tests() {
   try {
     // Add 3 temporary students
     const tempBatch = [
-      { username: 'temp_del_1', firstname: 'Del1', email: 'del1@test.com', jenjang: 'Kelas 1' as StudentJenjang },
-      { username: 'temp_del_2', firstname: 'Del2', email: 'del2@test.com', jenjang: 'Kelas 1' as StudentJenjang },
+      { username: 'temp_del_1', firstname: 'Del1', email: 'del1@test.com', jenjang: 'Jenjang 1' as StudentJenjang },
+      { username: 'temp_del_2', firstname: 'Del2', email: 'del2@test.com', jenjang: 'Jenjang 1' as StudentJenjang },
     ]
     const tempRes = await studentRepository.bulkSaveStudents(tempBatch, TEST_INSTITUTION_A, TEST_USER, 'manual')
     const idsToDelete = tempRes.savedStudents.map((s) => s.id)
@@ -393,7 +393,7 @@ async function runPhase5Tests() {
         lastname: 'Nabil',
         full_name: 'Farhan Nabil',
         email: 'farhan@test.com',
-        jenjang: 'Kelas 1',
+        jenjang: 'Jenjang 1',
         institution_id: TEST_INSTITUTION_A,
         created_by: TEST_USER,
         created_at: new Date().toISOString(),
@@ -434,7 +434,7 @@ async function runPhase5Tests() {
     })
     const jenjangRes = await studentRepository.getStudents({
       institutionId: TEST_INSTITUTION_A,
-      jenjang: 'Kelas 3',
+      jenjang: 'Jenjang 3',
     })
     const sourceRes = await studentRepository.getStudents({
       institutionId: TEST_INSTITUTION_A,
@@ -445,11 +445,11 @@ async function runPhase5Tests() {
       searchRes.total === 1 &&
         searchRes.data[0].username === 'excel_std_1' &&
         jenjangRes.total === 1 &&
-        jenjangRes.data[0].jenjang === 'Kelas 3' &&
+        jenjangRes.data[0].jenjang === 'Jenjang 3' &&
         sourceRes.total === 1 &&
         sourceRes.data[0].source === 'csv',
       '15. Search and filters',
-      'Filtered correctly by search query, jenjang (Kelas 3), and source (csv)'
+      'Filtered correctly by search query, jenjang (Jenjang 3), and source (csv)'
     )
   } catch (err) {
     assert(false, '15. Search and filters', `Exception: ${err}`)
@@ -506,7 +506,7 @@ async function runPhase5Tests() {
       firstname: 'Beta',
       lastname: 'Santri',
       email: 'beta@pesantren-beta.sch.id',
-      jenjang: 'Kelas 1',
+      jenjang: 'Jenjang 1',
       institution_id: TEST_INSTITUTION_B,
     })
 

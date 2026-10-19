@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   Save,
   Building2,
@@ -13,6 +13,8 @@ import {
   Copy,
   Sliders,
   ArrowRight,
+  Globe,
+  Database,
 } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
@@ -30,9 +32,25 @@ import {
   type SupabaseHealthStatus,
 } from '../services/supabaseStatusService'
 import { COMPLETE_DATABASE_SETUP_SQL } from '../constants/databaseSetupSql'
+import { WebsiteContentSettingsTab } from '../components/settings/WebsiteContentSettingsTab'
 
 export const SettingsPage: React.FC = () => {
   const { isSuperAdmin, assignedCampus } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const tabParam = searchParams.get('tab')
+  const [activeTab, setActiveTab] = useState<'campus' | 'website' | 'database'>(
+    tabParam === 'website' && isSuperAdmin
+      ? 'website'
+      : tabParam === 'database'
+      ? 'database'
+      : 'campus'
+  )
+
+  const handleTabChange = (tab: 'campus' | 'website' | 'database') => {
+    setActiveTab(tab)
+    setSearchParams({ tab })
+  }
 
   // Tentukan kampus default: jika admin kampus, gunakan kampus akunnya; jika super admin, default Gontor 1
   const defaultCampusKey: StudentKampus = assignedCampus || 'Gontor 1'
@@ -108,19 +126,74 @@ export const SettingsPage: React.FC = () => {
     <div className="space-y-6 max-w-4xl">
       <PageHeader
         title="Pengaturan Sistem"
-        subtitle="Konfigurasi data institusi kampus, informasi kontak penanggung jawab, dan alamat resmi pendaftaran."
+        subtitle="Konfigurasi data institusi kampus, informasi kontak penanggung jawab, dan manajemen website publik."
       />
 
-      {saveSuccessMessage && (
-        <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-sm shadow-sm animate-fade-in">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-          <span className="font-medium">{saveSuccessMessage}</span>
-        </div>
+      {/* Tabs Navigation */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => handleTabChange('campus')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${
+            activeTab === 'campus'
+              ? 'bg-[#166534] text-white shadow-sm'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <Building2 className="w-4 h-4" />
+          <span>Profil Kampus</span>
+        </button>
+
+        {isSuperAdmin && (
+          <button
+            type="button"
+            onClick={() => handleTabChange('website')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${
+              activeTab === 'website'
+                ? 'bg-[#166534] text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Globe className="w-4 h-4" />
+            <span>Konten Website Publik</span>
+            <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+              Super Admin
+            </span>
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={() => handleTabChange('database')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${
+            activeTab === 'database'
+              ? 'bg-[#166534] text-white shadow-sm'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <Database className="w-4 h-4" />
+          <span>Status Database Cloud</span>
+        </button>
+      </div>
+
+      {/* WEBSITE CONTENT TAB (SUPER ADMIN) */}
+      {activeTab === 'website' && isSuperAdmin && (
+        <WebsiteContentSettingsTab />
       )}
 
-      <SectionCard
-        title="Profil Kampus / Institusi Utama"
-        subtitle="Informasi ini dicetak otomatis pada rekap dan kartu peserta."
+      {/* CAMPUS PROFILE TAB */}
+      {activeTab === 'campus' && (
+        <>
+          {saveSuccessMessage && (
+            <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-sm shadow-sm animate-fade-in">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+              <span className="font-medium">{saveSuccessMessage}</span>
+            </div>
+          )}
+
+          <SectionCard
+            title="Profil Kampus / Institusi Utama"
+            subtitle="Informasi ini dicetak otomatis pada rekap dan kartu peserta."
         action={
           <a
             href="https://gontor.ac.id/kontak-alamat/"
@@ -317,120 +390,124 @@ export const SettingsPage: React.FC = () => {
           </div>
         </SectionCard>
       )}
+        </>
+      )}
 
       {/* Status Database Supabase Cloud */}
-      <SectionCard
-        title="Status Database Supabase Cloud"
-        subtitle="Verifikasi keaktifan tabel database cloud dan sinkronisasi data direktori santri."
-        action={
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={verifySupabaseHealth}
-            disabled={isCheckingHealth}
-            leftIcon={<RotateCcw className={`w-3.5 h-3.5 mr-1 ${isCheckingHealth ? 'animate-spin' : ''}`} />}
-          >
-            {isCheckingHealth ? 'Memeriksa...' : 'Cek Ulang Status'}
-          </Button>
-        }
-      >
-        <div className="space-y-4">
-          <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
-              <div>
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-                  Project URL Supabase
-                </span>
-                <p className="font-mono text-xs text-slate-800 font-semibold mt-0.5">
-                  {healthStatus?.url || 'https://cuunipngguedqttuutaa.supabase.co'}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 font-medium">Koneksi API:</span>
-                {healthStatus?.connectionOk ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    Terhubung
+      {activeTab === 'database' && (
+        <SectionCard
+          title="Status Database Supabase Cloud"
+          subtitle="Verifikasi keaktifan tabel database cloud dan sinkronisasi data direktori santri."
+          action={
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={verifySupabaseHealth}
+              disabled={isCheckingHealth}
+              leftIcon={<RotateCcw className={`w-3.5 h-3.5 mr-1 ${isCheckingHealth ? 'animate-spin' : ''}`} />}
+            >
+              {isCheckingHealth ? 'Memeriksa...' : 'Cek Ulang Status'}
+            </Button>
+          }
+        >
+          <div className="space-y-4">
+            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
+                <div>
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                    Project URL Supabase
                   </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-xs font-bold text-rose-800 bg-rose-100 px-2.5 py-0.5 rounded-full border border-rose-300">
-                    <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
-                    Belum Terhubung
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-              <div>
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-                  Status Tabel Database Cloud (public.students)
-                </span>
-                <p className="text-xs text-slate-700 mt-0.5">
-                  {healthStatus?.details}
-                </p>
-              </div>
-
-              <div>
-                {healthStatus?.tablesExist ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300 whitespace-nowrap">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    Tabel Cloud Aktif
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-900 bg-amber-100 px-3 py-1 rounded-full border border-amber-300 whitespace-nowrap">
-                    <AlertCircle className="w-4 h-4 text-amber-600" />
-                    Tabel Belum Dibuat di Supabase
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {!healthStatus?.tablesExist && (
-            <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/70 space-y-3">
-              <div className="flex items-start gap-2.5">
-                <AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wide">
-                    Cara Mengaktifkan Tabel Database di Supabase Cloud (1-Klik)
-                  </h4>
-                  <p className="text-xs text-amber-900/90 leading-relaxed">
-                    Kredensial API Supabase sudah valid dan terhubung, namun tabel database (tabel <code className="bg-amber-100 px-1 py-0.5 rounded font-mono font-bold">students</code>, <code className="bg-amber-100 px-1 py-0.5 rounded font-mono font-bold">institutions</code>, dan <code className="bg-amber-100 px-1 py-0.5 rounded font-mono font-bold">user_profiles</code>) belum pernah dijalankan di SQL Editor Supabase.
-                    <br />
-                    Saat ini seluruh data siswa Anda <strong>tetap tersimpan aman di Penyimpanan Lokal Terpadu (Local Persistence)</strong> dan tidak akan hilang saat logout/berganti akun.
+                  <p className="font-mono text-xs text-slate-800 font-semibold mt-0.5">
+                    {healthStatus?.url || 'https://cuunipngguedqttuutaa.supabase.co'}
                   </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-500 font-medium">Koneksi API:</span>
+                  {healthStatus?.connectionOk ? (
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      Terhubung
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-rose-800 bg-rose-100 px-2.5 py-0.5 rounded-full border border-rose-300">
+                      <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
+                      Belum Terhubung
+                    </span>
+                  )}
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-amber-200/80">
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="sm"
-                  onClick={handleCopySqlSetup}
-                  leftIcon={sqlCopied ? <CheckCircle2 className="w-4 h-4 mr-1.5" /> : <Copy className="w-4 h-4 mr-1.5" />}
-                  className="bg-emerald-700 hover:bg-emerald-800 text-white"
-                >
-                  {sqlCopied ? 'Script SQL Berhasil Disalin!' : 'Salin Script SQL Setup (1-Klik)'}
-                </Button>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                <div>
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                    Status Tabel Database Cloud (public.students)
+                  </span>
+                  <p className="text-xs text-slate-700 mt-0.5">
+                    {healthStatus?.details}
+                  </p>
+                </div>
 
-                <a
-                  href="https://supabase.com/dashboard/project/cuunipngguedqttuutaa/sql/new"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center text-xs font-semibold px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-800 hover:bg-slate-50 transition-colors shadow-sm"
-                >
-                  <span>Buka Supabase SQL Editor</span>
-                  <ExternalLink className="w-3.5 h-3.5 ml-1.5 text-slate-500" />
-                </a>
+                <div>
+                  {healthStatus?.tablesExist ? (
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300 whitespace-nowrap">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      Tabel Cloud Aktif
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-900 bg-amber-100 px-3 py-1 rounded-full border border-amber-300 whitespace-nowrap">
+                      <AlertCircle className="w-4 h-4 text-amber-600" />
+                      Tabel Belum Dibuat di Supabase
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-          )}
-        </div>
-      </SectionCard>
+
+            {!healthStatus?.tablesExist && (
+              <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/70 space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wide">
+                      Cara Mengaktifkan Tabel Database di Supabase Cloud (1-Klik)
+                    </h4>
+                    <p className="text-xs text-amber-900/90 leading-relaxed">
+                      Kredensial API Supabase sudah valid dan terhubung, namun tabel database (tabel <code className="bg-amber-100 px-1 py-0.5 rounded font-mono font-bold">students</code>, <code className="bg-amber-100 px-1 py-0.5 rounded font-mono font-bold">institutions</code>, dan <code className="bg-amber-100 px-1 py-0.5 rounded font-mono font-bold">user_profiles</code>) belum pernah dijalankan di SQL Editor Supabase.
+                      <br />
+                      Saat ini seluruh data siswa Anda <strong>tetap tersimpan aman di Penyimpanan Lokal Terpadu (Local Persistence)</strong> dan tidak akan hilang saat logout/berganti akun.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-amber-200/80">
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    onClick={handleCopySqlSetup}
+                    leftIcon={sqlCopied ? <CheckCircle2 className="w-4 h-4 mr-1.5" /> : <Copy className="w-4 h-4 mr-1.5" />}
+                    className="bg-emerald-700 hover:bg-emerald-800 text-white"
+                  >
+                    {sqlCopied ? 'Script SQL Berhasil Disalin!' : 'Salin Script SQL Setup (1-Klik)'}
+                  </Button>
+
+                  <a
+                    href="https://supabase.com/dashboard/project/cuunipngguedqttuutaa/sql/new"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-xs font-semibold px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-800 hover:bg-slate-50 transition-colors shadow-sm"
+                  >
+                    <span>Buka Supabase SQL Editor</span>
+                    <ExternalLink className="w-3.5 h-3.5 ml-1.5 text-slate-500" />
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+        </SectionCard>
+      )}
     </div>
   )
 }

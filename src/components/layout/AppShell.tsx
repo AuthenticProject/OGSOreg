@@ -1,15 +1,13 @@
 import React, { useState } from 'react'
-import { Outlet, Navigate, useLocation } from 'react-router-dom'
+import { Outlet, Navigate } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
-import { PublicNavbar } from './PublicNavbar'
 import { ForcePasswordChangeModal } from '../auth/ForcePasswordChangeModal'
 import { useAuth } from '../../context/AuthContext'
 
 export const AppShell: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { appProfile, isLoading } = useAuth()
-  const location = useLocation()
 
   if (isLoading) {
     return (
@@ -19,29 +17,8 @@ export const AppShell: React.FC = () => {
     )
   }
 
-  const isPublicRoute =
-    location.pathname.startsWith('/materi') ||
-    location.pathname.startsWith('/verify') ||
-    location.pathname.startsWith('/sertifikat')
-
-  // If user is not logged in:
+  // If user is not logged in, redirect strictly to /login
   if (!appProfile) {
-    // If accessing public educational materials or verification, render Public Shell
-    if (isPublicRoute) {
-      return (
-        <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-[#0F172A]">
-          <PublicNavbar />
-          <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
-            <Outlet />
-          </main>
-          <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-400">
-            &copy; {new Date().getFullYear()} Olimpiade Gontor Sains & Matematika (OGSO). Hak Cipta Dilindungi.
-          </footer>
-        </div>
-      )
-    }
-
-    // Strictly redirect all other internal pages to /login
     return <Navigate to="/login" replace />
   }
 

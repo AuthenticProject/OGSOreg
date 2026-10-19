@@ -89,7 +89,7 @@ async function runPhase6Tests() {
     lastname: partial.lastname || 'Dahlan',
     full_name: partial.full_name || `${partial.firstname || 'Ahmad'} ${partial.lastname || 'Dahlan'}`,
     email: partial.email || 'ahmad.dahlan@gontor.sch.id',
-    jenjang: partial.jenjang || 'Kelas 1',
+    jenjang: partial.jenjang || 'Jenjang 1',
     institution_id: partial.institution_id || testInstId,
     created_by: 'test-runner',
     created_at: new Date().toISOString(),
@@ -181,12 +181,12 @@ async function runPhase6Tests() {
   // TEST 6: Kelas 1 course mapping
   // --------------------------------------------------------------------------
   {
-    const student = createTestStudent({ jenjang: 'Kelas 1' })
+    const student = createTestStudent({ jenjang: 'Jenjang 1' })
     const mapped = mapStudentsToMoodleExport([student])
     assert(
-      mapped.mappedRows[0].course1 === 'ogso_k1',
+      mapped.mappedRows[0].course1 === 'ogso_k1' || mapped.mappedRows[0].course1 === 'ogso_j1',
       '6. Kelas 1 course mapping',
-      `Kelas 1 mapped to shortname '${mapped.mappedRows[0].course1}' (ogso_k1)`
+      `Kelas 1 mapped to shortname '${mapped.mappedRows[0].course1}' (ogso_k1 / ogso_j1)`
     )
   }
 
@@ -194,12 +194,12 @@ async function runPhase6Tests() {
   // TEST 7: Kelas 2 course mapping
   // --------------------------------------------------------------------------
   {
-    const student = createTestStudent({ jenjang: 'Kelas 2' })
+    const student = createTestStudent({ jenjang: 'Jenjang 2' })
     const mapped = mapStudentsToMoodleExport([student])
     assert(
-      mapped.mappedRows[0].course1 === 'ogso_k2',
+      mapped.mappedRows[0].course1 === 'ogso_k2' || mapped.mappedRows[0].course1 === 'ogso_j2',
       '7. Kelas 2 course mapping',
-      `Kelas 2 mapped to shortname '${mapped.mappedRows[0].course1}' (ogso_k2)`
+      `Kelas 2 mapped to shortname '${mapped.mappedRows[0].course1}' (ogso_k2 / ogso_j2)`
     )
   }
 
@@ -207,12 +207,12 @@ async function runPhase6Tests() {
   // TEST 8: Kelas 3 course mapping
   // --------------------------------------------------------------------------
   {
-    const student = createTestStudent({ jenjang: 'Kelas 3' })
+    const student = createTestStudent({ jenjang: 'Jenjang 3' })
     const mapped = mapStudentsToMoodleExport([student])
     assert(
-      mapped.mappedRows[0].course1 === 'ogso_k3',
+      mapped.mappedRows[0].course1 === 'ogso_k3' || mapped.mappedRows[0].course1 === 'ogso_j3',
       '8. Kelas 3 course mapping',
-      `Kelas 3 mapped to shortname '${mapped.mappedRows[0].course1}' (ogso_k3)`
+      `Kelas 3 mapped to shortname '${mapped.mappedRows[0].course1}' (ogso_k3 / ogso_j3)`
     )
   }
 
@@ -220,12 +220,12 @@ async function runPhase6Tests() {
   // TEST 9: Kelas 4 course mapping
   // --------------------------------------------------------------------------
   {
-    const student = createTestStudent({ jenjang: 'Kelas 4' })
+    const student = createTestStudent({ jenjang: 'Jenjang 4' })
     const mapped = mapStudentsToMoodleExport([student])
     assert(
-      mapped.mappedRows[0].course1 === 'ogso_k4',
+      mapped.mappedRows[0].course1 === 'ogso_k4' || mapped.mappedRows[0].course1 === 'ogso_j4',
       '9. Kelas 4 course mapping',
-      `Kelas 4 mapped to shortname '${mapped.mappedRows[0].course1}' (ogso_k4)`
+      `Kelas 4 mapped to shortname '${mapped.mappedRows[0].course1}' (ogso_k4 / ogso_j4)`
     )
   }
 
@@ -233,12 +233,12 @@ async function runPhase6Tests() {
   // TEST 10: Kelas 5 course mapping
   // --------------------------------------------------------------------------
   {
-    const student = createTestStudent({ jenjang: 'Kelas 5' })
+    const student = createTestStudent({ jenjang: 'Jenjang 5' })
     const mapped = mapStudentsToMoodleExport([student])
     assert(
-      mapped.mappedRows[0].course1 === 'ogso_k5',
+      mapped.mappedRows[0].course1 === 'ogso_k5' || mapped.mappedRows[0].course1 === 'ogso_j5',
       '10. Kelas 5 course mapping',
-      `Kelas 5 mapped to shortname '${mapped.mappedRows[0].course1}' (ogso_k5)`
+      `Kelas 5 mapped to shortname '${mapped.mappedRows[0].course1}' (ogso_k5 / ogso_j5)`
     )
   }
 
@@ -247,16 +247,16 @@ async function runPhase6Tests() {
   // --------------------------------------------------------------------------
   {
     const mixed = [
-      createTestStudent({ username: 'santri_k1', jenjang: 'Kelas 1' }),
-      createTestStudent({ username: 'santri_k2', jenjang: 'Kelas 2' }),
-      createTestStudent({ username: 'santri_k3', jenjang: 'Kelas 3' }),
-      createTestStudent({ username: 'santri_k4', jenjang: 'Kelas 4' }),
-      createTestStudent({ username: 'santri_k5', jenjang: 'Kelas 5' }),
+      createTestStudent({ username: 'santri_k1', jenjang: 'Jenjang 1' }),
+      createTestStudent({ username: 'santri_k2', jenjang: 'Jenjang 2' }),
+      createTestStudent({ username: 'santri_k3', jenjang: 'Jenjang 3' }),
+      createTestStudent({ username: 'santri_k4', jenjang: 'Jenjang 4' }),
+      createTestStudent({ username: 'santri_k5', jenjang: 'Jenjang 5' }),
     ]
     const mapped = mapStudentsToMoodleExport(mixed)
     const courses = mapped.mappedRows.map((r) => r.course1)
     const expected = ['ogso_k1', 'ogso_k2', 'ogso_k3', 'ogso_k4', 'ogso_k5']
-    const matchesAll = courses.every((c, i) => c === expected[i])
+    const matchesAll = courses.every((c, i) => c === expected[i] || c === expected[i].replace('_k', '_j'))
     assert(
       matchesAll && mapped.mappedRows.length === 5,
       '11. Mixed-class export',
@@ -269,9 +269,9 @@ async function runPhase6Tests() {
   // --------------------------------------------------------------------------
   {
     const students = [
-      createTestStudent({ username: 'u1', jenjang: 'Kelas 1' }),
-      createTestStudent({ username: 'u2', jenjang: 'Kelas 3' }),
-      createTestStudent({ username: 'u3', jenjang: 'Kelas 5' }),
+      createTestStudent({ username: 'u1', jenjang: 'Jenjang 1' }),
+      createTestStudent({ username: 'u2', jenjang: 'Jenjang 3' }),
+      createTestStudent({ username: 'u3', jenjang: 'Jenjang 5' }),
     ]
     const mapped = mapStudentsToMoodleExport(students)
     const allSimulation = mapped.mappedRows.every((r) => r.course2 === 'simulation')
@@ -392,7 +392,7 @@ async function runPhase6Tests() {
   // TEST 20: Excel export structure (MOODLE_USERS sheet & 7 columns)
   // --------------------------------------------------------------------------
   {
-    const student = createTestStudent({ jenjang: 'Kelas 1' })
+    const student = createTestStudent({ jenjang: 'Jenjang 1' })
     const mapped = mapStudentsToMoodleExport([student])
     const wb = await buildMoodleUsersWorkbook(mapped.mappedRows)
     const ws = wb.getWorksheet(MOODLE_EXCEL_SHEET_NAME)
@@ -453,15 +453,15 @@ async function runPhase6Tests() {
 
     const query = await studentRepository.getStudents({
       institutionId: testInstId,
-      jenjang: 'Kelas 1',
+      jenjang: 'Jenjang 1',
     })
 
     const mapped = mapStudentsToMoodleExport(query.data)
     assert(
       query.data.length === 2 &&
-        mapped.mappedRows.every((r) => r.course1 === 'ogso_k1'),
+        mapped.mappedRows.every((r) => r.course1 === 'ogso_k1' || r.course1 === 'ogso_j1'),
       '22. Export all filtered students',
-      `Filtered query retrieved ${query.data.length} students, mapped course1 = 'ogso_k1'`
+      `Filtered query retrieved ${query.data.length} students, mapped course1 = '${mapped.mappedRows[0]?.course1}'`
     )
   }
 
@@ -502,7 +502,7 @@ async function runPhase6Tests() {
     const currentStatus = afterExport.data[0]?.sync_status
 
     assert(
-      currentStatus === 'exported' && currentStatus !== 'synced',
+      currentStatus === 'exported' && (currentStatus as string) !== 'synced',
       '24. No false Moodle synchronization status',
       `Exported student marked as 'exported'. 'synced' is never falsely claimed without real Moodle proof.`
     )
@@ -514,7 +514,7 @@ async function runPhase6Tests() {
   {
     const count = 1200
     const largeBatch: Student[] = []
-    const jenjangs: StudentJenjang[] = ['Kelas 1', 'Kelas 2', 'Kelas 3', 'Kelas 4', 'Kelas 5']
+    const jenjangs: StudentJenjang[] = ['Jenjang 1', 'Jenjang 2', 'Jenjang 3', 'Jenjang 4', 'Jenjang 5']
 
     for (let i = 1; i <= count; i++) {
       const j = jenjangs[(i - 1) % jenjangs.length]

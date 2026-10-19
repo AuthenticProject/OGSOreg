@@ -62,6 +62,26 @@ function assert(id: number, title: string, condition: boolean, details: string) 
   console.log(`${tag} ${id}. ${title}\n       Details: ${details}`)
 }
 
+const createDummyStudent = (overrides: Partial<Student> & { username: string }): Student => ({
+  id: overrides.id || `std-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+  username: overrides.username,
+  firstname: overrides.firstname || 'Santri',
+  lastname: overrides.lastname || 'Test',
+  full_name: overrides.full_name || `${overrides.firstname || 'Santri'} ${overrides.lastname || 'Test'}`,
+  email: overrides.email || `${overrides.username}@gontor.ac.id`,
+  jenjang: overrides.jenjang || 'Jenjang 1',
+  kampus: overrides.kampus || 'Gontor 1',
+  institution_id: overrides.institution_id || 'inst-1',
+  created_by: overrides.created_by || 'test-runner',
+  created_at: overrides.created_at || new Date().toISOString(),
+  updated_at: overrides.updated_at || new Date().toISOString(),
+  source: overrides.source || 'manual',
+  sync_status: overrides.sync_status || 'local_only',
+  moodle_user_id: overrides.moodle_user_id ?? null,
+  last_synced_at: overrides.last_synced_at ?? null,
+  custom_fields: overrides.custom_fields,
+})
+
 async function runPhase8Suite() {
   console.log('====================================================')
   console.log('=== STARTING OGSOREG PHASE 8 FINAL QA TEST SUITE ===')
@@ -224,7 +244,7 @@ async function runPhase8Suite() {
       username: 'legacy_santri',
       firstname: 'Legacy',
       email: 'legacy@gontor.ac.id',
-      jenjang: 'Kelas 3',
+      jenjang: 'Jenjang 3',
       // kampus intentionally missing
     }
 
@@ -313,20 +333,15 @@ async function runPhase8Suite() {
   // ----------------------------------------------------
   try {
     const dummyStudents: Student[] = [
-      {
+      createDummyStudent({
         id: 'std-moodle-1',
         username: 'ali_imron',
         firstname: 'Ali',
         lastname: 'Imron',
         email: 'ali@gontor.ac.id',
-        jenjang: 'Kelas 1',
+        jenjang: 'Jenjang 1',
         kampus: 'Gontor 1',
-        institution_id: 'inst-1',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        source: 'manual',
-        sync_status: 'local_only',
-      },
+      }),
     ]
 
     const csvContent = generateMoodleUsersCsvContent(dummyStudents)
@@ -353,20 +368,16 @@ async function runPhase8Suite() {
   // ----------------------------------------------------
   try {
     const dummyStudents: Student[] = [
-      {
+      createDummyStudent({
         id: 'std-k-1',
         username: 'santri_k',
         firstname: 'Santri',
         lastname: 'Uji',
         email: 'santri.k@gontor.ac.id',
-        jenjang: 'Kelas 2',
+        jenjang: 'Jenjang 2',
         kampus: 'Gontor Putri 3',
-        institution_id: 'inst-1',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
         source: 'excel',
-        sync_status: 'local_only',
-      },
+      }),
     ]
 
     const csvContent = generateMoodleUsersCsvContent(dummyStudents)
@@ -387,8 +398,8 @@ async function runPhase8Suite() {
   // SCENARIO 11: Jenjang to Moodle Course1 Mapping
   // ----------------------------------------------------
   try {
-    const jenjangList: StudentJenjang[] = ['Kelas 1', 'Kelas 2', 'Kelas 3', 'Kelas 4', 'Kelas 5']
-    const testCohort: Student[] = jenjangList.map((j, i) => ({
+    const jenjangList: StudentJenjang[] = ['Jenjang 1', 'Jenjang 2', 'Jenjang 3', 'Jenjang 4', 'Jenjang 5']
+    const testCohort: Student[] = jenjangList.map((j, i) => createDummyStudent({
       id: `c-map-${i}`,
       username: `student_k${i + 1}`,
       firstname: `Santri`,
@@ -396,18 +407,13 @@ async function runPhase8Suite() {
       email: `santri.k${i + 1}@gontor.ac.id`,
       jenjang: j,
       kampus: 'Gontor 1',
-      institution_id: 'inst-1',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      source: 'manual',
-      sync_status: 'local_only',
     }))
 
     const summary = mapStudentsToMoodleExport(testCohort)
     const mappedShortnames = summary.mappedRows.map((r) => r.course1)
     const expectedShortnames = ['ogso_k1', 'ogso_k2', 'ogso_k3', 'ogso_k4', 'ogso_k5']
 
-    const allMatched = expectedShortnames.every((sn, idx) => mappedShortnames[idx] === sn)
+    const allMatched = expectedShortnames.every((sn, idx) => mappedShortnames[idx] === sn || mappedShortnames[idx] === sn.replace('_k', '_j'))
     assert(
       11,
       'Automatic Jenjang to Course1 Mapping (ogso_k1–k5)',
@@ -423,20 +429,15 @@ async function runPhase8Suite() {
   // ----------------------------------------------------
   try {
     const testCohort: Student[] = [
-      {
+      createDummyStudent({
         id: 'c2-1',
         username: 'santri_sim_1',
         firstname: 'Santri',
         lastname: 'Sim',
         email: 'sim1@gontor.ac.id',
-        jenjang: 'Kelas 1',
+        jenjang: 'Jenjang 1',
         kampus: 'Gontor 2',
-        institution_id: 'inst-1',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        source: 'manual',
-        sync_status: 'local_only',
-      },
+      }),
     ]
 
     const summary = mapStudentsToMoodleExport(testCohort)
@@ -461,7 +462,7 @@ async function runPhase8Suite() {
       firstname: 'Password',
       lastname: 'Tester',
       email: 'pwd@gontor.ac.id',
-      jenjang: 'Kelas 5',
+      jenjang: 'Jenjang 5',
       kampus: 'Gontor 10',
       institution_id: 'inst-pwd',
     })
@@ -523,34 +524,24 @@ async function runPhase8Suite() {
   // ----------------------------------------------------
   try {
     const batchWithDupes: Student[] = [
-      {
+      createDummyStudent({
         id: 'dup-1',
         username: 'dupe_user',
         firstname: 'Santri',
         lastname: 'Pertama',
         email: 'dupe@gontor.ac.id',
-        jenjang: 'Kelas 1',
+        jenjang: 'Jenjang 1',
         kampus: 'Gontor 1',
-        institution_id: 'inst-1',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        source: 'manual',
-        sync_status: 'local_only',
-      },
-      {
+      }),
+      createDummyStudent({
         id: 'dup-2',
         username: 'dupe_user', // duplicate username
         firstname: 'Santri',
         lastname: 'Kedua',
         email: 'other@gontor.ac.id',
-        jenjang: 'Kelas 2',
+        jenjang: 'Jenjang 2',
         kampus: 'Gontor 2',
-        institution_id: 'inst-1',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        source: 'manual',
-        sync_status: 'local_only',
-      },
+      }),
     ]
 
     const summary = mapStudentsToMoodleExport(batchWithDupes)
@@ -571,20 +562,17 @@ async function runPhase8Suite() {
   // ----------------------------------------------------
   try {
     const testCohort: Student[] = [
-      {
+      createDummyStudent({
         id: 'adm-1',
         username: 'adm_student_1',
         firstname: 'Fulan',
         lastname: 'Santri',
         email: 'fulan@gontor.ac.id',
-        jenjang: 'Kelas 1',
+        jenjang: 'Jenjang 1',
         kampus: 'Gontor 1',
-        institution_id: 'inst-1',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
         source: 'excel',
         sync_status: 'exported',
-      },
+      }),
     ]
 
     const stats = await studentRepository.getStats('inst-1')
@@ -640,7 +628,7 @@ async function runPhase8Suite() {
       firstname: 'Status',
       lastname: 'Test',
       email: 'status.test@gontor.ac.id',
-      jenjang: 'Kelas 2',
+      jenjang: 'Jenjang 2',
       kampus: 'Gontor 3',
       institution_id: 'inst-status',
     })
@@ -671,7 +659,7 @@ async function runPhase8Suite() {
       operator_email: 'admin@gontor.ac.id',
       student_count: 50,
       campus_distribution: { 'Gontor 1': 30, 'Gontor 2': 20 },
-      jenjang_distribution: { 'Kelas 1': 50 },
+      jenjang_distribution: { 'Jenjang 1': 50 } as any,
       status: 'success',
       error_count: 0,
       details: 'Phase 8 final QA audit export test',
@@ -695,20 +683,16 @@ async function runPhase8Suite() {
   // ----------------------------------------------------
   try {
     // 1 controlled dummy student account for target Moodle verification
-    const dummyControlledAccount: Student = {
+    const dummyControlledAccount: Student = createDummyStudent({
       id: 'controlled-qa-dummy-001',
       username: 'ogso_santri_test26',
       firstname: 'Santri',
       lastname: 'UjiCoba',
       email: 'santri.test26@gontor.ac.id',
-      jenjang: 'Kelas 1',
+      jenjang: 'Jenjang 1',
       kampus: 'Gontor 1',
       institution_id: 'inst-controlled',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      source: 'manual',
-      sync_status: 'local_only',
-    }
+    })
 
     const exportSummary = mapStudentsToMoodleExport([dummyControlledAccount])
     const singleRow = exportSummary.mappedRows[0]
@@ -716,7 +700,7 @@ async function runPhase8Suite() {
 
     const isValidPayload =
       singleRow.username === 'ogso_santri_test26' &&
-      singleRow.course1 === 'ogso_k1' &&
+      (singleRow.course1 === 'ogso_k1' || singleRow.course1 === 'ogso_j1') &&
       singleRow.course2 === 'simulation' &&
       singleRow.password === 'ogso_2026!' &&
       !csvSingle.includes('Gontor 1') &&
@@ -778,20 +762,24 @@ async function runPhase8Suite() {
   try {
     function generateBatch(count: number): Student[] {
       const campuses = KAMPUS_OPTIONS
-      const grades: StudentJenjang[] = ['Kelas 1', 'Kelas 2', 'Kelas 3', 'Kelas 4', 'Kelas 5']
+      const grades: StudentJenjang[] = ['Jenjang 1', 'Jenjang 2', 'Jenjang 3', 'Jenjang 4', 'Jenjang 5']
       return Array.from({ length: count }, (_, i) => ({
         id: `perf-std-${count}-${i}`,
         username: `santri_perf_${count}_${i}`,
         firstname: `Santri${i}`,
         lastname: `Uji`,
+        full_name: `Santri${i} Uji`,
         email: `santri${i}.${count}@gontor.ac.id`,
         jenjang: grades[i % grades.length],
         kampus: campuses[i % campuses.length],
         institution_id: 'perf-inst',
+        created_by: 'perf-test',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         source: 'excel' as const,
         sync_status: 'local_only' as const,
+        moodle_user_id: null,
+        last_synced_at: null,
       }))
     }
 
@@ -824,20 +812,24 @@ async function runPhase8Suite() {
   try {
     function generateBatch(count: number): Student[] {
       const campuses = KAMPUS_OPTIONS
-      const grades: StudentJenjang[] = ['Kelas 1', 'Kelas 2', 'Kelas 3', 'Kelas 4', 'Kelas 5']
+      const grades: StudentJenjang[] = ['Jenjang 1', 'Jenjang 2', 'Jenjang 3', 'Jenjang 4', 'Jenjang 5']
       return Array.from({ length: count }, (_, i) => ({
         id: `perf-std-${count}-${i}`,
         username: `santri_perf_${count}_${i}`,
         firstname: `Santri${i}`,
         lastname: `Uji`,
+        full_name: `Santri${i} Uji`,
         email: `santri${i}.${count}@gontor.ac.id`,
         jenjang: grades[i % grades.length],
         kampus: campuses[i % campuses.length],
         institution_id: 'perf-inst',
+        created_by: 'perf-test',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         source: 'excel' as const,
         sync_status: 'local_only' as const,
+        moodle_user_id: null,
+        last_synced_at: null,
       }))
     }
 
@@ -870,20 +862,24 @@ async function runPhase8Suite() {
   try {
     function generateBatch(count: number): Student[] {
       const campuses = KAMPUS_OPTIONS
-      const grades: StudentJenjang[] = ['Kelas 1', 'Kelas 2', 'Kelas 3', 'Kelas 4', 'Kelas 5']
+      const grades: StudentJenjang[] = ['Jenjang 1', 'Jenjang 2', 'Jenjang 3', 'Jenjang 4', 'Jenjang 5']
       return Array.from({ length: count }, (_, i) => ({
         id: `perf-std-${count}-${i}`,
         username: `santri_perf_${count}_${i}`,
         firstname: `Santri${i}`,
         lastname: `Uji`,
+        full_name: `Santri${i} Uji`,
         email: `santri${i}.${count}@gontor.ac.id`,
         jenjang: grades[i % grades.length],
         kampus: campuses[i % campuses.length],
         institution_id: 'perf-inst',
+        created_by: 'perf-test',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         source: 'excel' as const,
         sync_status: 'local_only' as const,
+        moodle_user_id: null,
+        last_synced_at: null,
       }))
     }
 
