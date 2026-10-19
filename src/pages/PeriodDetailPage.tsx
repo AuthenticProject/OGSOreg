@@ -124,7 +124,8 @@ export const PeriodDetailPage: React.FC = () => {
   >(
     list: T[]
   ) => {
-    return list.filter((item) => {
+    return (list || []).filter((item) => {
+      if (!item) return false
       const name = item.recipient_name || item.student_name || ''
       if (search && !name.toLowerCase().includes(search.toLowerCase())) return false
       if (campusFilter !== 'all' && item.campus !== campusFilter) return false
@@ -148,20 +149,22 @@ export const PeriodDetailPage: React.FC = () => {
   // Always keep winners sorted by official rank order:
   // Juara 1 -> Juara 2 -> Juara 3 -> Juara Harapan 1 -> Juara Harapan 2
   const sortedWinners = [...filteredWinners].sort((a, b) => {
-    const rankA = getAwardRank(a.award)
-    const rankB = getAwardRank(b.award)
+    const rankA = getAwardRank(a?.award)
+    const rankB = getAwardRank(b?.award)
     if (rankA !== rankB) return rankA - rankB
-    const catA = (a.category || a.jenjang || '').toLowerCase()
-    const catB = (b.category || b.jenjang || '').toLowerCase()
+    const catA = (a?.category || a?.jenjang || '').toLowerCase()
+    const catB = (b?.category || b?.jenjang || '').toLowerCase()
     if (catA !== catB) return catA.localeCompare(catB)
-    return (b.score ?? 0) - (a.score ?? 0)
+    return (b?.score ?? 0) - (a?.score ?? 0)
   })
 
   const sortedWinnerCerts = [...filteredWinnerCerts].sort((a, b) => {
-    const rankA = getAwardRank(a.award_title)
-    const rankB = getAwardRank(b.award_title)
+    const rankA = getAwardRank(a?.award_title)
+    const rankB = getAwardRank(b?.award_title)
     if (rankA !== rankB) return rankA - rankB
-    return a.recipient_name.localeCompare(b.recipient_name)
+    const nameA = a?.recipient_name || (a as unknown as { student_name?: string })?.student_name || ''
+    const nameB = b?.recipient_name || (b as unknown as { student_name?: string })?.student_name || ''
+    return nameA.localeCompare(nameB)
   })
 
   // Group sorted winners by category (Bidang Lomba)
@@ -175,7 +178,8 @@ export const PeriodDetailPage: React.FC = () => {
       })
     }
 
-    sortedWinners.forEach((w) => {
+    (sortedWinners || []).forEach((w) => {
+      if (!w) return
       const cat = w.category || 'Bidang Lainnya'
       if (!groups[cat]) {
         groups[cat] = []
@@ -197,7 +201,7 @@ export const PeriodDetailPage: React.FC = () => {
     // Only keep non-empty groups if not actively searching
     const result: Record<string, PeriodWinner[]> = {}
     for (const [key, list] of Object.entries(groups)) {
-      if (list.length > 0) {
+      if (list && list.length > 0) {
         result[key] = list
       }
     }
@@ -213,7 +217,7 @@ export const PeriodDetailPage: React.FC = () => {
   }
 
   const handleToggleSelectCategory = (catWinners: PeriodWinner[]) => {
-    const catIds = catWinners.map((w) => w.id)
+    const catIds = (catWinners || []).map((w) => w?.id).filter(Boolean) as string[]
     const allSelected = catIds.length > 0 && catIds.every((id) => selectedWinnerIds.includes(id))
     if (allSelected) {
       setSelectedWinnerIds((prev) => prev.filter((id) => !catIds.includes(id)))
@@ -223,7 +227,7 @@ export const PeriodDetailPage: React.FC = () => {
   }
 
   const handleToggleSelectAll = () => {
-    const allIds = sortedWinners.map((w) => w.id)
+    const allIds = (sortedWinners || []).map((w) => w?.id).filter(Boolean) as string[]
     const allSelected = allIds.length > 0 && allIds.every((id) => selectedWinnerIds.includes(id))
     if (allSelected) {
       setSelectedWinnerIds([])
@@ -249,8 +253,8 @@ export const PeriodDetailPage: React.FC = () => {
     }
   }
 
-  const getAwardBadgeClass = (award: string) => {
-    const norm = award.toLowerCase()
+  const getAwardBadgeClass = (award?: string) => {
+    const norm = (award || '').toLowerCase()
     if (norm.includes('juara 1')) return 'bg-amber-100 text-amber-900 border-amber-300'
     if (norm.includes('juara 2')) return 'bg-slate-100 text-slate-800 border-slate-300'
     if (norm.includes('juara 3')) return 'bg-amber-50 text-amber-800 border-amber-200'
@@ -334,8 +338,11 @@ export const PeriodDetailPage: React.FC = () => {
 
   // Generate / Download certificate simulation
   const handleDownloadPdf = (cert: PeriodCertificate) => {
-    const filename = `Sertifikat_${cert.certificate_type.toUpperCase()}_${cert.recipient_name.replace(/\s+/g, '_')}_${cert.certificate_number.replace(/\//g, '-')}.pdf`
-    alert(`Mengunduh berkas resmi PDF:\n${filename}\n\nNomor: ${cert.certificate_number}\nKode Verifikasi: ${cert.verification_code}`)
+    const typeStr = (cert?.certificate_type || 'WINNER').toUpperCase()
+    const nameStr = (cert?.recipient_name || 'santri').replace(/\s+/g, '_')
+    const numStr = (cert?.certificate_number || 'CERT').replace(/\//g, '-')
+    const filename = `Sertifikat_${typeStr}_${nameStr}_${numStr}.pdf`
+    alert(`Mengunduh berkas resmi PDF:\n${filename}\n\nNomor: ${cert?.certificate_number || '-'}\nKode Verifikasi: ${cert?.verification_code || '-'}`)
   }
 
   return (
@@ -609,8 +616,9 @@ export const PeriodDetailPage: React.FC = () => {
               /* VIEW MODE 1: PISAHKAN DATA PEMENANG ANTAR LOMBA */
               <div className="space-y-5">
                 {Object.entries(groupedWinners).map(([catName, catWinners]) => {
+                  const safeList = Array.isArray(catWinners) ? catWinners.filter((item): item is PeriodWinner => Boolean(item && item.id)) : []
                   const isCatAllSelected =
-                    catWinners.length > 0 && catWinners.every((w) => selectedWinnerIds.includes(w.id))
+                    safeList.length > 0 && safeList.every((w) => selectedWinnerIds.includes(w.id))
 
                   return (
                     <div
@@ -627,7 +635,7 @@ export const PeriodDetailPage: React.FC = () => {
                             <div className="flex items-center gap-2">
                               <h3 className="font-bold text-slate-900 text-sm">{catName}</h3>
                               <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold text-[10px] border border-slate-200">
-                                {catWinners.length} Pemenang
+                                {safeList.length} Pemenang
                               </span>
                             </div>
                             <p className="text-[11px] text-slate-400 mt-0.5">
@@ -639,7 +647,7 @@ export const PeriodDetailPage: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => handleToggleSelectCategory(catWinners)}
+                            onClick={() => handleToggleSelectCategory(safeList)}
                             className="text-[11px] font-semibold text-slate-600 hover:text-emerald-700 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 border border-slate-200 transition-colors cursor-pointer"
                           >
                             {isCatAllSelected ? 'Batal Pilih Lomba Ini' : 'Pilih Semua Lomba Ini'}
@@ -656,7 +664,7 @@ export const PeriodDetailPage: React.FC = () => {
                                 <input
                                   type="checkbox"
                                   checked={isCatAllSelected}
-                                  onChange={() => handleToggleSelectCategory(catWinners)}
+                                  onChange={() => handleToggleSelectCategory(safeList)}
                                   className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
                                 />
                               </th>
@@ -670,7 +678,7 @@ export const PeriodDetailPage: React.FC = () => {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
-                            {catWinners.map((w, idx) => {
+                            {safeList.map((w, idx) => {
                               const isSelected = selectedWinnerIds.includes(w.id)
                               return (
                                 <tr
@@ -766,7 +774,9 @@ export const PeriodDetailPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {sortedWinners.map((w, idx) => {
+                    {sortedWinners
+                      .filter((item): item is PeriodWinner => Boolean(item && item.id))
+                      .map((w, idx) => {
                       const isSelected = selectedWinnerIds.includes(w.id)
                       return (
                         <tr

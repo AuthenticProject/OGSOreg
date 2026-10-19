@@ -24,8 +24,8 @@ export type AwardOption = (typeof AWARD_OPTIONS)[number]
  * Returns numerical rank order for sorting awards:
  * Juara 1 (1) -> Juara 2 (2) -> Juara 3 (3) -> Juara Harapan 1 (4) -> Juara Harapan 2 (5)
  */
-export const getAwardRank = (award?: string): number => {
-  if (!award) return 999
+export const getAwardRank = (award?: unknown): number => {
+  if (!award || typeof award !== 'string') return 999
   const trimmed = award.trim().toLowerCase()
   if (trimmed === 'juara 1' || trimmed.startsWith('juara 1')) return 1
   if (trimmed === 'juara 2' || trimmed.startsWith('juara 2')) return 2
@@ -180,7 +180,19 @@ class ParticipantPeriodService {
         localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(INITIAL_PERIODS))
         return INITIAL_PERIODS
       }
-      return JSON.parse(raw)
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Ensure default INITIAL_PERIODS are merged if missing
+        const existingIds = new Set(parsed.map((p) => p?.id))
+        const missing = INITIAL_PERIODS.filter((ip) => !existingIds.has(ip.id))
+        if (missing.length > 0) {
+          const merged = [...parsed, ...missing]
+          localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(merged))
+          return merged
+        }
+        return parsed
+      }
+      return INITIAL_PERIODS
     } catch {
       return INITIAL_PERIODS
     }
@@ -188,7 +200,8 @@ class ParticipantPeriodService {
 
   getPeriodById(id: string): CompetitionPeriod | null {
     const list = this.getPeriods()
-    return list.find((p) => p.id === id || p.slug === id) || null
+    if (!Array.isArray(list)) return null
+    return list.find((p) => p && (p.id === id || p.slug === id)) || null
   }
 
   savePeriod(period: Partial<CompetitionPeriod> & { name: string; year: number }): CompetitionPeriod {
@@ -197,7 +210,7 @@ class ParticipantPeriodService {
     const slug = period.slug || `ogso-${period.year}`
     const now = new Date().toISOString()
 
-    const existingIdx = list.findIndex((p) => p.id === id)
+    const existingIdx = list.findIndex((p) => p && p.id === id)
     let saved: CompetitionPeriod
 
     if (existingIdx >= 0) {
@@ -233,7 +246,7 @@ class ParticipantPeriodService {
   }
 
   deletePeriod(id: string): boolean {
-    const list = this.getPeriods().filter((p) => p.id !== id)
+    const list = this.getPeriods().filter((p) => p && p.id !== id)
     if (typeof window !== 'undefined') {
       localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(list))
     }
@@ -265,7 +278,6 @@ class ParticipantPeriodService {
 
       // 2. Scan previous storage keys to restore user's manual inputs
       const PREVIOUS_KEYS = [
-        'ogsoreg_period_winners_v4',
         'ogsoreg_period_winners_v3',
         'ogsoreg_period_winners_v2',
         'ogsoreg_period_winners_v1',
@@ -291,32 +303,29 @@ class ParticipantPeriodService {
       // 3. Purge dummy data: remove items that match dummy student names & dummy seed IDs
       list = Array.from(combinedMap.values()).filter((w) => {
         if (!w || !w.student_name) return false
-        const nameLower = w.student_name.trim().toLowerCase()
+        const nameLower = (w.student_name || '').trim().toLowerCase()
         const isDummy =
           DUMMY_STUDENT_NAMES.has(nameLower) &&
           (DUMMY_WINNER_IDS.has(w.id) || w.id.startsWith('win-2025-') || w.id.startsWith('win-2026-'))
         return !isDummy
       })
-
-      // Sync cleaned user data back into current storage key
-      localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(list))
     } catch {
       list = []
     }
 
     if (periodId) {
-      list = list.filter((w) => w.period_id === periodId)
+      list = list.filter((w) => w && w.period_id === periodId)
     }
 
     // Always sort winners in standard order: Juara 1, Juara 2, Juara 3, Juara Harapan 1, Juara Harapan 2
     return [...list].sort((a, b) => {
-      const rankA = getAwardRank(a.award)
-      const rankB = getAwardRank(b.award)
+      const rankA = getAwardRank(a?.award)
+      const rankB = getAwardRank(b?.award)
       if (rankA !== rankB) return rankA - rankB
-      const catA = (a.category || a.jenjang || '').toLowerCase()
-      const catB = (b.category || b.jenjang || '').toLowerCase()
+      const catA = (a?.category || a?.jenjang || '').toLowerCase()
+      const catB = (b?.category || b?.jenjang || '').toLowerCase()
       if (catA !== catB) return catA.localeCompare(catB)
-      return (b.score ?? 0) - (a.score ?? 0)
+      return (b?.score ?? 0) - (a?.score ?? 0)
     })
   }
 
@@ -386,7 +395,6 @@ class ParticipantPeriodService {
       }
 
       const PREV_CERT_KEYS = [
-        'ogsoreg_period_certs_v4',
         'ogsoreg_period_certs_v3',
         'ogsoreg_period_certs_v2',
         'ogsoreg_period_certs_v1',
@@ -409,21 +417,21 @@ class ParticipantPeriodService {
 
       // Purge dummy certs whose recipient matches dummy student names
       list = Array.from(combinedMap.values()).filter((c) => {
-        if (!c || !c.recipient_name) return false
-        const nameLower = c.recipient_name.trim().toLowerCase()
+        if (!c) return false
+        const recName = c.recipient_name || (c as unknown as { student_name?: string }).student_name || ''
+        if (!recName) return false
+        const nameLower = recName.trim().toLowerCase()
         return !DUMMY_STUDENT_NAMES.has(nameLower)
       })
-
-      localStorage.setItem(CERTIFICATES_STORAGE_KEY, JSON.stringify(list))
     } catch {
       list = []
     }
 
     if (periodId) {
-      list = list.filter((c) => c.period_id === periodId)
+      list = list.filter((c) => c && c.period_id === periodId)
     }
     if (type) {
-      list = list.filter((c) => c.certificate_type === type)
+      list = list.filter((c) => c && c.certificate_type === type)
     }
     return list
   }

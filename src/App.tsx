@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { AppShell } from './components/layout/AppShell'
+import { ErrorBoundary } from './components/feedback/ErrorBoundary'
 
 // Existing Pages
 import { DashboardPage } from './pages/DashboardPage'
@@ -68,7 +69,17 @@ export function App() {
             {/* 2. PARTICIPANT */}
             <Route path="/participant" element={<Navigate to="/participant/periode" replace />} />
             <Route path="/participant/periode" element={<PeriodListPage />} />
-            <Route path="/participant/periode/:periodId" element={<PeriodDetailPage />} />
+            <Route
+              path="/participant/periode/:periodId"
+              element={
+                <ErrorBoundary
+                  fallbackTitle="Kendala Memuat Detail Periode"
+                  fallbackMessage="Terjadi kendala saat memuat data periode atau pemenang. Klik coba lagi untuk menyegarkan data."
+                >
+                  <PeriodDetailPage />
+                </ErrorBoundary>
+              }
+            />
             {/* Backward-compatible redirects for previous E-Certificate menu */}
             <Route path="/e-certificate" element={<Navigate to="/participant/periode" replace />} />
             <Route path="/e-certificate/*" element={<Navigate to="/participant/periode" replace />} />
