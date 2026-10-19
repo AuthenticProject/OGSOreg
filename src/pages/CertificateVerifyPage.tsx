@@ -144,9 +144,11 @@ export const CertificateVerifyPage: React.FC = () => {
                     <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 flex items-start gap-3">
                       <GraduationCap className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                       <div>
-                        <div className="text-xs text-slate-500">Jenjang Kompetisi</div>
+                        <div className="text-xs text-slate-500">
+                          {certificate.jenjang ? 'Jenjang Kompetisi' : 'Format Kompetisi'}
+                        </div>
                         <div className="font-bold text-slate-900 mt-0.5">
-                          {certificate.jenjang}
+                          {certificate.jenjang || 'Tanpa Jenjang (Periode \u2264 2025)'}
                         </div>
                       </div>
                     </div>

@@ -170,6 +170,18 @@ export const PeriodListPage: React.FC = () => {
                   <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
                     {p.description}
                   </p>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    {p.year <= 2025 ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                        Format: Tanpa Jenjang (5 Lomba)
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                        Format: 5 Jenjang (Kelas 1 - 5)
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 

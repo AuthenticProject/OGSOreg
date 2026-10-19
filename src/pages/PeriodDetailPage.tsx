@@ -16,6 +16,7 @@ import {
   Edit2,
   Trash2,
   AlertCircle,
+  ShieldAlert,
 } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
@@ -24,6 +25,9 @@ import { EmptyState } from '../components/feedback/EmptyState'
 import { useAuth } from '../context/AuthContext'
 import {
   participantPeriodService,
+  LEGACY_LOMBA_OPTIONS,
+  AWARD_OPTIONS,
+  getAwardRank,
   type CompetitionPeriod,
   type PeriodWinner,
   type PeriodCertificate,
@@ -44,10 +48,15 @@ export const PeriodDetailPage: React.FC = () => {
   const [winnerCerts, setWinnerCerts] = useState<PeriodCertificate[]>([])
   const [participantCerts, setParticipantCerts] = useState<PeriodCertificate[]>([])
 
+  // Determine if period is legacy (<= 2025: belum ada jenjang, kategori dropdown)
+  const isLegacyPeriod = period ? period.year <= 2025 : false
+
   // Filters
   const [search, setSearch] = useState('')
   const [campusFilter, setCampusFilter] = useState<string>(assignedCampus || 'all')
   const [jenjangFilter, setJenjangFilter] = useState<string>('all')
+  const [lombaFilter, setLombaFilter] = useState<string>('all')
+  const [awardFilter, setAwardFilter] = useState<string>('all')
 
   // Modals
   const [isAddWinnerModalOpen, setIsAddWinnerModalOpen] = useState(false)
@@ -58,7 +67,7 @@ export const PeriodDetailPage: React.FC = () => {
   const [winnerName, setWinnerName] = useState('')
   const [winnerNisn, setWinnerNisn] = useState('')
   const [winnerCampus, setWinnerCampus] = useState(assignedCampus || 'Gontor 1')
-  const [winnerJenjang, setWinnerJenjang] = useState<StudentJenjang>('Jenjang 1')
+  const [winnerJenjang, setWinnerJenjang] = useState<StudentJenjang | string>('Jenjang 1')
   const [winnerAward, setWinnerAward] = useState('Juara 1')
   const [winnerCategory, setWinnerCategory] = useState('Matematika Terpadu')
   const [winnerScore, setWinnerScore] = useState<number | ''>(95)
@@ -96,14 +105,32 @@ export const PeriodDetailPage: React.FC = () => {
   }
 
   // Filter logic
-  const filterList = <T extends { recipient_name?: string; student_name?: string; campus: string; jenjang: string }>(
+  const filterList = <
+    T extends {
+      recipient_name?: string
+      student_name?: string
+      campus: string
+      jenjang?: string
+      category?: string
+      award_title?: string
+      award?: string
+    }
+  >(
     list: T[]
   ) => {
     return list.filter((item) => {
       const name = item.recipient_name || item.student_name || ''
       if (search && !name.toLowerCase().includes(search.toLowerCase())) return false
       if (campusFilter !== 'all' && item.campus !== campusFilter) return false
-      if (jenjangFilter !== 'all' && item.jenjang !== jenjangFilter) return false
+      if (!isLegacyPeriod && jenjangFilter !== 'all' && item.jenjang !== jenjangFilter) return false
+      if (isLegacyPeriod && lombaFilter !== 'all') {
+        const cat = (item.category || item.award_title || '').toLowerCase()
+        if (!cat.includes(lombaFilter.toLowerCase())) return false
+      }
+      if (awardFilter !== 'all') {
+        const a = (item.award || item.award_title || '').toLowerCase()
+        if (!a.includes(awardFilter.toLowerCase())) return false
+      }
       return true
     })
   }
@@ -112,26 +139,53 @@ export const PeriodDetailPage: React.FC = () => {
   const filteredWinnerCerts = filterList(winnerCerts)
   const filteredParticipantCerts = filterList(participantCerts)
 
-  // Winner handlers
+  // Always keep winners sorted by official rank order:
+  // Juara 1 -> Juara 2 -> Juara 3 -> Juara Harapan 1 -> Juara Harapan 2
+  const sortedWinners = [...filteredWinners].sort((a, b) => {
+    const rankA = getAwardRank(a.award)
+    const rankB = getAwardRank(b.award)
+    if (rankA !== rankB) return rankA - rankB
+    const catA = (a.category || a.jenjang || '').toLowerCase()
+    const catB = (b.category || b.jenjang || '').toLowerCase()
+    if (catA !== catB) return catA.localeCompare(catB)
+    return (b.score ?? 0) - (a.score ?? 0)
+  })
+
+  const sortedWinnerCerts = [...filteredWinnerCerts].sort((a, b) => {
+    const rankA = getAwardRank(a.award_title)
+    const rankB = getAwardRank(b.award_title)
+    if (rankA !== rankB) return rankA - rankB
+    return a.recipient_name.localeCompare(b.recipient_name)
+  })
+
+  // Winner handlers (Restricted strictly to Super Admin)
   const handleOpenAddWinner = () => {
+    if (!isSuperAdmin) {
+      alert('Akses Ditolak: Hanya Super Admin yang berwenang menambah data pemenang.')
+      return
+    }
     setEditingWinner(null)
     setWinnerName('')
     setWinnerNisn('')
     setWinnerCampus(assignedCampus || 'Gontor 1')
-    setWinnerJenjang('Jenjang 1')
+    setWinnerJenjang(isLegacyPeriod ? '' : 'Jenjang 1')
     setWinnerAward('Juara 1')
-    setWinnerCategory('Matematika Terpadu')
+    setWinnerCategory(isLegacyPeriod ? 'IPA Shigor' : 'Matematika Terpadu')
     setWinnerScore(95)
     setWinnerFormError(null)
     setIsAddWinnerModalOpen(true)
   }
 
   const handleOpenEditWinner = (w: PeriodWinner) => {
+    if (!isSuperAdmin) {
+      alert('Akses Ditolak: Hanya Super Admin yang berwenang mengedit data pemenang.')
+      return
+    }
     setEditingWinner(w)
     setWinnerName(w.student_name)
     setWinnerNisn(w.nisn_username)
     setWinnerCampus(w.campus as StudentKampus)
-    setWinnerJenjang(w.jenjang)
+    setWinnerJenjang(w.jenjang || '')
     setWinnerAward(w.award)
     setWinnerCategory(w.category)
     setWinnerScore(w.score !== undefined ? w.score : '')
@@ -140,6 +194,10 @@ export const PeriodDetailPage: React.FC = () => {
   }
 
   const handleDeleteWinner = (id: string, name: string) => {
+    if (!isSuperAdmin) {
+      alert('Akses Ditolak: Hanya Super Admin yang berwenang menghapus data pemenang.')
+      return
+    }
     if (window.confirm(`Hapus data pemenang '${name}'?`)) {
       participantPeriodService.deleteWinner(id)
       loadPeriodData()
@@ -148,6 +206,10 @@ export const PeriodDetailPage: React.FC = () => {
 
   const handleSaveWinner = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!isSuperAdmin) {
+      alert('Akses Ditolak: Hanya Super Admin yang berwenang menyimpan data pemenang.')
+      return
+    }
     if (!winnerName.trim()) {
       setWinnerFormError('Nama santri pemenang wajib diisi.')
       return
@@ -159,7 +221,7 @@ export const PeriodDetailPage: React.FC = () => {
       student_name: winnerName.trim(),
       nisn_username: winnerNisn.trim() || winnerName.toLowerCase().replace(/\s+/g, ''),
       campus: winnerCampus,
-      jenjang: winnerJenjang,
+      jenjang: isLegacyPeriod ? undefined : (winnerJenjang as StudentJenjang),
       award: winnerAward,
       category: winnerCategory,
       score: winnerScore !== '' ? Number(winnerScore) : undefined,
@@ -189,7 +251,16 @@ export const PeriodDetailPage: React.FC = () => {
 
       <PageHeader
         title={`${period.name} — Detail Periode Kompetisi`}
-        subtitle={`Pelaksanaan: ${period.description} (${new Date(period.start_date).getFullYear()})`}
+        subtitle={
+          <span className="flex flex-wrap items-center gap-2">
+            <span>Pelaksanaan: {period.description} ({new Date(period.start_date).getFullYear()})</span>
+            {isLegacyPeriod && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                Arsip &le; 2025: Format Tanpa Jenjang
+              </span>
+            )}
+          </span>
+        }
         actions={
           <div className="flex items-center gap-2">
             {isSuperAdmin && (
@@ -258,7 +329,7 @@ export const PeriodDetailPage: React.FC = () => {
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {!assignedCampus && (
             <select
               value={campusFilter}
@@ -274,17 +345,46 @@ export const PeriodDetailPage: React.FC = () => {
             </select>
           )}
 
+          {isLegacyPeriod ? (
+            <select
+              value={lombaFilter}
+              onChange={(e) => setLombaFilter(e.target.value)}
+              className="px-2.5 py-2 text-xs rounded-lg border border-slate-300 bg-white font-medium text-slate-800"
+            >
+              <option value="all">Semua Bidang Lomba</option>
+              {LEGACY_LOMBA_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <select
+              value={jenjangFilter}
+              onChange={(e) => setJenjangFilter(e.target.value)}
+              className="px-2.5 py-2 text-xs rounded-lg border border-slate-300 bg-white"
+            >
+              <option value="all">Semua Jenjang</option>
+              <option value="Jenjang 1">Jenjang 1 (Kelas 1)</option>
+              <option value="Jenjang 2">Jenjang 2 (Kelas 2)</option>
+              <option value="Jenjang 3">Jenjang 3 (Kelas 1 Int & 3)</option>
+              <option value="Jenjang 4">Jenjang 4 (Kelas 3 Int & 4)</option>
+              <option value="Jenjang 5">Jenjang 5 (Kelas 5)</option>
+            </select>
+          )}
+
+          {/* Filter Dropdown Juara (Selalu Berurutan) */}
           <select
-            value={jenjangFilter}
-            onChange={(e) => setJenjangFilter(e.target.value)}
-            className="px-2.5 py-2 text-xs rounded-lg border border-slate-300 bg-white"
+            value={awardFilter}
+            onChange={(e) => setAwardFilter(e.target.value)}
+            className="px-2.5 py-2 text-xs rounded-lg border border-slate-300 bg-white font-medium text-slate-800"
           >
-            <option value="all">Semua Jenjang</option>
-            <option value="Jenjang 1">Jenjang 1 (Kelas 1)</option>
-            <option value="Jenjang 2">Jenjang 2 (Kelas 2)</option>
-            <option value="Jenjang 3">Jenjang 3 (Kelas 1 Int & 3)</option>
-            <option value="Jenjang 4">Jenjang 4 (Kelas 3 Int & 4)</option>
-            <option value="Jenjang 5">Jenjang 5 (Kelas 5)</option>
+            <option value="all">Semua Juara</option>
+            {AWARD_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -294,10 +394,24 @@ export const PeriodDetailPage: React.FC = () => {
       {/* ======================================================== */}
       {activeTab === 'winners' && (
         <SectionCard
-          title={`Daftar Pemenang ${period.name} (${filteredWinners.length} Santri)`}
-          subtitle="Daftar resmi santri yang berhasil meraih juara pada babak final Olimpiade Gontor."
+          title={`Daftar Pemenang ${period.name} (${sortedWinners.length} Santri)`}
+          subtitle={
+            isLegacyPeriod
+              ? 'Daftar resmi santri pemenang kompetisi tingkat shigor/kibar (periode tanpa jenjang, berurutan Juara 1 - Juara Harapan 2).'
+              : 'Daftar resmi santri yang berhasil meraih juara pada babak final Olimpiade Gontor.'
+          }
         >
-          {filteredWinners.length === 0 ? (
+          {/* Notice Banner: Selain Super Admin tidak bisa mengedit pemenang */}
+          {!isSuperAdmin && (
+            <div className="mb-4 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-amber-50/70 border border-amber-200 text-amber-900 text-xs">
+              <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>
+                <strong>Mode Lihat Saja:</strong> Pengelolaan, penambahan, pengubahan, dan penghapusan data pemenang hanya dapat dilakukan oleh <strong>Super Admin</strong>.
+              </span>
+            </div>
+          )}
+
+          {sortedWinners.length === 0 ? (
             <EmptyState
               title="Belum Ada Data Juara"
               description="Belum ada data santri pemenang untuk kriteria filter ini."
@@ -310,7 +424,7 @@ export const PeriodDetailPage: React.FC = () => {
                     <th className="py-3 px-3">No</th>
                     <th className="py-3 px-3">Nama Santri</th>
                     <th className="py-3 px-3">Kampus</th>
-                    <th className="py-3 px-3">Jenjang</th>
+                    {!isLegacyPeriod && <th className="py-3 px-3">Jenjang</th>}
                     <th className="py-3 px-3">Penghargaan / Juara</th>
                     <th className="py-3 px-3">Bidang Lomba</th>
                     <th className="py-3 px-3">Nilai</th>
@@ -318,23 +432,49 @@ export const PeriodDetailPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredWinners.map((w, idx) => (
+                  {sortedWinners.map((w, idx) => (
                     <tr key={w.id} className="hover:bg-slate-50/60 transition-colors">
                       <td className="py-3 px-3 font-mono text-slate-400">{idx + 1}</td>
                       <td className="py-3 px-3 font-bold text-slate-900">{w.student_name}</td>
                       <td className="py-3 px-3 text-slate-600">{w.campus}</td>
-                      <td className="py-3 px-3">
-                        <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold text-[10px] border border-blue-200">
-                          {w.jenjang}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 font-bold text-amber-900">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100/70 border border-amber-300">
+                      {!isLegacyPeriod && (
+                        <td className="py-3 px-3">
+                          <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold text-[10px] border border-blue-200">
+                            {w.jenjang || '-'}
+                          </span>
+                        </td>
+                      )}
+                      <td className="py-3 px-3 font-bold">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] ${
+                            w.award.includes('Juara 1')
+                              ? 'bg-amber-100 text-amber-900 border-amber-300'
+                              : w.award.includes('Juara 2')
+                              ? 'bg-slate-100 text-slate-800 border-slate-300'
+                              : w.award.includes('Juara 3')
+                              ? 'bg-amber-50 text-amber-800 border-amber-200'
+                              : w.award.toLowerCase().includes('harapan 1')
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                              : w.award.toLowerCase().includes('harapan 2')
+                              ? 'bg-sky-50 text-sky-800 border-sky-200'
+                              : 'bg-slate-50 text-slate-700 border-slate-200'
+                          }`}
+                        >
                           <Trophy className="w-3 h-3 text-amber-600" />
                           <span>{w.award}</span>
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-slate-700 font-medium">{w.category}</td>
+                      <td className="py-3 px-3 text-slate-700 font-medium">
+                        <span
+                          className={
+                            isLegacyPeriod
+                              ? 'px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 font-semibold text-[11px] border border-emerald-200 inline-block'
+                              : ''
+                          }
+                        >
+                          {w.category}
+                        </span>
+                      </td>
                       <td className="py-3 px-3 font-mono font-bold text-emerald-700">{w.score ?? '-'}</td>
                       {isSuperAdmin && (
                         <td className="py-3 px-3 text-right space-x-1">
@@ -368,14 +508,14 @@ export const PeriodDetailPage: React.FC = () => {
       {/* ======================================================== */}
       {activeTab === 'winner_certs' && (
         <div className="space-y-4">
-          {filteredWinnerCerts.length === 0 ? (
+          {sortedWinnerCerts.length === 0 ? (
             <EmptyState
               title="Belum Ada Sertifikat Pemenang"
               description="Belum ada sertifikat juara yang diterbitkan untuk periode ini."
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredWinnerCerts.map((cert) => (
+              {sortedWinnerCerts.map((cert) => (
                 <div
                   key={cert.id}
                   className="p-5 rounded-2xl bg-white border border-amber-200/80 hover:border-amber-400 shadow-subtle hover:shadow-md transition-all flex flex-col justify-between space-y-4"
@@ -398,9 +538,11 @@ export const PeriodDetailPage: React.FC = () => {
                       <p>
                         Kampus: <strong>{cert.campus}</strong>
                       </p>
-                      <p>
-                        Jenjang: <strong>{cert.jenjang}</strong>
-                      </p>
+                      {!isLegacyPeriod && cert.jenjang && (
+                        <p>
+                          Jenjang: <strong>{cert.jenjang}</strong>
+                        </p>
+                      )}
                       <p className="font-mono text-[10px] text-slate-400">Verifikasi: {cert.verification_code}</p>
                     </div>
                   </div>
@@ -466,9 +608,11 @@ export const PeriodDetailPage: React.FC = () => {
                       <p>
                         Kampus: <strong>{cert.campus}</strong>
                       </p>
-                      <p>
-                        Jenjang: <strong>{cert.jenjang}</strong>
-                      </p>
+                      {!isLegacyPeriod && cert.jenjang && (
+                        <p>
+                          Jenjang: <strong>{cert.jenjang}</strong>
+                        </p>
+                      )}
                       <p className="font-mono text-[10px] text-slate-400">Verifikasi: {cert.verification_code}</p>
                     </div>
                   </div>
@@ -539,7 +683,8 @@ export const PeriodDetailPage: React.FC = () => {
                     {previewCert.recipient_name}
                   </h3>
                   <p className="text-xs text-slate-600 mt-1">
-                    Kontingen: <strong>{previewCert.campus}</strong> ({previewCert.jenjang})
+                    Kontingen: <strong>{previewCert.campus}</strong>
+                    {!isLegacyPeriod && previewCert.jenjang ? ` (${previewCert.jenjang})` : ''}
                   </p>
                 </div>
 
@@ -588,8 +733,8 @@ export const PeriodDetailPage: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL ADD / EDIT WINNER (Super Admin Only) */}
-      {isAddWinnerModalOpen && (
+      {/* MODAL ADD / EDIT WINNER (Strictly Super Admin Only) */}
+      {isAddWinnerModalOpen && isSuperAdmin && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="bg-white rounded-2xl max-w-md w-full border border-border shadow-2xl overflow-hidden flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-slate-50">
@@ -627,7 +772,7 @@ export const PeriodDetailPage: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className={isLegacyPeriod ? 'space-y-1' : 'grid grid-cols-2 gap-3'}>
                 <div className="space-y-1">
                   <label className="font-semibold text-slate-700">Kampus Kontingen</label>
                   <select
@@ -642,33 +787,46 @@ export const PeriodDetailPage: React.FC = () => {
                     ))}
                   </select>
                 </div>
-                <div className="space-y-1">
-                  <label className="font-semibold text-slate-700">Jenjang</label>
-                  <select
-                    value={winnerJenjang}
-                    onChange={(e) => setWinnerJenjang(e.target.value as any)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white"
-                  >
-                    <option value="Jenjang 1">Jenjang 1 (Kelas 1)</option>
-                    <option value="Jenjang 2">Jenjang 2 (Kelas 2)</option>
-                    <option value="Jenjang 3">Jenjang 3 (Kelas 1 Int & Kelas 3)</option>
-                    <option value="Jenjang 4">Jenjang 4 (Kelas 3 Int & Kelas 4)</option>
-                    <option value="Jenjang 5">Jenjang 5 (Kelas 5)</option>
-                  </select>
-                </div>
+                {!isLegacyPeriod && (
+                  <div className="space-y-1">
+                    <label className="font-semibold text-slate-700">Jenjang</label>
+                    <select
+                      value={winnerJenjang}
+                      onChange={(e) => setWinnerJenjang(e.target.value as any)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white"
+                    >
+                      <option value="Jenjang 1">Jenjang 1 (Kelas 1)</option>
+                      <option value="Jenjang 2">Jenjang 2 (Kelas 2)</option>
+                      <option value="Jenjang 3">Jenjang 3 (Kelas 1 Int & Kelas 3)</option>
+                      <option value="Jenjang 4">Jenjang 4 (Kelas 3 Int & Kelas 4)</option>
+                      <option value="Jenjang 5">Jenjang 5 (Kelas 5)</option>
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-semibold text-slate-700">Penghargaan / Juara</label>
-                  <input
-                    type="text"
-                    required
+                  <label className="font-semibold text-slate-700 flex items-center justify-between">
+                    <span>Penghargaan / Juara</span>
+                    <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                      Dropdown
+                    </span>
+                  </label>
+                  <select
                     value={winnerAward}
                     onChange={(e) => setWinnerAward(e.target.value)}
-                    placeholder="Juara 1 / Medali Emas"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
-                  />
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white font-medium text-slate-800"
+                  >
+                    {AWARD_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                    {!AWARD_OPTIONS.includes(winnerAward as any) && winnerAward && (
+                      <option value={winnerAward}>{winnerAward}</option>
+                    )}
+                  </select>
                 </div>
                 <div className="space-y-1">
                   <label className="font-semibold text-slate-700">Nilai Akhir (Opsional)</label>
@@ -684,15 +842,36 @@ export const PeriodDetailPage: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="font-semibold text-slate-700">Bidang Lomba / Kategori</label>
-                <input
-                  type="text"
-                  required
-                  value={winnerCategory}
-                  onChange={(e) => setWinnerCategory(e.target.value)}
-                  placeholder="Matematika Terpadu"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
-                />
+                <label className="font-semibold text-slate-700 flex items-center justify-between">
+                  <span>Bidang Lomba</span>
+                  {isLegacyPeriod && (
+                    <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      Pilihan Dropdown Resmi
+                    </span>
+                  )}
+                </label>
+                {isLegacyPeriod ? (
+                  <select
+                    value={winnerCategory}
+                    onChange={(e) => setWinnerCategory(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white font-medium text-slate-800"
+                  >
+                    {LEGACY_LOMBA_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    required
+                    value={winnerCategory}
+                    onChange={(e) => setWinnerCategory(e.target.value)}
+                    placeholder="Matematika Terpadu"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+                  />
+                )}
               </div>
 
               <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
