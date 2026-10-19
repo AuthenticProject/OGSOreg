@@ -85,9 +85,66 @@ export interface PeriodCertificate {
   created_at: string
 }
 
-const PERIODS_STORAGE_KEY = 'ogsoreg_periods_v4'
-const WINNERS_STORAGE_KEY = 'ogsoreg_period_winners_v4'
-const CERTIFICATES_STORAGE_KEY = 'ogsoreg_period_certs_v4'
+const PERIODS_STORAGE_KEY = 'ogsoreg_periods_v5'
+const WINNERS_STORAGE_KEY = 'ogsoreg_period_winners_v5'
+const CERTIFICATES_STORAGE_KEY = 'ogsoreg_period_certs_v5'
+const DELETED_WINNERS_KEY = 'ogsoreg_deleted_winner_ids_v5'
+const DELETED_CERTS_KEY = 'ogsoreg_deleted_cert_ids_v5'
+const WINNERS_MIGRATED_FLAG = 'ogsoreg_winners_migrated_v5'
+const CERTS_MIGRATED_FLAG = 'ogsoreg_certs_migrated_v5'
+
+function getDeletedWinnerIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set()
+  try {
+    const raw = localStorage.getItem(DELETED_WINNERS_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return new Set(parsed)
+    }
+  } catch {}
+  return new Set()
+}
+
+function addDeletedWinnerIds(ids: string[]): void {
+  if (typeof window === 'undefined') return
+  try {
+    const set = getDeletedWinnerIds()
+    ids.forEach((id) => set.add(id))
+    localStorage.setItem(DELETED_WINNERS_KEY, JSON.stringify(Array.from(set)))
+  } catch {}
+}
+
+function removeDeletedWinnerId(id: string): void {
+  if (typeof window === 'undefined') return
+  try {
+    const set = getDeletedWinnerIds()
+    if (set.has(id)) {
+      set.delete(id)
+      localStorage.setItem(DELETED_WINNERS_KEY, JSON.stringify(Array.from(set)))
+    }
+  } catch {}
+}
+
+function getDeletedCertIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set()
+  try {
+    const raw = localStorage.getItem(DELETED_CERTS_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return new Set(parsed)
+    }
+  } catch {}
+  return new Set()
+}
+
+function addDeletedCertIds(ids: string[]): void {
+  if (typeof window === 'undefined') return
+  try {
+    const set = getDeletedCertIds()
+    ids.forEach((id) => set.add(id))
+    localStorage.setItem(DELETED_CERTS_KEY, JSON.stringify(Array.from(set)))
+  } catch {}
+}
 
 // Initial seed periods for OGSO
 const INITIAL_PERIODS: CompetitionPeriod[] = [
@@ -253,62 +310,70 @@ class ParticipantPeriodService {
     return true
   }
 
-  // Winners
-  getWinners(periodId?: string): PeriodWinner[] {
-    let list: PeriodWinner[] = []
-    if (typeof window === 'undefined') {
-      return []
-    }
+  // One-time migration for winners
+  private ensureWinnersMigrated(): void {
+    if (typeof window === 'undefined') return
+    const isMigrated = localStorage.getItem(WINNERS_MIGRATED_FLAG) === 'true'
+    if (isMigrated) return
 
-    try {
-      const activeRaw = localStorage.getItem(WINNERS_STORAGE_KEY)
-      const combinedMap = new Map<string, PeriodWinner>()
+    const combinedMap = new Map<string, PeriodWinner>()
+    const deletedSet = getDeletedWinnerIds()
+    const PREVIOUS_KEYS = [
+      'ogsoreg_period_winners_v5',
+      'ogsoreg_period_winners_v4',
+      'ogsoreg_period_winners_v3',
+      'ogsoreg_period_winners_v2',
+      'ogsoreg_period_winners_v1',
+      'ogsoreg_period_winners',
+    ]
 
-      // 1. Recover from active storage key
-      if (activeRaw) {
+    for (const key of PREVIOUS_KEYS) {
+      const raw = localStorage.getItem(key)
+      if (raw) {
         try {
-          const parsed = JSON.parse(activeRaw)
+          const parsed = JSON.parse(raw)
           if (Array.isArray(parsed)) {
-            parsed.forEach((w) => {
-              if (w && w.id) combinedMap.set(w.id, w)
-            })
+            for (const item of parsed) {
+              if (item && item.id && !combinedMap.has(item.id) && !deletedSet.has(item.id)) {
+                combinedMap.set(item.id, item)
+              }
+            }
           }
         } catch {}
       }
+    }
 
-      // 2. Scan previous storage keys to restore user's manual inputs
-      const PREVIOUS_KEYS = [
-        'ogsoreg_period_winners_v3',
-        'ogsoreg_period_winners_v2',
-        'ogsoreg_period_winners_v1',
-        'ogsoreg_period_winners',
-      ]
+    const list = Array.from(combinedMap.values()).filter((w) => {
+      if (!w || !w.student_name) return false
+      const nameLower = (w.student_name || '').trim().toLowerCase()
+      const isDummy =
+        DUMMY_STUDENT_NAMES.has(nameLower) &&
+        (DUMMY_WINNER_IDS.has(w.id) || w.id.startsWith('win-2025-') || w.id.startsWith('win-2026-'))
+      return !isDummy && !deletedSet.has(w.id)
+    })
 
-      for (const key of PREVIOUS_KEYS) {
-        const raw = localStorage.getItem(key)
-        if (raw) {
-          try {
-            const parsed = JSON.parse(raw)
-            if (Array.isArray(parsed)) {
-              for (const item of parsed) {
-                if (item && item.id && !combinedMap.has(item.id)) {
-                  combinedMap.set(item.id, item)
-                }
-              }
-            }
-          } catch {}
+    localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(list))
+    localStorage.setItem(WINNERS_MIGRATED_FLAG, 'true')
+  }
+
+  // Winners
+  getWinners(periodId?: string): PeriodWinner[] {
+    if (typeof window === 'undefined') {
+      return []
+    }
+    this.ensureWinnersMigrated()
+
+    const deletedSet = getDeletedWinnerIds()
+    let list: PeriodWinner[] = []
+
+    try {
+      const raw = localStorage.getItem(WINNERS_STORAGE_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) {
+          list = parsed.filter((w) => w && w.id && !deletedSet.has(w.id))
         }
       }
-
-      // 3. Purge dummy data: remove items that match dummy student names & dummy seed IDs
-      list = Array.from(combinedMap.values()).filter((w) => {
-        if (!w || !w.student_name) return false
-        const nameLower = (w.student_name || '').trim().toLowerCase()
-        const isDummy =
-          DUMMY_STUDENT_NAMES.has(nameLower) &&
-          (DUMMY_WINNER_IDS.has(w.id) || w.id.startsWith('win-2025-') || w.id.startsWith('win-2026-'))
-        return !isDummy
-      })
     } catch {
       list = []
     }
@@ -330,7 +395,12 @@ class ParticipantPeriodService {
   }
 
   saveWinner(winner: Omit<PeriodWinner, 'id' | 'created_at'> & { id?: string }): PeriodWinner {
-    const list = this.getWinners()
+    if (typeof window === 'undefined') {
+      return { ...winner, id: winner.id || 'tmp', created_at: new Date().toISOString() } as PeriodWinner
+    }
+    this.ensureWinnersMigrated()
+
+    const list = this.getWinners() // gets all winners across all periods
     const id = winner.id || `win-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
     const now = new Date().toISOString()
 
@@ -349,80 +419,96 @@ class ParticipantPeriodService {
       list.unshift(saved)
     }
 
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(list))
-    }
+    // If previously marked deleted, unmark it
+    removeDeletedWinnerId(id)
+
+    localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(list))
     return saved
   }
 
   deleteWinner(id: string): boolean {
+    if (typeof window === 'undefined') return true
+    this.ensureWinnersMigrated()
+    addDeletedWinnerIds([id])
+
     const list = this.getWinners().filter((w) => w.id !== id)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(list))
-    }
+    localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(list))
     return true
   }
 
   deleteMultipleWinners(ids: string[]): boolean {
+    if (typeof window === 'undefined') return true
+    this.ensureWinnersMigrated()
+    addDeletedWinnerIds(ids)
+
     const idSet = new Set(ids)
     const list = this.getWinners().filter((w) => !idSet.has(w.id))
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(list))
-    }
+    localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(list))
     return true
+  }
+
+  // One-time migration for certificates
+  private ensureCertsMigrated(): void {
+    if (typeof window === 'undefined') return
+    const isMigrated = localStorage.getItem(CERTS_MIGRATED_FLAG) === 'true'
+    if (isMigrated) return
+
+    const combinedMap = new Map<string, PeriodCertificate>()
+    const deletedSet = getDeletedCertIds()
+    const PREV_CERT_KEYS = [
+      'ogsoreg_period_certs_v5',
+      'ogsoreg_period_certs_v4',
+      'ogsoreg_period_certs_v3',
+      'ogsoreg_period_certs_v2',
+      'ogsoreg_period_certs_v1',
+    ]
+
+    for (const key of PREV_CERT_KEYS) {
+      const raw = localStorage.getItem(key)
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw)
+          if (Array.isArray(parsed)) {
+            for (const item of parsed) {
+              if (item && item.id && !combinedMap.has(item.id) && !deletedSet.has(item.id)) {
+                combinedMap.set(item.id, item)
+              }
+            }
+          }
+        } catch {}
+      }
+    }
+
+    const list = Array.from(combinedMap.values()).filter((c) => {
+      if (!c) return false
+      const recName = c.recipient_name || (c as unknown as { student_name?: string }).student_name || ''
+      if (!recName) return false
+      const nameLower = recName.trim().toLowerCase()
+      return !DUMMY_STUDENT_NAMES.has(nameLower) && !deletedSet.has(c.id)
+    })
+
+    localStorage.setItem(CERTIFICATES_STORAGE_KEY, JSON.stringify(list))
+    localStorage.setItem(CERTS_MIGRATED_FLAG, 'true')
   }
 
   // Certificates
   getCertificates(periodId?: string, type?: 'winner' | 'participant'): PeriodCertificate[] {
-    let list: PeriodCertificate[] = []
     if (typeof window === 'undefined') {
       return []
     }
+    this.ensureCertsMigrated()
+
+    const deletedSet = getDeletedCertIds()
+    let list: PeriodCertificate[] = []
 
     try {
-      const activeRaw = localStorage.getItem(CERTIFICATES_STORAGE_KEY)
-      const combinedMap = new Map<string, PeriodCertificate>()
-
-      if (activeRaw) {
-        try {
-          const parsed = JSON.parse(activeRaw)
-          if (Array.isArray(parsed)) {
-            parsed.forEach((c) => {
-              if (c && c.id) combinedMap.set(c.id, c)
-            })
-          }
-        } catch {}
-      }
-
-      const PREV_CERT_KEYS = [
-        'ogsoreg_period_certs_v3',
-        'ogsoreg_period_certs_v2',
-        'ogsoreg_period_certs_v1',
-      ]
-      for (const key of PREV_CERT_KEYS) {
-        const raw = localStorage.getItem(key)
-        if (raw) {
-          try {
-            const parsed = JSON.parse(raw)
-            if (Array.isArray(parsed)) {
-              for (const item of parsed) {
-                if (item && item.id && !combinedMap.has(item.id)) {
-                  combinedMap.set(item.id, item)
-                }
-              }
-            }
-          } catch {}
+      const raw = localStorage.getItem(CERTIFICATES_STORAGE_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) {
+          list = parsed.filter((c) => c && c.id && !deletedSet.has(c.id))
         }
       }
-
-      // Purge dummy certs whose recipient matches dummy student names
-      list = Array.from(combinedMap.values()).filter((c) => {
-        if (!c) return false
-        const recName = c.recipient_name || (c as unknown as { student_name?: string }).student_name || ''
-        if (!recName) return false
-        const nameLower = recName.trim().toLowerCase()
-        return !DUMMY_STUDENT_NAMES.has(nameLower)
-      })
     } catch {
       list = []
     }
@@ -468,10 +554,12 @@ class ParticipantPeriodService {
   }
 
   deleteCertificate(id: string): boolean {
+    if (typeof window === 'undefined') return true
+    this.ensureCertsMigrated()
+    addDeletedCertIds([id])
+
     const list = this.getCertificates().filter((c) => c.id !== id)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(CERTIFICATES_STORAGE_KEY, JSON.stringify(list))
-    }
+    localStorage.setItem(CERTIFICATES_STORAGE_KEY, JSON.stringify(list))
     return true
   }
 }

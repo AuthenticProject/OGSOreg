@@ -302,6 +302,7 @@ export const PeriodDetailPage: React.FC = () => {
     }
     if (window.confirm(`Hapus data pemenang '${name}'?`)) {
       participantPeriodService.deleteWinner(id)
+      setSelectedWinnerIds((prev) => prev.filter((i) => i !== id))
       loadPeriodData()
     }
   }
@@ -331,6 +332,8 @@ export const PeriodDetailPage: React.FC = () => {
     })
 
     setIsAddWinnerModalOpen(false)
+    setEditingWinner(null)
+    setWinnerFormError(null)
     loadPeriodData()
   }
 
@@ -1222,6 +1225,9 @@ export const PeriodDetailPage: React.FC = () => {
                         {opt}
                       </option>
                     ))}
+                    {!LEGACY_LOMBA_OPTIONS.includes(winnerCategory as any) && winnerCategory && (
+                      <option value={winnerCategory}>{winnerCategory}</option>
+                    )}
                   </select>
                 ) : (
                   <input
