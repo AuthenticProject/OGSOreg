@@ -42,13 +42,22 @@ export const PeriodDetailPage: React.FC = () => {
   const navigate = useNavigate()
   const { isSuperAdmin, assignedCampus } = useAuth()
 
-  const [period, setPeriod] = useState<CompetitionPeriod | null>(null)
+  // Lazy initial state so data is ready on first render
+  const [period, setPeriod] = useState<CompetitionPeriod | null>(() =>
+    periodId ? participantPeriodService.getPeriodById(periodId) : null
+  )
   const [activeTab, setActiveTab] = useState<'winners' | 'winner_certs' | 'participant_certs'>('winners')
 
-  // Data states
-  const [winners, setWinners] = useState<PeriodWinner[]>([])
-  const [winnerCerts, setWinnerCerts] = useState<PeriodCertificate[]>([])
-  const [participantCerts, setParticipantCerts] = useState<PeriodCertificate[]>([])
+  // Data states initialized synchronously from service
+  const [winners, setWinners] = useState<PeriodWinner[]>(() =>
+    periodId ? participantPeriodService.getWinners(periodId) : []
+  )
+  const [winnerCerts, setWinnerCerts] = useState<PeriodCertificate[]>(() =>
+    periodId ? participantPeriodService.getCertificates(periodId, 'winner') : []
+  )
+  const [participantCerts, setParticipantCerts] = useState<PeriodCertificate[]>(() =>
+    periodId ? participantPeriodService.getCertificates(periodId, 'participant') : []
+  )
 
   // Multi-select & view mode for winners
   const [selectedWinnerIds, setSelectedWinnerIds] = useState<string[]>([])
@@ -97,18 +106,6 @@ export const PeriodDetailPage: React.FC = () => {
   useEffect(() => {
     loadPeriodData()
   }, [periodId])
-
-  if (!period) {
-    return (
-      <div className="py-12 text-center space-y-4">
-        <AlertCircle className="w-10 h-10 text-amber-600 mx-auto" />
-        <h2 className="text-lg font-bold text-slate-800">Periode Tidak Ditemukan</h2>
-        <Button variant="outline" size="sm" onClick={() => navigate('/participant/periode')}>
-          Kembali ke Daftar Periode
-        </Button>
-      </div>
-    )
-  }
 
   // Filter logic
   const filterList = <
@@ -311,6 +308,7 @@ export const PeriodDetailPage: React.FC = () => {
 
   const handleSaveWinner = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!period) return
     if (!isSuperAdmin) {
       alert('Akses Ditolak: Hanya Super Admin yang berwenang menyimpan data pemenang.')
       return
@@ -345,6 +343,18 @@ export const PeriodDetailPage: React.FC = () => {
     alert(`Mengunduh berkas resmi PDF:\n${filename}\n\nNomor: ${cert?.certificate_number || '-'}\nKode Verifikasi: ${cert?.verification_code || '-'}`)
   }
 
+  if (!period) {
+    return (
+      <div className="py-12 text-center space-y-4">
+        <AlertCircle className="w-10 h-10 text-amber-600 mx-auto" />
+        <h2 className="text-lg font-bold text-slate-800">Periode Tidak Ditemukan</h2>
+        <Button variant="outline" size="sm" onClick={() => navigate('/participant/periode')}>
+          Kembali ke Daftar Periode
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Breadcrumb & Navigation */}
@@ -361,7 +371,7 @@ export const PeriodDetailPage: React.FC = () => {
         title={`${period.name} — Detail Periode Kompetisi`}
         subtitle={
           <span className="flex flex-wrap items-center gap-2">
-            <span>Pelaksanaan: {period.description} ({new Date(period.start_date).getFullYear()})</span>
+            <span>Pelaksanaan: {period.description} ({period.year || (period.start_date ? new Date(period.start_date).getFullYear() : '')})</span>
             {isLegacyPeriod && (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
                 Arsip &le; 2025: Format Tanpa Jenjang
