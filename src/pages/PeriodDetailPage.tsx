@@ -30,6 +30,7 @@ import {
   LEGACY_LOMBA_OPTIONS,
   AWARD_OPTIONS,
   getAwardRank,
+  normalizeCategoryName,
   type CompetitionPeriod,
   type PeriodWinner,
   type PeriodCertificate,
@@ -128,7 +129,7 @@ export const PeriodDetailPage: React.FC = () => {
       if (campusFilter !== 'all' && item.campus !== campusFilter) return false
       if (!isLegacyPeriod && jenjangFilter !== 'all' && item.jenjang !== jenjangFilter) return false
       if (isLegacyPeriod && lombaFilter !== 'all') {
-        const cat = (item.category || item.award_title || '').toLowerCase()
+        const cat = normalizeCategoryName(item.category || item.award_title || '').toLowerCase()
         if (!cat.includes(lombaFilter.toLowerCase())) return false
       }
       if (awardFilter !== 'all') {
@@ -177,7 +178,7 @@ export const PeriodDetailPage: React.FC = () => {
 
     (sortedWinners || []).forEach((w) => {
       if (!w) return
-      const cat = w.category || 'Bidang Lainnya'
+      const cat = normalizeCategoryName(w.category)
       if (!groups[cat]) {
         groups[cat] = []
       }

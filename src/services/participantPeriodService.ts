@@ -38,6 +38,42 @@ export const getAwardRank = (award?: unknown): number => {
   return 100
 }
 
+/**
+ * Normalizes competition category / lomba names (case-insensitive & variant matching)
+ * to prevent duplicates like "Ipa Shigor" vs "ipa shigor" vs "IPA Shigor".
+ */
+export const normalizeCategoryName = (cat?: string): string => {
+  if (!cat || typeof cat !== 'string') return 'Bidang Lainnya'
+  const trimmed = cat.trim()
+  const lower = trimmed.toLowerCase()
+
+  // Match against standard legacy options case-insensitively
+  if (lower === 'ipa shigor' || lower === 'ipa-shigor' || lower.includes('ipa shigor') || lower.includes('ipa_shigor')) {
+    return 'IPA Shigor'
+  }
+  if (lower === 'ipa kibar' || lower === 'ipa-kibar' || lower.includes('ipa kibar') || lower.includes('ipa_kibar')) {
+    return 'IPA Kibar'
+  }
+  if (lower === 'mtk shigor' || lower === 'mtk-shigor' || lower.includes('mtk shigor') || lower.includes('matematika shigor')) {
+    return 'MTK Shigor'
+  }
+  if (lower === 'mtk kibar' || lower === 'mtk-kibar' || lower.includes('mtk kibar') || lower.includes('matematika kibar')) {
+    return 'MTK Kibar'
+  }
+  if (lower === 'dms' || lower.startsWith('dms') || lower.includes('darussalam math and science')) {
+    return 'DMS (Darussalam Math and Science)'
+  }
+
+  // Exact match with any other standard option case-insensitively
+  for (const opt of LEGACY_LOMBA_OPTIONS) {
+    if (opt.toLowerCase() === lower) {
+      return opt
+    }
+  }
+
+  return trimmed
+}
+
 export interface CompetitionPeriod {
   id: string
   name: string // e.g. "OGSO 2026", "OGSO 2025"
@@ -382,8 +418,13 @@ class ParticipantPeriodService {
       list = list.filter((w) => w && w.period_id === periodId)
     }
 
+    const normalized = list.map((w) => ({
+      ...w,
+      category: normalizeCategoryName(w.category),
+    }))
+
     // Always sort winners in standard order: Juara 1, Juara 2, Juara 3, Juara Harapan 1, Juara Harapan 2
-    return [...list].sort((a, b) => {
+    return [...normalized].sort((a, b) => {
       const rankA = getAwardRank(a?.award)
       const rankB = getAwardRank(b?.award)
       if (rankA !== rankB) return rankA - rankB
@@ -403,17 +444,24 @@ class ParticipantPeriodService {
     const list = this.getWinners() // gets all winners across all periods
     const id = winner.id || `win-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
     const now = new Date().toISOString()
+    const normalizedCategory = normalizeCategoryName(winner.category)
 
     const existingIdx = list.findIndex((w) => w.id === id)
     let saved: PeriodWinner
 
     if (existingIdx >= 0) {
-      saved = { ...list[existingIdx], ...winner, id }
+      saved = {
+        ...list[existingIdx],
+        ...winner,
+        id,
+        category: normalizedCategory,
+      }
       list[existingIdx] = saved
     } else {
       saved = {
         ...winner,
         id,
+        category: normalizedCategory,
         created_at: now,
       }
       list.unshift(saved)
