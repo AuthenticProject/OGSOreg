@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { KeyRound, Check, Eye, EyeOff, Lock, AlertCircle, LogOut } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { useAuth } from '../../context/AuthContext'
 
 export const ForcePasswordChangeModal: React.FC = () => {
+  const navigate = useNavigate()
   const { appProfile, changePassword, mustChangePassword, signOut } = useAuth()
 
   const [currentPassword, setCurrentPassword] = useState('')
@@ -193,7 +195,7 @@ export const ForcePasswordChangeModal: React.FC = () => {
           <div className="pt-2 text-center border-t border-slate-100">
             <button
               type="button"
-              onClick={() => signOut()}
+              onClick={async () => { await signOut(); navigate('/') }}
               className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors py-1"
             >
               <LogOut className="w-3.5 h-3.5" />

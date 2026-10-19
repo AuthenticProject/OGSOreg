@@ -13,7 +13,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
 
   const handleSignOut = async () => {
     await signOut()
-    navigate('/login')
+    navigate('/')
   }
 
   // Display label required by specification:
