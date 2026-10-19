@@ -138,583 +138,37 @@ const INITIAL_PERIODS: CompetitionPeriod[] = [
   },
 ]
 
-const INITIAL_WINNERS: PeriodWinner[] = [
-  {
-    id: 'win-2026-01',
-    period_id: 'period-ogso-2026',
-    student_name: 'Nainawa Annabila',
-    nisn_username: 'nainawaannabila',
-    campus: 'Gontor Putri 1',
-    jenjang: 'Jenjang 1',
-    award: 'Juara 1',
-    category: 'Matematika Terpadu',
-    score: 98.5,
-    certificate_id: 'cert-win-2026-01',
-    created_at: '2026-10-15T08:00:00Z',
-  },
-  {
-    id: 'win-2026-02',
-    period_id: 'period-ogso-2026',
-    student_name: 'Nashir Azzuhri',
-    nisn_username: 'nashirazzuhri',
-    campus: 'Gontor 1',
-    jenjang: 'Jenjang 2',
-    award: 'Juara 1',
-    category: 'Sains Alam',
-    score: 96.0,
-    certificate_id: 'cert-win-2026-02',
-    created_at: '2026-10-15T08:00:00Z',
-  },
-  {
-    id: 'win-2026-03',
-    period_id: 'period-ogso-2026',
-    student_name: 'Amanda Nur',
-    nisn_username: 'amandanur',
-    campus: 'Gontor Putri 1',
-    jenjang: 'Jenjang 3',
-    award: 'Juara 2',
-    category: 'Matematika Terpadu',
-    score: 92.0,
-    certificate_id: 'cert-win-2026-03',
-    created_at: '2026-10-15T08:00:00Z',
-  },
-  {
-    id: 'win-2026-04',
-    period_id: 'period-ogso-2026',
-    student_name: 'Lathiif Rahman',
-    nisn_username: 'lathiif',
-    campus: 'Gontor 1',
-    jenjang: 'Jenjang 4',
-    award: 'Juara 3',
-    category: 'Sains Alam',
-    score: 91.5,
-    certificate_id: 'cert-win-2026-04',
-    created_at: '2026-10-15T08:00:00Z',
-  },
-  {
-    id: 'win-2026-05',
-    period_id: 'period-ogso-2026',
-    student_name: 'Alya Nashwa',
-    nisn_username: 'alyamuthianashwa',
-    campus: 'Gontor Putri 1',
-    jenjang: 'Jenjang 5',
-    award: 'Juara Harapan 1',
-    category: 'Matematika Lanjutan',
-    score: 89.0,
-    certificate_id: 'cert-win-2026-05',
-    created_at: '2026-10-15T08:00:00Z',
-  },
-  {
-    id: 'win-2026-06',
-    period_id: 'period-ogso-2026',
-    student_name: 'Ghovva Marshandi',
-    nisn_username: 'ghovva',
-    campus: 'Gontor 1',
-    jenjang: 'Jenjang 5',
-    award: 'Juara Harapan 2',
-    category: 'Matematika Lanjutan',
-    score: 86.5,
-    certificate_id: 'cert-win-2026-06',
-    created_at: '2026-10-15T08:00:00Z',
-  },
-  // OGSO 2025 Winners (Legacy format: tanpa jenjang, dropdown kategori lomba berurutan Juara 1 - Juara Harapan 2)
-  {
-    id: 'win-2025-01',
-    period_id: 'period-ogso-2025',
-    student_name: 'Fikri Haikal',
-    nisn_username: 'fikrihaikal',
-    campus: 'Gontor 1',
-    award: 'Juara 1',
-    category: 'IPA Shigor',
-    score: 97.0,
-    certificate_id: 'cert-win-2025-01',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'win-2025-02',
-    period_id: 'period-ogso-2025',
-    student_name: 'Rayhan Al-Ghifari',
-    nisn_username: 'rayhanalghifari',
-    campus: 'Gontor 2',
-    award: 'Juara 2',
-    category: 'IPA Shigor',
-    score: 94.0,
-    certificate_id: 'cert-win-2025-02',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'win-2025-03',
-    period_id: 'period-ogso-2025',
-    student_name: 'Zahra Kamila',
-    nisn_username: 'zahrakamila',
-    campus: 'Gontor Putri 1',
-    award: 'Juara 3',
-    category: 'IPA Shigor',
-    score: 91.5,
-    certificate_id: 'cert-win-2025-03',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'win-2025-04',
-    period_id: 'period-ogso-2025',
-    student_name: 'Ahmad Fauzi',
-    nisn_username: 'ahmadfauzi',
-    campus: 'Gontor 3',
-    award: 'Juara Harapan 1',
-    category: 'IPA Shigor',
-    score: 88.0,
-    certificate_id: 'cert-win-2025-04',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'win-2025-05',
-    period_id: 'period-ogso-2025',
-    student_name: 'Syifa Az-Zahra',
-    nisn_username: 'syifaazzahra',
-    campus: 'Gontor Putri 2',
-    award: 'Juara Harapan 2',
-    category: 'IPA Shigor',
-    score: 85.5,
-    certificate_id: 'cert-win-2025-05',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  // MTK Shigor
-  {
-    id: 'win-2025-06',
-    period_id: 'period-ogso-2025',
-    student_name: 'M. Rizky Pratama',
-    nisn_username: 'rizkypratama',
-    campus: 'Gontor 1',
-    award: 'Juara 1',
-    category: 'MTK Shigor',
-    score: 98.0,
-    certificate_id: 'cert-win-2025-06',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'win-2025-07',
-    period_id: 'period-ogso-2025',
-    student_name: 'Annisa Rahmawati',
-    nisn_username: 'annisa',
-    campus: 'Gontor Putri 1',
-    award: 'Juara 2',
-    category: 'MTK Shigor',
-    score: 95.0,
-    certificate_id: 'cert-win-2025-07',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'win-2025-08',
-    period_id: 'period-ogso-2025',
-    student_name: 'Dafa Al-Fatih',
-    nisn_username: 'dafaalfatih',
-    campus: 'Gontor 2',
-    award: 'Juara 3',
-    category: 'MTK Shigor',
-    score: 92.0,
-    certificate_id: 'cert-win-2025-08',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'win-2025-09',
-    period_id: 'period-ogso-2025',
-    student_name: 'Nurul Hidayah',
-    nisn_username: 'nurulhidayah',
-    campus: 'Gontor Putri 2',
-    award: 'Juara Harapan 1',
-    category: 'MTK Shigor',
-    score: 89.0,
-    certificate_id: 'cert-win-2025-09',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'win-2025-10',
-    period_id: 'period-ogso-2025',
-    student_name: 'Salman Farisi',
-    nisn_username: 'salmanfarisi',
-    campus: 'Gontor 3',
-    award: 'Juara Harapan 2',
-    category: 'MTK Shigor',
-    score: 87.0,
-    certificate_id: 'cert-win-2025-10',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  // DMS
-  {
-    id: 'win-2025-11',
-    period_id: 'period-ogso-2025',
-    student_name: 'Bilal Akbar',
-    nisn_username: 'bilalakbar',
-    campus: 'Gontor 1',
-    award: 'Juara 1',
-    category: 'DMS (Darussalam Math and Science)',
-    score: 99.0,
-    certificate_id: 'cert-win-2025-11',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'win-2025-12',
-    period_id: 'period-ogso-2025',
-    student_name: 'Maryam Jameela',
-    nisn_username: 'maryamjameela',
-    campus: 'Gontor Putri 1',
-    award: 'Juara 2',
-    category: 'DMS (Darussalam Math and Science)',
-    score: 96.0,
-    certificate_id: 'cert-win-2025-12',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'win-2025-13',
-    period_id: 'period-ogso-2025',
-    student_name: 'Dzaky Mubarak',
-    nisn_username: 'dzakymubarak',
-    campus: 'Gontor 2',
-    award: 'Juara 3',
-    category: 'DMS (Darussalam Math and Science)',
-    score: 93.5,
-    certificate_id: 'cert-win-2025-13',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'win-2025-14',
-    period_id: 'period-ogso-2025',
-    student_name: 'Khadijah Al-Kubro',
-    nisn_username: 'khadijah',
-    campus: 'Gontor Putri 2',
-    award: 'Juara Harapan 1',
-    category: 'DMS (Darussalam Math and Science)',
-    score: 90.0,
-    certificate_id: 'cert-win-2025-14',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'win-2025-15',
-    period_id: 'period-ogso-2025',
-    student_name: 'Tariq Ziyad',
-    nisn_username: 'tariqziyad',
-    campus: 'Gontor 3',
-    award: 'Juara Harapan 2',
-    category: 'DMS (Darussalam Math and Science)',
-    score: 87.5,
-    certificate_id: 'cert-win-2025-15',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-]
+// Names of pre-seeded dummy records that must be purged to respect user-created data
+export const DUMMY_STUDENT_NAMES = new Set([
+  'bilal akbar',
+  'fikri haikal',
+  'm. rizky pratama',
+  'maryam jameela',
+  'rayhan al-ghifari',
+  'annisa rahmawati',
+  'dzaky mubarak',
+  'zahra kamila',
+  'dafa al-fatih',
+  'khadijah al-kubro',
+  'ahmad fauzi',
+  'nurul hidayah',
+  'tariq ziyad',
+  'syifa az-zahra',
+  'salman farisi',
+  'nainawa annabila',
+  'nashir azzuhri',
+  'amanda nur',
+  'lathiif rahman',
+  'alya nashwa',
+  'ghovva marshandi',
+])
 
-const INITIAL_CERTIFICATES: PeriodCertificate[] = [
-  {
-    id: 'cert-win-2026-01',
-    period_id: 'period-ogso-2026',
-    certificate_number: 'OGSO/2026/WIN-001',
-    certificate_type: 'winner',
-    recipient_name: 'Nainawa Annabila',
-    nisn_username: 'nainawaannabila',
-    campus: 'Gontor Putri 1',
-    jenjang: 'Jenjang 1',
-    award_title: 'Juara 1 — Matematika Terpadu Jenjang 1',
-    issue_date: '2026-10-17',
-    is_published: true,
-    is_revoked: false,
-    verification_code: 'OGSO-VER-2026-001-NA',
-    created_at: '2026-10-15T08:00:00Z',
-  },
-  {
-    id: 'cert-win-2026-02',
-    period_id: 'period-ogso-2026',
-    certificate_number: 'OGSO/2026/WIN-002',
-    certificate_type: 'winner',
-    recipient_name: 'Nashir Azzuhri',
-    nisn_username: 'nashirazzuhri',
-    campus: 'Gontor 1',
-    jenjang: 'Jenjang 2',
-    award_title: 'Juara 1 — Sains Alam Jenjang 2',
-    issue_date: '2026-10-17',
-    is_published: true,
-    is_revoked: false,
-    verification_code: 'OGSO-VER-2026-002-NZ',
-    created_at: '2026-10-15T08:00:00Z',
-  },
-  {
-    id: 'cert-win-2026-03',
-    period_id: 'period-ogso-2026',
-    certificate_number: 'OGSO/2026/WIN-003',
-    certificate_type: 'winner',
-    recipient_name: 'Amanda Nur',
-    nisn_username: 'amandanur',
-    campus: 'Gontor Putri 1',
-    jenjang: 'Jenjang 3',
-    award_title: 'Juara 2 — Matematika Terpadu Jenjang 3',
-    issue_date: '2026-10-17',
-    is_published: true,
-    is_revoked: false,
-    verification_code: 'OGSO-VER-2026-003-AN',
-    created_at: '2026-10-15T08:00:00Z',
-  },
-  {
-    id: 'cert-win-2026-04',
-    period_id: 'period-ogso-2026',
-    certificate_number: 'OGSO/2026/WIN-004',
-    certificate_type: 'winner',
-    recipient_name: 'Lathiif Rahman',
-    nisn_username: 'lathiif',
-    campus: 'Gontor 1',
-    jenjang: 'Jenjang 4',
-    award_title: 'Juara 3 — Sains Alam Jenjang 4',
-    issue_date: '2026-10-17',
-    is_published: true,
-    is_revoked: false,
-    verification_code: 'OGSO-VER-2026-004-LR',
-    created_at: '2026-10-15T08:00:00Z',
-  },
-  {
-    id: 'cert-win-2026-05',
-    period_id: 'period-ogso-2026',
-    certificate_number: 'OGSO/2026/WIN-005',
-    certificate_type: 'winner',
-    recipient_name: 'Alya Nashwa',
-    nisn_username: 'alyamuthianashwa',
-    campus: 'Gontor Putri 1',
-    jenjang: 'Jenjang 5',
-    award_title: 'Juara Harapan 1 — Matematika Lanjutan Jenjang 5',
-    issue_date: '2026-10-17',
-    is_published: true,
-    is_revoked: false,
-    verification_code: 'OGSO-VER-2026-005-AN',
-    created_at: '2026-10-15T08:00:00Z',
-  },
-  {
-    id: 'cert-win-2026-06',
-    period_id: 'period-ogso-2026',
-    certificate_number: 'OGSO/2026/WIN-006',
-    certificate_type: 'winner',
-    recipient_name: 'Ghovva Marshandi',
-    nisn_username: 'ghovva',
-    campus: 'Gontor 1',
-    jenjang: 'Jenjang 5',
-    award_title: 'Juara Harapan 2 — Matematika Lanjutan Jenjang 5',
-    issue_date: '2026-10-17',
-    is_published: true,
-    is_revoked: false,
-    verification_code: 'OGSO-VER-2026-006-GM',
-    created_at: '2026-10-15T08:00:00Z',
-  },
-  // Participant certificates 2026
-  {
-    id: 'cert-part-2026-01',
-    period_id: 'period-ogso-2026',
-    certificate_number: 'OGSO/2026/PART-001',
-    certificate_type: 'participant',
-    recipient_name: 'Humaira Salsabila',
-    nisn_username: 'humaira',
-    campus: 'Gontor Putri 1',
-    jenjang: 'Jenjang 2',
-    award_title: 'Peserta Resmi Olimpiade Gontor Sains & Matematika 2026',
-    issue_date: '2026-10-17',
-    is_published: true,
-    is_revoked: false,
-    verification_code: 'OGSO-VER-2026-PART-001',
-    created_at: '2026-10-15T08:00:00Z',
-  },
-  {
-    id: 'cert-part-2026-02',
-    period_id: 'period-ogso-2026',
-    certificate_number: 'OGSO/2026/PART-002',
-    certificate_type: 'participant',
-    recipient_name: 'Farhan Ramadhan',
-    nisn_username: 'farhanramadhan',
-    campus: 'Gontor 1',
-    jenjang: 'Jenjang 1',
-    award_title: 'Peserta Resmi Olimpiade Gontor Sains & Matematika 2026',
-    issue_date: '2026-10-17',
-    is_published: true,
-    is_revoked: false,
-    verification_code: 'OGSO-VER-2026-PART-002',
-    created_at: '2026-10-15T08:00:00Z',
-  },
-  {
-    id: 'cert-part-2026-03',
-    period_id: 'period-ogso-2026',
-    certificate_number: 'OGSO/2026/PART-003',
-    certificate_type: 'participant',
-    recipient_name: 'Nur Amanda',
-    nisn_username: 'amandanur1',
-    campus: 'Gontor Putri 1',
-    jenjang: 'Jenjang 2',
-    award_title: 'Peserta Resmi Olimpiade Gontor Sains & Matematika 2026',
-    issue_date: '2026-10-17',
-    is_published: true,
-    is_revoked: false,
-    verification_code: 'OGSO-VER-2026-PART-003',
-    created_at: '2026-10-15T08:00:00Z',
-  },
-  // OGSO 2025 Certificates (Legacy format: tanpa jenjang)
-  {
-    id: 'cert-win-2025-01',
-    period_id: 'period-ogso-2025',
-    certificate_number: 'OGSO/2025/WIN-001',
-    certificate_type: 'winner',
-    recipient_name: 'Fikri Haikal',
-    nisn_username: 'fikrihaikal',
-    campus: 'Gontor 1',
-    award_title: 'Juara 1 — IPA Shigor',
-    issue_date: '2025-10-25',
-    is_published: true,
-    is_revoked: false,
-    verification_code: 'OGSO-VER-2025-001-FH',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'cert-win-2025-02',
-    period_id: 'period-ogso-2025',
-    certificate_number: 'OGSO/2025/WIN-002',
-    certificate_type: 'winner',
-    recipient_name: 'Rayhan Al-Ghifari',
-    nisn_username: 'rayhanalghifari',
-    campus: 'Gontor 2',
-    award_title: 'Juara 2 — IPA Shigor',
-    issue_date: '2025-10-25',
-    is_published: true,
-    is_revoked: false,
-    verification_code: 'OGSO-VER-2025-002-RG',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'cert-win-2025-03',
-    period_id: 'period-ogso-2025',
-    certificate_number: 'OGSO/2025/WIN-003',
-    certificate_type: 'winner',
-    recipient_name: 'Zahra Kamila',
-    nisn_username: 'zahrakamila',
-    campus: 'Gontor Putri 1',
-    award_title: 'Juara 3 — IPA Shigor',
-    issue_date: '2025-10-25',
-    is_published: true,
-    is_revoked: false,
-    verification_code: 'OGSO-VER-2025-003-ZK',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'cert-win-2025-04',
-    period_id: 'period-ogso-2025',
-    certificate_number: 'OGSO/2025/WIN-004',
-    certificate_type: 'winner',
-    recipient_name: 'Ahmad Fauzi',
-    nisn_username: 'ahmadfauzi',
-    campus: 'Gontor 3',
-    award_title: 'Juara Harapan 1 — IPA Shigor',
-    issue_date: '2025-10-25',
-    is_published: true,
-    is_revoked: false,
-    verification_code: 'OGSO-VER-2025-004-AF',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'cert-win-2025-05',
-    period_id: 'period-ogso-2025',
-    certificate_number: 'OGSO/2025/WIN-005',
-    certificate_type: 'winner',
-    recipient_name: 'Syifa Az-Zahra',
-    nisn_username: 'syifaazzahra',
-    campus: 'Gontor Putri 2',
-    award_title: 'Juara Harapan 2 — IPA Shigor',
-    issue_date: '2025-10-25',
-    is_published: true,
-    is_revoked: false,
-    verification_code: 'OGSO-VER-2025-005-SZ',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'cert-win-2025-06',
-    period_id: 'period-ogso-2025',
-    certificate_number: 'OGSO/2025/WIN-006',
-    certificate_type: 'winner',
-    recipient_name: 'M. Rizky Pratama',
-    nisn_username: 'rizkypratama',
-    campus: 'Gontor 1',
-    award_title: 'Juara 1 — MTK Shigor',
-    issue_date: '2025-10-25',
-    is_published: true,
-    is_revoked: false,
-    verification_code: 'OGSO-VER-2025-006-RP',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'cert-win-2025-07',
-    period_id: 'period-ogso-2025',
-    certificate_number: 'OGSO/2025/WIN-007',
-    certificate_type: 'winner',
-    recipient_name: 'Annisa Rahmawati',
-    nisn_username: 'annisa',
-    campus: 'Gontor Putri 1',
-    award_title: 'Juara 2 — MTK Shigor',
-    issue_date: '2025-10-25',
-    is_published: true,
-    is_revoked: false,
-    verification_code: 'OGSO-VER-2025-007-AR',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'cert-win-2025-08',
-    period_id: 'period-ogso-2025',
-    certificate_number: 'OGSO/2025/WIN-008',
-    certificate_type: 'winner',
-    recipient_name: 'Dafa Al-Fatih',
-    nisn_username: 'dafaalfatih',
-    campus: 'Gontor 2',
-    award_title: 'Juara 3 — MTK Shigor',
-    issue_date: '2025-10-25',
-    is_published: true,
-    is_revoked: false,
-    verification_code: 'OGSO-VER-2025-008-DA',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'cert-win-2025-09',
-    period_id: 'period-ogso-2025',
-    certificate_number: 'OGSO/2025/WIN-009',
-    certificate_type: 'winner',
-    recipient_name: 'Nurul Hidayah',
-    nisn_username: 'nurulhidayah',
-    campus: 'Gontor Putri 2',
-    award_title: 'Juara Harapan 1 — MTK Shigor',
-    issue_date: '2025-10-25',
-    is_published: true,
-    is_revoked: false,
-    verification_code: 'OGSO-VER-2025-009-NH',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'cert-win-2025-10',
-    period_id: 'period-ogso-2025',
-    certificate_number: 'OGSO/2025/WIN-010',
-    certificate_type: 'winner',
-    recipient_name: 'Salman Farisi',
-    nisn_username: 'salmanfarisi',
-    campus: 'Gontor 3',
-    award_title: 'Juara Harapan 2 — MTK Shigor',
-    issue_date: '2025-10-25',
-    is_published: true,
-    is_revoked: false,
-    verification_code: 'OGSO-VER-2025-010-SF',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-  {
-    id: 'cert-part-2025-01',
-    period_id: 'period-ogso-2025',
-    certificate_number: 'OGSO/2025/PART-001',
-    certificate_type: 'participant',
-    recipient_name: 'M. Wildan Pratama',
-    nisn_username: 'wildanpratama',
-    campus: 'Gontor 1',
-    award_title: 'Peserta Resmi Olimpiade Gontor Sains & Matematika 2025',
-    issue_date: '2025-10-25',
-    is_published: true,
-    is_revoked: false,
-    verification_code: 'OGSO-VER-2025-PART-001',
-    created_at: '2025-10-20T08:00:00Z',
-  },
-]
+export const DUMMY_WINNER_IDS = new Set([
+  'win-2026-01', 'win-2026-02', 'win-2026-03', 'win-2026-04', 'win-2026-05', 'win-2026-06',
+  'win-2025-01', 'win-2025-02', 'win-2025-03', 'win-2025-04', 'win-2025-05', 'win-2025-06',
+  'win-2025-07', 'win-2025-08', 'win-2025-09', 'win-2025-10', 'win-2025-11', 'win-2025-12',
+  'win-2025-13', 'win-2025-14', 'win-2025-15',
+])
 
 class ParticipantPeriodService {
   // Periods
@@ -790,19 +244,64 @@ class ParticipantPeriodService {
   getWinners(periodId?: string): PeriodWinner[] {
     let list: PeriodWinner[] = []
     if (typeof window === 'undefined') {
-      list = INITIAL_WINNERS
-    } else {
-      try {
-        const raw = localStorage.getItem(WINNERS_STORAGE_KEY)
-        if (!raw) {
-          localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(INITIAL_WINNERS))
-          list = INITIAL_WINNERS
-        } else {
-          list = JSON.parse(raw)
-        }
-      } catch {
-        list = INITIAL_WINNERS
+      return []
+    }
+
+    try {
+      const activeRaw = localStorage.getItem(WINNERS_STORAGE_KEY)
+      const combinedMap = new Map<string, PeriodWinner>()
+
+      // 1. Recover from active storage key
+      if (activeRaw) {
+        try {
+          const parsed = JSON.parse(activeRaw)
+          if (Array.isArray(parsed)) {
+            parsed.forEach((w) => {
+              if (w && w.id) combinedMap.set(w.id, w)
+            })
+          }
+        } catch {}
       }
+
+      // 2. Scan previous storage keys to restore user's manual inputs
+      const PREVIOUS_KEYS = [
+        'ogsoreg_period_winners_v4',
+        'ogsoreg_period_winners_v3',
+        'ogsoreg_period_winners_v2',
+        'ogsoreg_period_winners_v1',
+        'ogsoreg_period_winners',
+      ]
+
+      for (const key of PREVIOUS_KEYS) {
+        const raw = localStorage.getItem(key)
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw)
+            if (Array.isArray(parsed)) {
+              for (const item of parsed) {
+                if (item && item.id && !combinedMap.has(item.id)) {
+                  combinedMap.set(item.id, item)
+                }
+              }
+            }
+          } catch {}
+        }
+      }
+
+      // 3. Purge dummy data: remove items that match dummy student names & dummy seed IDs
+      list = Array.from(combinedMap.values()).filter((w) => {
+        if (!w || !w.student_name) return false
+        const nameLower = w.student_name.trim().toLowerCase()
+        const isDummy =
+          DUMMY_STUDENT_NAMES.has(nameLower) &&
+          (DUMMY_WINNER_IDS.has(w.id) || w.id.startsWith('win-2025-') || w.id.startsWith('win-2026-'))
+        return !isDummy
+      })
+
+      // Sync cleaned user data back into current storage key
+      localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(list))
+    } catch {
+      list = []
     }
 
     if (periodId) {
@@ -855,23 +354,69 @@ class ParticipantPeriodService {
     return true
   }
 
+  deleteMultipleWinners(ids: string[]): boolean {
+    const idSet = new Set(ids)
+    const list = this.getWinners().filter((w) => !idSet.has(w.id))
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(list))
+    }
+    return true
+  }
+
   // Certificates
   getCertificates(periodId?: string, type?: 'winner' | 'participant'): PeriodCertificate[] {
     let list: PeriodCertificate[] = []
     if (typeof window === 'undefined') {
-      list = INITIAL_CERTIFICATES
-    } else {
-      try {
-        const raw = localStorage.getItem(CERTIFICATES_STORAGE_KEY)
-        if (!raw) {
-          localStorage.setItem(CERTIFICATES_STORAGE_KEY, JSON.stringify(INITIAL_CERTIFICATES))
-          list = INITIAL_CERTIFICATES
-        } else {
-          list = JSON.parse(raw)
-        }
-      } catch {
-        list = INITIAL_CERTIFICATES
+      return []
+    }
+
+    try {
+      const activeRaw = localStorage.getItem(CERTIFICATES_STORAGE_KEY)
+      const combinedMap = new Map<string, PeriodCertificate>()
+
+      if (activeRaw) {
+        try {
+          const parsed = JSON.parse(activeRaw)
+          if (Array.isArray(parsed)) {
+            parsed.forEach((c) => {
+              if (c && c.id) combinedMap.set(c.id, c)
+            })
+          }
+        } catch {}
       }
+
+      const PREV_CERT_KEYS = [
+        'ogsoreg_period_certs_v4',
+        'ogsoreg_period_certs_v3',
+        'ogsoreg_period_certs_v2',
+        'ogsoreg_period_certs_v1',
+      ]
+      for (const key of PREV_CERT_KEYS) {
+        const raw = localStorage.getItem(key)
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw)
+            if (Array.isArray(parsed)) {
+              for (const item of parsed) {
+                if (item && item.id && !combinedMap.has(item.id)) {
+                  combinedMap.set(item.id, item)
+                }
+              }
+            }
+          } catch {}
+        }
+      }
+
+      // Purge dummy certs whose recipient matches dummy student names
+      list = Array.from(combinedMap.values()).filter((c) => {
+        if (!c || !c.recipient_name) return false
+        const nameLower = c.recipient_name.trim().toLowerCase()
+        return !DUMMY_STUDENT_NAMES.has(nameLower)
+      })
+
+      localStorage.setItem(CERTIFICATES_STORAGE_KEY, JSON.stringify(list))
+    } catch {
+      list = []
     }
 
     if (periodId) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   Trophy,
@@ -17,6 +17,8 @@ import {
   Trash2,
   AlertCircle,
   ShieldAlert,
+  Layers,
+  LayoutGrid,
 } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
@@ -47,6 +49,10 @@ export const PeriodDetailPage: React.FC = () => {
   const [winners, setWinners] = useState<PeriodWinner[]>([])
   const [winnerCerts, setWinnerCerts] = useState<PeriodCertificate[]>([])
   const [participantCerts, setParticipantCerts] = useState<PeriodCertificate[]>([])
+
+  // Multi-select & view mode for winners
+  const [selectedWinnerIds, setSelectedWinnerIds] = useState<string[]>([])
+  const [winnerViewMode, setWinnerViewMode] = useState<'by_lomba' | 'flat'>('by_lomba')
 
   // Determine if period is legacy (<= 2025: belum ada jenjang, kategori dropdown)
   const isLegacyPeriod = period ? period.year <= 2025 : false
@@ -157,6 +163,101 @@ export const PeriodDetailPage: React.FC = () => {
     if (rankA !== rankB) return rankA - rankB
     return a.recipient_name.localeCompare(b.recipient_name)
   })
+
+  // Group sorted winners by category (Bidang Lomba)
+  const groupedWinners = useMemo(() => {
+    const groups: Record<string, PeriodWinner[]> = {}
+
+    // In legacy periods (<= 2025), order categories by LEGACY_LOMBA_OPTIONS first
+    if (isLegacyPeriod) {
+      LEGACY_LOMBA_OPTIONS.forEach((opt) => {
+        groups[opt] = []
+      })
+    }
+
+    sortedWinners.forEach((w) => {
+      const cat = w.category || 'Bidang Lainnya'
+      if (!groups[cat]) {
+        groups[cat] = []
+      }
+      groups[cat].push(w)
+    })
+
+    // Filter by lombaFilter if selected
+    if (lombaFilter !== 'all') {
+      const filteredGroups: Record<string, PeriodWinner[]> = {}
+      for (const [key, list] of Object.entries(groups)) {
+        if (key.toLowerCase().includes(lombaFilter.toLowerCase())) {
+          filteredGroups[key] = list
+        }
+      }
+      return filteredGroups
+    }
+
+    // Only keep non-empty groups if not actively searching
+    const result: Record<string, PeriodWinner[]> = {}
+    for (const [key, list] of Object.entries(groups)) {
+      if (list.length > 0) {
+        result[key] = list
+      }
+    }
+
+    return Object.keys(result).length > 0 ? result : groups
+  }, [sortedWinners, isLegacyPeriod, lombaFilter])
+
+  // Multi-select handlers
+  const handleToggleSelectWinner = (id: string) => {
+    setSelectedWinnerIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    )
+  }
+
+  const handleToggleSelectCategory = (catWinners: PeriodWinner[]) => {
+    const catIds = catWinners.map((w) => w.id)
+    const allSelected = catIds.length > 0 && catIds.every((id) => selectedWinnerIds.includes(id))
+    if (allSelected) {
+      setSelectedWinnerIds((prev) => prev.filter((id) => !catIds.includes(id)))
+    } else {
+      setSelectedWinnerIds((prev) => Array.from(new Set([...prev, ...catIds])))
+    }
+  }
+
+  const handleToggleSelectAll = () => {
+    const allIds = sortedWinners.map((w) => w.id)
+    const allSelected = allIds.length > 0 && allIds.every((id) => selectedWinnerIds.includes(id))
+    if (allSelected) {
+      setSelectedWinnerIds([])
+    } else {
+      setSelectedWinnerIds(allIds)
+    }
+  }
+
+  const handleBulkDeleteWinners = () => {
+    if (!isSuperAdmin) {
+      alert('Akses Ditolak: Hanya Super Admin yang berwenang menghapus data pemenang.')
+      return
+    }
+    if (selectedWinnerIds.length === 0) return
+    if (
+      window.confirm(
+        `Apakah Anda yakin ingin menghapus ${selectedWinnerIds.length} data pemenang yang dipilih? Tindakan ini tidak dapat dibatalkan.`
+      )
+    ) {
+      participantPeriodService.deleteMultipleWinners(selectedWinnerIds)
+      setSelectedWinnerIds([])
+      loadPeriodData()
+    }
+  }
+
+  const getAwardBadgeClass = (award: string) => {
+    const norm = award.toLowerCase()
+    if (norm.includes('juara 1')) return 'bg-amber-100 text-amber-900 border-amber-300'
+    if (norm.includes('juara 2')) return 'bg-slate-100 text-slate-800 border-slate-300'
+    if (norm.includes('juara 3')) return 'bg-amber-50 text-amber-800 border-amber-200'
+    if (norm.includes('harapan 1') || norm.includes('harapn 1')) return 'bg-emerald-50 text-emerald-800 border-emerald-200'
+    if (norm.includes('harapan 2') || norm.includes('harapn 2')) return 'bg-sky-50 text-sky-800 border-sky-200'
+    return 'bg-slate-50 text-slate-700 border-slate-200'
+  }
 
   // Winner handlers (Restricted strictly to Super Admin)
   const handleOpenAddWinner = () => {
@@ -392,115 +493,355 @@ export const PeriodDetailPage: React.FC = () => {
       {/* ======================================================== */}
       {/* SECTION A: DATA JUARA                                    */}
       {/* ======================================================== */}
+      {/* ======================================================== */}
+      {/* SECTION A: DATA JUARA                                    */}
+      {/* ======================================================== */}
       {activeTab === 'winners' && (
-        <SectionCard
-          title={`Daftar Pemenang ${period.name} (${sortedWinners.length} Santri)`}
-          subtitle={
-            isLegacyPeriod
-              ? 'Daftar resmi santri pemenang kompetisi tingkat shigor/kibar (periode tanpa jenjang, berurutan Juara 1 - Juara Harapan 2).'
-              : 'Daftar resmi santri yang berhasil meraih juara pada babak final Olimpiade Gontor.'
-          }
-        >
-          {/* Notice Banner: Selain Super Admin tidak bisa mengedit pemenang */}
-          {!isSuperAdmin && (
-            <div className="mb-4 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-amber-50/70 border border-amber-200 text-amber-900 text-xs">
-              <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
-              <span>
-                <strong>Mode Lihat Saja:</strong> Pengelolaan, penambahan, pengubahan, dan penghapusan data pemenang hanya dapat dilakukan oleh <strong>Super Admin</strong>.
-              </span>
-            </div>
-          )}
+        <div className="space-y-4">
+          {/* Floating / Sticky Bulk Actions Toolbar */}
+          {selectedWinnerIds.length > 0 && (
+            <div className="sticky top-2 z-30 flex flex-wrap items-center justify-between gap-3 p-3 px-4 rounded-xl bg-slate-900 text-white shadow-xl border border-slate-700 animate-in slide-in-from-top duration-200">
+              <div className="flex items-center gap-2.5">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500 text-white font-bold text-xs">
+                  {selectedWinnerIds.length}
+                </span>
+                <span className="font-semibold text-xs">Data Pemenang Dipilih</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedWinnerIds([])}
+                  className="text-[11px] text-slate-300 hover:text-white underline ml-2 cursor-pointer"
+                >
+                  Batal Pilih
+                </button>
+                <button
+                  type="button"
+                  onClick={handleToggleSelectAll}
+                  className="text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold ml-2 cursor-pointer"
+                >
+                  {sortedWinners.length > 0 && sortedWinners.every((w) => selectedWinnerIds.includes(w.id))
+                    ? 'Batal Pilih Semua'
+                    : `Pilih Semua (${sortedWinners.length})`}
+                </button>
+              </div>
 
-          {sortedWinners.length === 0 ? (
-            <EmptyState
-              title="Belum Ada Data Juara"
-              description="Belum ada data santri pemenang untuk kriteria filter ini."
-            />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200 text-slate-500 bg-slate-50/70 font-semibold uppercase text-[10px] tracking-wider">
-                    <th className="py-3 px-3">No</th>
-                    <th className="py-3 px-3">Nama Santri</th>
-                    <th className="py-3 px-3">Kampus</th>
-                    {!isLegacyPeriod && <th className="py-3 px-3">Jenjang</th>}
-                    <th className="py-3 px-3">Penghargaan / Juara</th>
-                    <th className="py-3 px-3">Bidang Lomba</th>
-                    <th className="py-3 px-3">Nilai</th>
-                    {isSuperAdmin && <th className="py-3 px-3 text-right">Aksi</th>}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {sortedWinners.map((w, idx) => (
-                    <tr key={w.id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="py-3 px-3 font-mono text-slate-400">{idx + 1}</td>
-                      <td className="py-3 px-3 font-bold text-slate-900">{w.student_name}</td>
-                      <td className="py-3 px-3 text-slate-600">{w.campus}</td>
-                      {!isLegacyPeriod && (
-                        <td className="py-3 px-3">
-                          <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold text-[10px] border border-blue-200">
-                            {w.jenjang || '-'}
+              <div className="flex items-center gap-2">
+                {isSuperAdmin && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkDeleteWinners}
+                    leftIcon={<Trash2 className="w-3.5 h-3.5 text-rose-400" />}
+                    className="border-rose-500/50 bg-rose-950/40 text-rose-200 hover:bg-rose-900/60 hover:text-white text-xs"
+                  >
+                    Hapus ({selectedWinnerIds.length}) Terpilih
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}          <SectionCard
+            title={`Daftar Pemenang ${period.name} (${sortedWinners.length} Santri)`}
+            subtitle={
+              isLegacyPeriod
+                ? 'Daftar resmi santri pemenang kompetisi yang dipisahkan antar Bidang Lomba dan berurutan dari Juara 1 hingga Juara Harapan 2.'
+                : 'Daftar resmi santri yang berhasil meraih juara pada babak final Olimpiade Gontor.'
+            }
+            action={
+              sortedWinners.length > 0 ? (
+                <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-lg border border-slate-200 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setWinnerViewMode('by_lomba')}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+                      winnerViewMode === 'by_lomba'
+                        ? 'bg-white text-emerald-700 shadow-sm border border-slate-200/80'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                    title="Pisahkan tabel per Bidang Lomba"
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>Per Bidang Lomba</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWinnerViewMode('flat')}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+                      winnerViewMode === 'flat'
+                        ? 'bg-white text-emerald-700 shadow-sm border border-slate-200/80'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                    title="Semua dalam satu tabel gabungan"
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    <span>Tabel Gabungan</span>
+                  </button>
+                </div>
+              ) : undefined
+            }
+          >
+            {/* Notice Banner: Selain Super Admin tidak bisa mengedit pemenang */}
+            {!isSuperAdmin && (
+              <div className="mb-4 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-amber-50/70 border border-amber-200 text-amber-900 text-xs">
+                <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>
+                  <strong>Mode Lihat Saja:</strong> Pengelolaan, penambahan, pengubahan, dan penghapusan data pemenang hanya dapat dilakukan oleh <strong>Super Admin</strong>.
+                </span>
+              </div>
+            )}
+
+            {sortedWinners.length === 0 ? (
+              <EmptyState
+                title="Belum Ada Data Juara"
+                description="Belum ada data santri pemenang untuk kriteria filter ini atau belum ada data yang diinput."
+                action={
+                  isSuperAdmin && (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={handleOpenAddWinner}
+                      leftIcon={<Plus className="w-4 h-4 mr-1" />}
+                    >
+                      Tambah Data Juara Sekarang
+                    </Button>
+                  )
+                }
+              />
+            ) : winnerViewMode === 'by_lomba' ? (
+              /* VIEW MODE 1: PISAHKAN DATA PEMENANG ANTAR LOMBA */
+              <div className="space-y-5">
+                {Object.entries(groupedWinners).map(([catName, catWinners]) => {
+                  const isCatAllSelected =
+                    catWinners.length > 0 && catWinners.every((w) => selectedWinnerIds.includes(w.id))
+
+                  return (
+                    <div
+                      key={catName}
+                      className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 shadow-subtle space-y-3.5"
+                    >
+                      {/* Lomba Header */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                        <div className="flex items-center gap-2.5">
+                          <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-amber-50 border border-amber-200 text-amber-700">
+                            <Trophy className="w-4 h-4" />
                           </span>
-                        </td>
-                      )}
-                      <td className="py-3 px-3 font-bold">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] ${
-                            w.award.includes('Juara 1')
-                              ? 'bg-amber-100 text-amber-900 border-amber-300'
-                              : w.award.includes('Juara 2')
-                              ? 'bg-slate-100 text-slate-800 border-slate-300'
-                              : w.award.includes('Juara 3')
-                              ? 'bg-amber-50 text-amber-800 border-amber-200'
-                              : w.award.toLowerCase().includes('harapan 1')
-                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                              : w.award.toLowerCase().includes('harapan 2')
-                              ? 'bg-sky-50 text-sky-800 border-sky-200'
-                              : 'bg-slate-50 text-slate-700 border-slate-200'
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-bold text-slate-900 text-sm">{catName}</h3>
+                              <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold text-[10px] border border-slate-200">
+                                {catWinners.length} Pemenang
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-400 mt-0.5">
+                              Urutan: Juara 1 &rarr; Juara 2 &rarr; Juara 3 &rarr; Juara Harapan 1 &rarr; Juara Harapan 2
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleSelectCategory(catWinners)}
+                            className="text-[11px] font-semibold text-slate-600 hover:text-emerald-700 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 border border-slate-200 transition-colors cursor-pointer"
+                          >
+                            {isCatAllSelected ? 'Batal Pilih Lomba Ini' : 'Pilih Semua Lomba Ini'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Lomba Table */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="border-b border-slate-200 text-slate-500 bg-slate-50/70 font-semibold uppercase text-[10px] tracking-wider">
+                              <th className="py-2.5 px-3 w-8">
+                                <input
+                                  type="checkbox"
+                                  checked={isCatAllSelected}
+                                  onChange={() => handleToggleSelectCategory(catWinners)}
+                                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                                />
+                              </th>
+                              <th className="py-2.5 px-3 w-10">No</th>
+                              <th className="py-2.5 px-3">Nama Santri</th>
+                              <th className="py-2.5 px-3">Kampus</th>
+                              {!isLegacyPeriod && <th className="py-2.5 px-3">Jenjang</th>}
+                              <th className="py-2.5 px-3">Penghargaan / Juara</th>
+                              <th className="py-2.5 px-3">Nilai</th>
+                              {isSuperAdmin && <th className="py-2.5 px-3 text-right">Aksi</th>}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {catWinners.map((w, idx) => {
+                              const isSelected = selectedWinnerIds.includes(w.id)
+                              return (
+                                <tr
+                                  key={w.id}
+                                  className={`transition-colors ${
+                                    isSelected ? 'bg-emerald-50/50' : 'hover:bg-slate-50/60'
+                                  }`}
+                                >
+                                  <td className="py-2.5 px-3">
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={() => handleToggleSelectWinner(w.id)}
+                                      className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                                    />
+                                  </td>
+                                  <td className="py-2.5 px-3 font-mono text-slate-400">{idx + 1}</td>
+                                  <td className="py-2.5 px-3 font-bold text-slate-900">{w.student_name}</td>
+                                  <td className="py-2.5 px-3 text-slate-600">{w.campus}</td>
+                                  {!isLegacyPeriod && (
+                                    <td className="py-2.5 px-3">
+                                      <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold text-[10px] border border-blue-200">
+                                        {w.jenjang || '-'}
+                                      </span>
+                                    </td>
+                                  )}
+                                  <td className="py-2.5 px-3 font-bold">
+                                    <span
+                                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] ${getAwardBadgeClass(
+                                        w.award
+                                      )}`}
+                                    >
+                                      <Trophy className="w-3 h-3 text-amber-600" />
+                                      <span>{w.award}</span>
+                                    </span>
+                                  </td>
+                                  <td className="py-2.5 px-3 font-mono font-bold text-emerald-700">
+                                    {w.score ?? '-'}
+                                  </td>
+                                  {isSuperAdmin && (
+                                    <td className="py-2.5 px-3 text-right space-x-1">
+                                      <button
+                                        onClick={() => handleOpenEditWinner(w)}
+                                        className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                                        title="Edit Data Juara"
+                                      >
+                                        <Edit2 className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteWinner(w.id, w.student_name)}
+                                        className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                                        title="Hapus"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </td>
+                                  )}
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              /* VIEW MODE 2: TABEL GABUNGAN */
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-slate-500 bg-slate-50/70 font-semibold uppercase text-[10px] tracking-wider">
+                      <th className="py-3 px-3 w-8">
+                        <input
+                          type="checkbox"
+                          checked={
+                            sortedWinners.length > 0 &&
+                            sortedWinners.every((w) => selectedWinnerIds.includes(w.id))
+                          }
+                          onChange={handleToggleSelectAll}
+                          className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                        />
+                      </th>
+                      <th className="py-3 px-3 w-10">No</th>
+                      <th className="py-3 px-3">Nama Santri</th>
+                      <th className="py-3 px-3">Kampus</th>
+                      {!isLegacyPeriod && <th className="py-3 px-3">Jenjang</th>}
+                      <th className="py-3 px-3">Penghargaan / Juara</th>
+                      <th className="py-3 px-3">Bidang Lomba</th>
+                      <th className="py-3 px-3">Nilai</th>
+                      {isSuperAdmin && <th className="py-3 px-3 text-right">Aksi</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {sortedWinners.map((w, idx) => {
+                      const isSelected = selectedWinnerIds.includes(w.id)
+                      return (
+                        <tr
+                          key={w.id}
+                          className={`transition-colors ${
+                            isSelected ? 'bg-emerald-50/50' : 'hover:bg-slate-50/60'
                           }`}
                         >
-                          <Trophy className="w-3 h-3 text-amber-600" />
-                          <span>{w.award}</span>
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-slate-700 font-medium">
-                        <span
-                          className={
-                            isLegacyPeriod
-                              ? 'px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 font-semibold text-[11px] border border-emerald-200 inline-block'
-                              : ''
-                          }
-                        >
-                          {w.category}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 font-mono font-bold text-emerald-700">{w.score ?? '-'}</td>
-                      {isSuperAdmin && (
-                        <td className="py-3 px-3 text-right space-x-1">
-                          <button
-                            onClick={() => handleOpenEditWinner(w)}
-                            className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100"
-                            title="Edit Data Juara"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteWinner(w.id, w.student_name)}
-                            className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50"
-                            title="Hapus"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </SectionCard>
+                          <td className="py-3 px-3">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => handleToggleSelectWinner(w.id)}
+                              className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                            />
+                          </td>
+                          <td className="py-3 px-3 font-mono text-slate-400">{idx + 1}</td>
+                          <td className="py-3 px-3 font-bold text-slate-900">{w.student_name}</td>
+                          <td className="py-3 px-3 text-slate-600">{w.campus}</td>
+                          {!isLegacyPeriod && (
+                            <td className="py-3 px-3">
+                              <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold text-[10px] border border-blue-200">
+                                {w.jenjang || '-'}
+                              </span>
+                            </td>
+                          )}
+                          <td className="py-3 px-3 font-bold">
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] ${getAwardBadgeClass(
+                                w.award
+                              )}`}
+                            >
+                              <Trophy className="w-3 h-3 text-amber-600" />
+                              <span>{w.award}</span>
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-slate-700 font-medium">
+                            <span
+                              className={
+                                isLegacyPeriod
+                                  ? 'px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 font-semibold text-[11px] border border-emerald-200 inline-block'
+                                  : ''
+                              }
+                            >
+                              {w.category}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 font-mono font-bold text-emerald-700">{w.score ?? '-'}</td>
+                          {isSuperAdmin && (
+                            <td className="py-3 px-3 text-right space-x-1">
+                              <button
+                                onClick={() => handleOpenEditWinner(w)}
+                                className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                                title="Edit Data Juara"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteWinner(w.id, w.student_name)}
+                                className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                                title="Hapus"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </SectionCard>
+        </div>
       )}
 
       {/* ======================================================== */}
