@@ -69,7 +69,7 @@ export const PeriodDetailPage: React.FC = () => {
 
   // Filters
   const [search, setSearch] = useState('')
-  const [campusFilter, setCampusFilter] = useState<string>(assignedCampus || 'all')
+  const [campusFilter, setCampusFilter] = useState<string>('all')
   const [jenjangFilter, setJenjangFilter] = useState<string>('all')
   const [lombaFilter, setLombaFilter] = useState<string>('all')
   const [awardFilter, setAwardFilter] = useState<string>('all')
@@ -452,6 +452,27 @@ export const PeriodDetailPage: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          {/* Tombol "Kampusku" untuk admin kampus */}
+          {assignedCampus && (
+            <button
+              type="button"
+              onClick={() =>
+                setCampusFilter((prev) =>
+                  prev === assignedCampus ? 'all' : assignedCampus
+                )
+              }
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                campusFilter === assignedCampus
+                  ? 'bg-emerald-700 text-white border-emerald-600 shadow-sm'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-emerald-400 hover:text-emerald-700'
+              }`}
+              title={campusFilter === assignedCampus ? 'Klik untuk melihat semua kampus' : `Klik untuk hanya melihat juara dari ${assignedCampus}`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 21V7l9-4 9 4v14M3 21h18M9 21v-6h6v6" /></svg>
+              {campusFilter === assignedCampus ? `✓ Kampusku` : 'Kampusku'}
+            </button>
+          )}
+
           {!assignedCampus && (
             <select
               value={campusFilter}
@@ -601,10 +622,21 @@ export const PeriodDetailPage: React.FC = () => {
           >
             {/* Notice Banner: Selain Super Admin tidak bisa mengedit pemenang */}
             {!isSuperAdmin && (
-              <div className="mb-4 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-amber-50/70 border border-amber-200 text-amber-900 text-xs">
-                <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+              <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-amber-50/70 border border-amber-200 text-amber-900 text-xs">
+                <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5 sm:mt-0" />
                 <span>
-                  <strong>Mode Lihat Saja:</strong> Pengelolaan, penambahan, pengubahan, dan penghapusan data pemenang hanya dapat dilakukan oleh <strong>Super Admin</strong>.
+                  <strong>Mode Lihat Saja:</strong> Pengelolaan data pemenang hanya dapat dilakukan oleh <strong>Super Admin</strong>.
+                  {assignedCampus && (
+                    <> Anda sedang melihat <strong>seluruh juara</strong> dari semua kampus. Gunakan tombol{' '}
+                    <button
+                      type="button"
+                      onClick={() => setCampusFilter((prev) => prev === assignedCampus ? 'all' : assignedCampus)}
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 font-bold hover:bg-amber-300 transition-colors cursor-pointer"
+                    >
+                      🏫 Kampusku
+                    </button>
+                    {' '}untuk melihat hanya juara dari {assignedCampus}.</>
+                  )}
                 </span>
               </div>
             )}
