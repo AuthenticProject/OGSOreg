@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import {
-  Sparkles,
   ChevronDown,
   BookOpen,
   Archive,
@@ -51,9 +50,12 @@ export const PublicNavbar: React.FC = () => {
         <div className="flex items-center justify-between">
           {/* Logo & Brand Identity */}
           <Link to="/" className="flex items-center gap-3 group focus:outline-none">
-            <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[#166534] via-[#15803D] to-[#22C55E] text-white font-black shadow-md border border-emerald-400/30 group-hover:scale-105 transition-transform duration-200">
-              <Sparkles className="w-5 h-5 text-[#A7F3D0] animate-pulse" />
-              <div className="absolute -inset-0.5 rounded-xl bg-emerald-400/20 blur-xs -z-10 group-hover:bg-emerald-400/30 transition-all" />
+            <div className="relative flex items-center justify-center w-10 h-10 group-hover:scale-105 transition-transform duration-200">
+              <img
+                src="/logo.png"
+                alt="Logo OGSO"
+                className="w-10 h-10 object-contain drop-shadow-md"
+              />
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
