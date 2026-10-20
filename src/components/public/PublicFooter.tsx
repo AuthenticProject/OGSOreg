@@ -10,6 +10,7 @@ import {
   LogIn,
   ChevronRight,
 } from 'lucide-react'
+import { getWhatsAppLink } from '../../lib/whatsapp'
 
 export const PublicFooter: React.FC = () => {
   const currentYear = new Date().getFullYear()
@@ -180,7 +181,7 @@ export const PublicFooter: React.FC = () => {
                 <div>
                   <div className="text-[11px] text-slate-400">Ketua Panitia OGSO:</div>
                   <a
-                    href="https://wa.me/6282332914996"
+                    href={getWhatsAppLink('6282332914996')}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-medium text-[#A7F3D0] hover:underline"
@@ -194,7 +195,7 @@ export const PublicFooter: React.FC = () => {
                 <div>
                   <div className="text-[11px] text-slate-400">Admin Lab KMI:</div>
                   <a
-                    href="https://wa.me/6285232601097"
+                    href={getWhatsAppLink('6285232601097')}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-medium text-[#A7F3D0] hover:underline"

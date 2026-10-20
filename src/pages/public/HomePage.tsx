@@ -32,6 +32,7 @@ import {
 } from '../../services/websiteContentService'
 import { PhotoMarqueeGallery } from '../../components/public/PhotoMarqueeGallery'
 import { cn } from '../../lib/utils'
+import { getWhatsAppLink } from '../../lib/whatsapp'
 
 export const HomePage: React.FC = () => {
   const [content, setContent] = useState<WebsiteContentConfig>(() =>
@@ -1519,7 +1520,7 @@ export const HomePage: React.FC = () => {
             <p className="text-xs text-slate-600">
               Silakan hubungi Narahubung Panitia Pelaksana OGSO 1448/2026 melalui WhatsApp:{' '}
               <a
-                href="https://wa.me/6282332914996"
+                href={getWhatsAppLink('6282332914996')}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-bold text-[#166534] underline"

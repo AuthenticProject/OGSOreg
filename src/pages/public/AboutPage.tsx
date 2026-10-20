@@ -9,6 +9,7 @@ import {
   ArrowRight,
 } from 'lucide-react'
 import { websiteContentService } from '../../services/websiteContentService'
+import { getWhatsAppLink } from '../../lib/whatsapp'
 
 export const AboutPage: React.FC = () => {
   const content = websiteContentService.getContent()
@@ -228,7 +229,7 @@ export const AboutPage: React.FC = () => {
                     <div className="text-[11px] text-slate-300">{contact.role}</div>
                     <div className="pt-1">
                       <a
-                        href={`https://wa.me/${contact.phone.replace(/[^0-9]/g, '')}`}
+                        href={getWhatsAppLink(contact.phone)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="font-mono text-xs font-bold text-white hover:underline flex items-center gap-1.5"
