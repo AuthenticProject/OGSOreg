@@ -16,7 +16,6 @@ import {
   Settings,
   ChevronDown,
   ChevronRight,
-  Sparkles,
   ShieldCheck,
   X,
   Award,
@@ -225,8 +224,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         {/* Brand Header */}
         <div className="flex items-center justify-between h-16 px-5 border-b border-white/10 bg-[#0B2F19] shrink-0">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-[#22C55E] to-[#166534] text-white font-black shadow-md">
-              <Sparkles className="w-5 h-5 text-white" />
+            <div className="flex items-center justify-center w-9 h-9 shrink-0">
+              <img src="/logo.png" alt="Logo OGSOreg" className="w-9 h-9 object-contain drop-shadow-sm" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">

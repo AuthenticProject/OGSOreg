@@ -3,7 +3,6 @@ import {
   FileSpreadsheet,
   Download,
   CheckCircle2,
-  Sparkles,
   ExternalLink,
   Settings,
   HelpCircle,
@@ -166,8 +165,8 @@ export const ExportStationPage: React.FC = () => {
       {/* Target Portal Banner */}
       <div className="bg-gradient-to-r from-[#DCFCE7]/60 via-[#DCFCE7]/30 to-transparent p-5 rounded-2xl border border-[#BBF7D0] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-[#166534] text-white flex items-center justify-center font-bold shrink-0 shadow-md">
-            <Sparkles className="w-6 h-6 text-[#22C55E]" />
+          <div className="w-11 h-11 flex items-center justify-center shrink-0">
+            <img src="/logo.png" alt="Logo OGSO" className="w-11 h-11 object-contain drop-shadow-sm" />
           </div>
           <div>
             <h3 className="text-sm font-bold text-foreground">

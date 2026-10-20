@@ -103,7 +103,7 @@ export const HomePage: React.FC = () => {
           <div className="text-center max-w-4xl mx-auto space-y-6">
             {/* Official Event Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-xs font-semibold tracking-wide text-[#A7F3D0] shadow-sm backdrop-blur-md hover:border-emerald-400/60 transition-colors">
-              <Sparkles className="w-4 h-4 text-[#A7F3D0] animate-spin" style={{ animationDuration: '8s' }} />
+              <img src="/logo.png" alt="Logo OGSO" className="w-4 h-4 object-contain" />
               <span>{content.competitionInfo.name} {content.competitionInfo.arabicYear}/{content.competitionInfo.masehiYear}</span>
             </div>
 

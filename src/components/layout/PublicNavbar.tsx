@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import {
-  Sparkles,
   BookOpen,
   Archive,
   ShieldCheck,
@@ -28,8 +27,8 @@ export const PublicNavbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand */}
         <Link to="/materi/silabus" className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-[#22C55E] to-[#166534] text-white font-black shadow-md">
-            <Sparkles className="w-5 h-5 text-white" />
+          <div className="flex items-center justify-center w-9 h-9 shrink-0">
+            <img src="/logo.png" alt="Logo OGSOreg" className="w-9 h-9 object-contain drop-shadow-sm" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">

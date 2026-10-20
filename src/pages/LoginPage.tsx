@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Sparkles, Lock, User, ArrowRight, AlertCircle, Eye, EyeOff } from 'lucide-react'
+import { Lock, User, ArrowRight, AlertCircle, Eye, EyeOff } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { useAuth } from '../context/AuthContext'
 
@@ -43,8 +43,8 @@ export const LoginPage: React.FC = () => {
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         {/* Brand Icon */}
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[#166534] text-white font-black shadow-md mb-3">
-          <Sparkles className="w-6 h-6 text-[#22C55E]" />
+        <div className="inline-flex items-center justify-center w-14 h-14 mb-3">
+          <img src="/logo.png" alt="Logo OGSOreg" className="w-14 h-14 object-contain drop-shadow-md" />
         </div>
 
         <h2 className="text-2xl sm:text-3xl font-extrabold text-[#0F172A] tracking-tight">
