@@ -73,7 +73,7 @@ export const HomePage: React.FC = () => {
         {/* Layer 1: Real Auditorium Stage Photo Ambient Backdrop */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
           <img
-            src="/foto/ogso-gallery-16.jpg"
+            src="/foto/IMG_20251123_201518_980.jpg"
             alt=""
             className="w-full h-full object-cover object-center opacity-30 filter saturate-150 contrast-125 mix-blend-luminosity scale-105"
           />
