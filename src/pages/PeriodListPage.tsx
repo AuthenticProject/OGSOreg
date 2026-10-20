@@ -18,6 +18,7 @@ import { Button } from '../components/ui/Button'
 import { useAuth } from '../context/AuthContext'
 import {
   participantPeriodService,
+  sortPeriodsNewestFirst,
   type CompetitionPeriod,
 } from '../services/participantPeriodService'
 
@@ -40,7 +41,7 @@ export const PeriodListPage: React.FC = () => {
 
   const loadPeriods = () => {
     const list = participantPeriodService.getPeriods()
-    setPeriods(list)
+    setPeriods(sortPeriodsNewestFirst(list))
   }
 
   useEffect(() => {

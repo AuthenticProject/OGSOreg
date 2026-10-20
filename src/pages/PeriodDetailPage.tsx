@@ -347,6 +347,17 @@ export const PeriodDetailPage: React.FC = () => {
     alert(`Mengunduh berkas resmi PDF:\n${filename}\n\nNomor: ${cert?.certificate_number || '-'}\nKode Verifikasi: ${cert?.verification_code || '-'}`)
   }
 
+  const handleDeleteCert = (id: string, recipientName: string) => {
+    if (!isSuperAdmin) {
+      alert('Akses Ditolak: Hanya Super Admin yang berwenang menghapus sertifikat.')
+      return
+    }
+    if (window.confirm(`Hapus sertifikat untuk '${recipientName}'? Tindakan ini tidak dapat dibatalkan.`)) {
+      participantPeriodService.deleteCertificate(id)
+      loadPeriodData()
+    }
+  }
+
   if (!period) {
     return (
       <div className="py-12 text-center space-y-4">
@@ -945,23 +956,37 @@ export const PeriodDetailPage: React.FC = () => {
                   </div>
 
                   <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPreviewCert(cert)}
-                      leftIcon={<Eye className="w-3.5 h-3.5 mr-1" />}
-                    >
-                      Pratinjau
-                    </Button>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => handleDownloadPdf(cert)}
-                      leftIcon={<Download className="w-3.5 h-3.5 mr-1" />}
-                      className="bg-amber-700 hover:bg-amber-800 text-white"
-                    >
-                      Unduh PDF
-                    </Button>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreviewCert(cert)}
+                        leftIcon={<Eye className="w-3.5 h-3.5 mr-1" />}
+                      >
+                        Pratinjau
+                      </Button>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleDownloadPdf(cert)}
+                        leftIcon={<Download className="w-3.5 h-3.5 mr-1" />}
+                        className="bg-amber-700 hover:bg-amber-800 text-white"
+                      >
+                        Unduh PDF
+                      </Button>
+                    </div>
+                    {isSuperAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteCert(cert.id, cert.recipient_name)}
+                        leftIcon={<Trash2 className="w-3.5 h-3.5 text-rose-500 mr-1" />}
+                        className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2"
+                        title="Hapus Sertifikat"
+                      >
+                        Hapus
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -1015,22 +1040,36 @@ export const PeriodDetailPage: React.FC = () => {
                   </div>
 
                   <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPreviewCert(cert)}
-                      leftIcon={<Eye className="w-3.5 h-3.5 mr-1" />}
-                    >
-                      Pratinjau
-                    </Button>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => handleDownloadPdf(cert)}
-                      leftIcon={<Download className="w-3.5 h-3.5 mr-1" />}
-                    >
-                      Unduh PDF
-                    </Button>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreviewCert(cert)}
+                        leftIcon={<Eye className="w-3.5 h-3.5 mr-1" />}
+                      >
+                        Pratinjau
+                      </Button>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleDownloadPdf(cert)}
+                        leftIcon={<Download className="w-3.5 h-3.5 mr-1" />}
+                      >
+                        Unduh PDF
+                      </Button>
+                    </div>
+                    {isSuperAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteCert(cert.id, cert.recipient_name)}
+                        leftIcon={<Trash2 className="w-3.5 h-3.5 text-rose-500 mr-1" />}
+                        className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2"
+                        title="Hapus Sertifikat"
+                      >
+                        Hapus
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}

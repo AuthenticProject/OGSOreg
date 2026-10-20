@@ -182,7 +182,27 @@ function addDeletedCertIds(ids: string[]): void {
   } catch {}
 }
 
-// Initial seed periods for OGSO
+// Helper to sort competition periods from newest to oldest:
+// 1. Year descending (e.g. 2027 -> 2026 -> 2025 -> 2024)
+// 2. start_date descending
+// 3. created_at descending
+export const sortPeriodsNewestFirst = (periods: CompetitionPeriod[]): CompetitionPeriod[] => {
+  return [...periods].sort((a, b) => {
+    const yearA = Number(a?.year) || (a?.start_date ? new Date(a.start_date).getFullYear() : 0)
+    const yearB = Number(b?.year) || (b?.start_date ? new Date(b.start_date).getFullYear() : 0)
+    if (yearA !== yearB) return yearB - yearA
+
+    const dateA = a?.start_date ? new Date(a.start_date).getTime() : 0
+    const dateB = b?.start_date ? new Date(b.start_date).getTime() : 0
+    if (dateA !== dateB) return dateB - dateA
+
+    const createdA = a?.created_at ? new Date(a.created_at).getTime() : 0
+    const createdB = b?.created_at ? new Date(b.created_at).getTime() : 0
+    return createdB - createdA
+  })
+}
+
+// Initial seed periods for OGSO (OGSO 2026 is upcoming/in-progress, so winners & certs start at 0)
 const INITIAL_PERIODS: CompetitionPeriod[] = [
   {
     id: 'period-ogso-2026',
@@ -194,8 +214,8 @@ const INITIAL_PERIODS: CompetitionPeriod[] = [
     start_date: '2026-01-10',
     end_date: '2026-11-20',
     is_published: true,
-    total_winners: 6,
-    total_participants: 24,
+    total_winners: 0,
+    total_participants: 0,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
   },
@@ -251,9 +271,12 @@ export const DUMMY_STUDENT_NAMES = new Set([
   'nainawa annabila',
   'nashir azzuhri',
   'amanda nur',
+  'nur amanda',
   'lathiif rahman',
   'alya nashwa',
   'ghovva marshandi',
+  'humaira salsabila',
+  'farhan ramadhan',
 ])
 
 export const DUMMY_WINNER_IDS = new Set([
@@ -263,31 +286,75 @@ export const DUMMY_WINNER_IDS = new Set([
   'win-2025-13', 'win-2025-14', 'win-2025-15',
 ])
 
+export const DUMMY_CERT_IDS = new Set([
+  'cert-part-2026-01',
+  'cert-part-2026-02',
+  'cert-part-2026-03',
+  'cert-win-2026-01',
+  'cert-win-2026-02',
+  'cert-win-2026-03',
+  'cert-win-2026-04',
+  'cert-win-2026-05',
+])
+
+/**
+ * Validates whether a certificate is an invalid or unstarted 2026 dummy participant certificate
+ */
+export const isInvalidCert = (c: PeriodCertificate | null | undefined): boolean => {
+  if (!c) return true
+  const id = (c.id || '').toLowerCase()
+  const certNum = (c.certificate_number || '').toLowerCase()
+  const verCode = (c.verification_code || '').toLowerCase()
+  const recName = (c.recipient_name || (c as unknown as { student_name?: string }).student_name || '').trim().toLowerCase()
+  const periodId = (c.period_id || '').toLowerCase()
+
+  // 1. Explicitly purged dummy student names
+  if (DUMMY_STUDENT_NAMES.has(recName)) return true
+
+  // 2. Explicit dummy certificate IDs or codes
+  if (
+    DUMMY_CERT_IDS.has(c.id) ||
+    id.startsWith('cert-part-2026-') ||
+    certNum.includes('2026/part') ||
+    verCode.includes('2026-part')
+  ) {
+    return true
+  }
+
+  // 3. Participant certificates for 2026 (competition has not started/finished yet)
+  if ((periodId === 'period-ogso-2026' || periodId.includes('2026')) && c.certificate_type === 'participant') {
+    return true
+  }
+
+  return false
+}
+
 class ParticipantPeriodService {
-  // Periods
+  // Periods: Guaranteed to always sort newest to oldest
   getPeriods(): CompetitionPeriod[] {
-    if (typeof window === 'undefined') return INITIAL_PERIODS
+    if (typeof window === 'undefined') return sortPeriodsNewestFirst(INITIAL_PERIODS)
     try {
       const raw = localStorage.getItem(PERIODS_STORAGE_KEY)
+      let list: CompetitionPeriod[]
       if (!raw) {
-        localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(INITIAL_PERIODS))
-        return INITIAL_PERIODS
+        list = sortPeriodsNewestFirst(INITIAL_PERIODS)
+        localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(list))
+        return list
       }
       const parsed = JSON.parse(raw)
       if (Array.isArray(parsed) && parsed.length > 0) {
         // Ensure default INITIAL_PERIODS are merged if missing
         const existingIds = new Set(parsed.map((p) => p?.id))
         const missing = INITIAL_PERIODS.filter((ip) => !existingIds.has(ip.id))
-        if (missing.length > 0) {
-          const merged = [...parsed, ...missing]
-          localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(merged))
-          return merged
-        }
-        return parsed
+        const combined = missing.length > 0 ? [...parsed, ...missing] : parsed
+        list = sortPeriodsNewestFirst(combined)
+        return list
       }
-      return INITIAL_PERIODS
+      list = sortPeriodsNewestFirst(INITIAL_PERIODS)
+      localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(list))
+      return list
     } catch {
-      return INITIAL_PERIODS
+      return sortPeriodsNewestFirst(INITIAL_PERIODS)
     }
   }
 
@@ -312,6 +379,7 @@ class ParticipantPeriodService {
         ...period,
         id,
         slug,
+        year: Number(period.year),
         updated_at: now,
       }
       list[existingIdx] = saved
@@ -320,7 +388,7 @@ class ParticipantPeriodService {
         id,
         name: period.name,
         slug,
-        year: period.year,
+        year: Number(period.year),
         description: period.description || `Olimpiade Gontor Sains & Matematika ${period.year}`,
         status: period.status || 'active',
         start_date: period.start_date || `${period.year}-01-01`,
@@ -329,19 +397,22 @@ class ParticipantPeriodService {
         created_at: now,
         updated_at: now,
       }
-      list.unshift(saved)
+      list.push(saved)
     }
 
+    // Always sort newest to oldest when saving any period
+    const sorted = sortPeriodsNewestFirst(list)
     if (typeof window !== 'undefined') {
-      localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(list))
+      localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(sorted))
     }
     return saved
   }
 
   deletePeriod(id: string): boolean {
     const list = this.getPeriods().filter((p) => p && p.id !== id)
+    const sorted = sortPeriodsNewestFirst(list)
     if (typeof window !== 'undefined') {
-      localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(list))
+      localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(sorted))
     }
     return true
   }
@@ -527,12 +598,15 @@ class ParticipantPeriodService {
       }
     }
 
+    addDeletedCertIds([
+      'cert-part-2026-01',
+      'cert-part-2026-02',
+      'cert-part-2026-03',
+    ])
+
     const list = Array.from(combinedMap.values()).filter((c) => {
       if (!c) return false
-      const recName = c.recipient_name || (c as unknown as { student_name?: string }).student_name || ''
-      if (!recName) return false
-      const nameLower = recName.trim().toLowerCase()
-      return !DUMMY_STUDENT_NAMES.has(nameLower) && !deletedSet.has(c.id)
+      return !isInvalidCert(c) && !deletedSet.has(c.id)
     })
 
     localStorage.setItem(CERTIFICATES_STORAGE_KEY, JSON.stringify(list))
@@ -554,7 +628,12 @@ class ParticipantPeriodService {
       if (raw) {
         const parsed = JSON.parse(raw)
         if (Array.isArray(parsed)) {
-          list = parsed.filter((c) => c && c.id && !deletedSet.has(c.id))
+          const originalLen = parsed.length
+          list = parsed.filter((c) => c && c.id && !deletedSet.has(c.id) && !isInvalidCert(c))
+          // Auto-persist pruned list if any invalid or unstarted 2026 participant certs were present
+          if (list.length !== originalLen) {
+            localStorage.setItem(CERTIFICATES_STORAGE_KEY, JSON.stringify(list))
+          }
         }
       }
     } catch {
