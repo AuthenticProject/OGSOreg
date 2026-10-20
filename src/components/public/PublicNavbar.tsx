@@ -73,15 +73,15 @@ export const PublicNavbar: React.FC = () => {
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1.5" aria-label="Main Navigation">
+          <nav className="hidden lg:flex items-center gap-2" aria-label="Main Navigation">
             <NavLink
               to="/"
               end
               className={({ isActive }) =>
                 cn(
-                  'px-3.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200',
+                  'px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
                   isActive
-                    ? 'text-[#A7F3D0] bg-emerald-950/60 border border-emerald-500/30'
+                    ? 'text-[#A7F3D0] bg-emerald-950/70 border border-emerald-500/30'
                     : 'text-emerald-100/90 hover:text-white hover:bg-emerald-900/30'
                 )
               }
@@ -93,9 +93,9 @@ export const PublicNavbar: React.FC = () => {
               to="/tentang"
               className={({ isActive }) =>
                 cn(
-                  'px-3.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200',
+                  'px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
                   isActive
-                    ? 'text-[#A7F3D0] bg-emerald-950/60 border border-emerald-500/30'
+                    ? 'text-[#A7F3D0] bg-emerald-950/70 border border-emerald-500/30'
                     : 'text-emerald-100/90 hover:text-white hover:bg-emerald-900/30'
                 )
               }
@@ -107,9 +107,9 @@ export const PublicNavbar: React.FC = () => {
               to="/pendaftaran"
               className={({ isActive }) =>
                 cn(
-                  'px-3.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200',
+                  'px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
                   isActive
-                    ? 'text-[#A7F3D0] bg-emerald-950/60 border border-emerald-500/30'
+                    ? 'text-[#A7F3D0] bg-emerald-950/70 border border-emerald-500/30'
                     : 'text-emerald-100/90 hover:text-white hover:bg-emerald-900/30'
                 )
               }
@@ -126,9 +126,9 @@ export const PublicNavbar: React.FC = () => {
               <button
                 type="button"
                 className={cn(
-                  'flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200',
+                  'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer',
                   isMateriActive
-                    ? 'text-[#A7F3D0] bg-emerald-950/60 border border-emerald-500/30'
+                    ? 'text-[#A7F3D0] bg-emerald-950/70 border border-emerald-500/30'
                     : 'text-emerald-100/90 hover:text-white hover:bg-emerald-900/30'
                 )}
                 onClick={() => setMateriDropdownOpen((prev) => !prev)}
@@ -144,23 +144,23 @@ export const PublicNavbar: React.FC = () => {
               </button>
 
               {materiDropdownOpen && (
-                <div className="absolute top-full left-0 mt-1 w-56 rounded-xl bg-[#0C241B] border border-emerald-800/60 shadow-2xl p-2 z-50 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="absolute top-full left-0 mt-2 w-64 rounded-2xl bg-[#0C241B] border border-emerald-800/70 shadow-2xl p-2.5 z-50 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-150">
                   <NavLink
                     to="/materi/silabus"
                     className={({ isActive }) =>
                       cn(
-                        'flex items-start gap-3 p-2.5 rounded-lg text-xs transition-colors',
+                        'flex items-start gap-3.5 p-3 rounded-xl text-xs transition-colors',
                         isActive
-                          ? 'bg-emerald-900/50 text-[#A7F3D0]'
+                          ? 'bg-emerald-900/60 text-[#A7F3D0]'
                           : 'text-emerald-100/90 hover:text-white hover:bg-emerald-900/30'
                       )
                     }
                   >
-                    <BookOpen className="w-4 h-4 text-[#A7F3D0] mt-0.5 shrink-0" />
-                    <div>
-                      <div className="font-semibold text-sm">Silabus Resmi</div>
-                      <div className="text-[11px] text-emerald-300/70">
-                        Cakupan materi Kelas 1–5 KMI
+                    <BookOpen className="w-5 h-5 text-[#A7F3D0] mt-0.5 shrink-0" />
+                    <div className="space-y-0.5">
+                      <div className="font-bold text-sm">Silabus Resmi</div>
+                      <div className="text-[11px] text-emerald-300/80 leading-snug">
+                        Kurikulum & Buku Teks Kelas 1–5 KMI
                       </div>
                     </div>
                   </NavLink>
@@ -169,17 +169,17 @@ export const PublicNavbar: React.FC = () => {
                     to="/materi/bank-soal"
                     className={({ isActive }) =>
                       cn(
-                        'flex items-start gap-3 p-2.5 rounded-lg text-xs transition-colors mt-1',
+                        'flex items-start gap-3.5 p-3 rounded-xl text-xs transition-colors mt-1',
                         isActive
-                          ? 'bg-emerald-900/50 text-[#A7F3D0]'
+                          ? 'bg-emerald-900/60 text-[#A7F3D0]'
                           : 'text-emerald-100/90 hover:text-white hover:bg-emerald-900/30'
                       )
                     }
                   >
-                    <Archive className="w-4 h-4 text-[#A7F3D0] mt-0.5 shrink-0" />
-                    <div>
-                      <div className="font-semibold text-sm">Bank Soal</div>
-                      <div className="text-[11px] text-emerald-300/70">
+                    <Archive className="w-5 h-5 text-[#A7F3D0] mt-0.5 shrink-0" />
+                    <div className="space-y-0.5">
+                      <div className="font-bold text-sm">Bank Soal</div>
+                      <div className="text-[11px] text-emerald-300/80 leading-snug">
                         Arsip soal penyisihan & final
                       </div>
                     </div>
@@ -192,9 +192,9 @@ export const PublicNavbar: React.FC = () => {
               to="/participant"
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200',
+                  'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
                   isActive
-                    ? 'text-[#A7F3D0] bg-emerald-950/60 border border-emerald-500/30'
+                    ? 'text-[#A7F3D0] bg-emerald-950/70 border border-emerald-500/30'
                     : 'text-emerald-100/90 hover:text-white hover:bg-emerald-900/30'
                 )
               }
@@ -205,11 +205,11 @@ export const PublicNavbar: React.FC = () => {
           </nav>
 
           {/* Action Button: JUKLAK Download & Admin Login */}
-          <div className="hidden sm:flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-3.5">
             <a
               href="/documents/Petunjuk_Pelaksanaan_OGSO_2026.pdf"
               download="Petunjuk_Pelaksanaan_OGSO_2026.pdf"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-[#A7F3D0] bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-600/30 hover:border-emerald-500 transition-colors shadow-xs"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-[#A7F3D0] bg-emerald-950/70 hover:bg-emerald-900/70 border border-emerald-600/40 hover:border-emerald-500 transition-colors shadow-xs"
               title="Unduh Dokumen Petunjuk Pelaksanaan (JUKLAK) OGSO 2026"
             >
               <Download className="w-3.5 h-3.5 text-[#A7F3D0]" />

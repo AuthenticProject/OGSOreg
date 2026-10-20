@@ -431,24 +431,24 @@ export const BankSoalPage: React.FC = () => {
                               </div>
 
                               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-2">
                                   <Button
                                     variant="secondary"
                                     size="sm"
                                     onClick={() => setPreviewDoc({ doc, collection: col })}
-                                    className="h-8 px-2.5 text-xs text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 border-slate-200"
+                                    className="h-8 px-3 text-xs text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 border-slate-200 flex items-center gap-1.5"
                                   >
-                                    <Eye className="w-3.5 h-3.5 mr-1 text-slate-400 group-hover:text-emerald-600" />
-                                    Preview
+                                    <Eye className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 shrink-0" />
+                                    <span>Preview</span>
                                   </Button>
                                   <Button
                                     variant="primary"
                                     size="sm"
                                     onClick={() => handleDownload(doc)}
-                                    className="h-8 px-2.5 text-xs bg-emerald-700 hover:bg-emerald-800 text-white"
+                                    className="h-8 px-3 text-xs bg-emerald-700 hover:bg-emerald-800 text-white flex items-center gap-1.5"
                                   >
-                                    <Download className="w-3.5 h-3.5 mr-1" />
-                                    Download
+                                    <Download className="w-3.5 h-3.5 shrink-0" />
+                                    <span>Download</span>
                                   </Button>
                                 </div>
 

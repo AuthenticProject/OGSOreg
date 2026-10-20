@@ -11,6 +11,16 @@ export interface SyllabusSubjectBreakdown {
   topics: SyllabusTopic[]
 }
 
+export interface SyllabusBookReference {
+  title: string
+  subject: string // "Fisika" | "Biologi" | "Matematika" | "Kimia" | "Umum"
+  authorOrPublisher: string
+  type: 'wajib' | 'pendamping'
+  editionOrYear?: string
+  chaptersOrCoverage?: string
+  description?: string
+}
+
 export interface SyllabusItem {
   id: string
   title: string
@@ -20,6 +30,7 @@ export interface SyllabusItem {
   subjects?: string[]
   description: string
   breakdown?: SyllabusSubjectBreakdown[]
+  book_references?: SyllabusBookReference[]
   file_url: string
   file_name: string
   file_size?: string
@@ -55,7 +66,7 @@ export interface BankSoalCollection {
   created_at: string
 }
 
-const SILABUS_STORAGE_KEY = 'ogsoreg_silabus_2026_v1'
+const SILABUS_STORAGE_KEY = 'ogsoreg_silabus_2026_v2'
 const BANK_SOAL_STORAGE_KEY = 'ogsoreg_bank_soal_v3'
 
 // Official syllabuses for Jenjang 1–5 extracted from Silabus_OGSO_2026.xlsx
@@ -97,6 +108,53 @@ const INITIAL_SYLLABUSES: SyllabusItem[] = [
           { title: 'Garis dan Sudut', kelas: '1 KMI' },
           { title: 'Segitiga', kelas: '1 KMI' },
         ],
+      },
+    ],
+    book_references: [
+      {
+        title: 'Buku Pelajaran Fisika Kelas 1 KMI',
+        subject: 'Fisika',
+        authorOrPublisher: 'Darussalam Press — Pondok Modern Darussalam Gontor',
+        type: 'wajib',
+        editionOrYear: 'Edisi Resmi KMI',
+        chaptersOrCoverage: 'Bab Besaran & Satuan, Karakteristik Wujud Zat, Skala Suhu, Pemuaian & Perpindahan Kalor.',
+        description: 'Buku pegangan wajib santri kelas 1 KMI untuk pemahaman konsep dasar sains fisik dan pengukuran eksperimental.',
+      },
+      {
+        title: 'Buku Pelajaran Biologi Kelas 1 KMI',
+        subject: 'Biologi',
+        authorOrPublisher: 'Darussalam Press — Pondok Modern Darussalam Gontor',
+        type: 'wajib',
+        editionOrYear: 'Edisi Resmi KMI',
+        chaptersOrCoverage: 'Bab Ciri Makhluk Hidup, Klasifikasi 5 Kingdom, Organisasi Kehidupan (Sel, Jaringan, Organ), dan Komponen Ekosistem.',
+        description: 'Buku teks utama KMI yang mengulas biodiversitas, sel hidup, dan interaksi lingkungan hidup.',
+      },
+      {
+        title: 'Buku Pelajaran Berhitung & Aljabar Dasar Kelas 1 KMI',
+        subject: 'Matematika',
+        authorOrPublisher: 'Darussalam Press — Pondok Modern Darussalam Gontor',
+        type: 'wajib',
+        editionOrYear: 'Edisi Resmi KMI',
+        chaptersOrCoverage: 'Bab Aritmetika Bilangan Bulat & Pecahan, Sederhana Aljabar, Operasi Himpunan, Konsep Geometri Sudut & Segitiga.',
+        description: 'Buku teks berhitung resmi KMI pembangun pondasi logika berhitung cepat dan manipulasi simbolik aljabar.',
+      },
+      {
+        title: 'Ilmu Pengetahuan Alam (IPA) Terpadu SMP/MTs Kelas VII',
+        subject: 'Umum',
+        authorOrPublisher: 'Pusat Kurikulum & Perbukuan Kemendikbudristek RI',
+        type: 'pendamping',
+        editionOrYear: 'Kurikulum Nasional Standar',
+        chaptersOrCoverage: 'Materi pengayaan pengukuran ilmiah, metode ilmiah, dan ekosistem terpadu.',
+        description: 'Buku referensi nasional pendamping untuk pengayaan konteks soal studi kasus dan observasi fenomena alam.',
+      },
+      {
+        title: 'Modul Pembinaan & Soal Olimpiade Sains Nasional (OSN) SMP',
+        subject: 'Umum',
+        authorOrPublisher: 'Tim Pembina Olimpiade Sains / Puspresnas',
+        type: 'pendamping',
+        editionOrYear: 'Edisi Pengayaan',
+        chaptersOrCoverage: 'Model soal penalaran logika, pemecahan masalah isian singkat, dan analisis data.',
+        description: 'Bahan rujukan latihan soal bertaraf kompetisi nasional untuk melatih kecepatan dan ketepatan santri.',
       },
     ],
     file_url: '/documents/Silabus_OGSO_2026.xlsx',
@@ -148,6 +206,53 @@ const INITIAL_SYLLABUSES: SyllabusItem[] = [
         ],
       },
     ],
+    book_references: [
+      {
+        title: 'Buku Pelajaran Fisika Kelas 2 KMI',
+        subject: 'Fisika',
+        authorOrPublisher: 'Darussalam Press — Pondok Modern Darussalam Gontor',
+        type: 'wajib',
+        editionOrYear: 'Edisi Resmi KMI',
+        chaptersOrCoverage: 'Bab Gaya & Hukum Newton Dasar, Usaha Mekanik & Energi, Tekanan Hidrostatis & Udara, Getaran, Gelombang, serta Sifat Cahaya & Optika.',
+        description: 'Buku teks utama santri kelas 2 KMI untuk pemahaman mekanika gerak, hukum fluida, dan optik geometri.',
+      },
+      {
+        title: 'Buku Pelajaran Biologi Kelas 2 KMI',
+        subject: 'Biologi',
+        authorOrPublisher: 'Darussalam Press — Pondok Modern Darussalam Gontor',
+        type: 'wajib',
+        editionOrYear: 'Edisi Resmi KMI',
+        chaptersOrCoverage: 'Bab Fisiologi Manusia (Rangka & Otot, Enzim & Pencernaan, Pernapasan Paru-paru, Sirkulasi Jantung & Pembuluh Darah) serta Biokimia Fotosintesis Tumbuhan.',
+        description: 'Buku pegangan sistem organ tubuh manusia dan proses metabolisme fotosintesis tumbuhan hijau.',
+      },
+      {
+        title: 'Buku Pelajaran Aljabar & Geometri Kelas 2 KMI',
+        subject: 'Matematika',
+        authorOrPublisher: 'Darussalam Press — Pondok Modern Darussalam Gontor',
+        type: 'wajib',
+        editionOrYear: 'Edisi Resmi KMI',
+        chaptersOrCoverage: 'Bab Faktorisasi Kuadrat, Persamaan/Pertidaksamaan Linear (PLSV), Teori Relasi & Fungsi, SPLDV Metoda Eliminasi/Substitusi, Dalil Pythagoras, Geometri Garis & Sudut Lingkaran.',
+        description: 'Buku teks resmi kurikulum KMI untuk mematangkan manipulasi aljabar persamaan dan dalil-dalil geometri bidang datar.',
+      },
+      {
+        title: 'Buku IPA Terpadu Kelas VIII SMP/MTs',
+        subject: 'Umum',
+        authorOrPublisher: 'Pusat Perbukuan Kemendikbudristek / Penerbit Erlangga',
+        type: 'pendamping',
+        editionOrYear: 'Edisi Revisi Standar',
+        chaptersOrCoverage: 'Pengayaan konsep tekanan zat cair/gas, bejana berhubungan, hukum Pascal, dan fisiologi manusia.',
+        description: 'Referensi komprehensif pendukung untuk studi komparasi kurikulum nasional dan pengayaan bank soal.',
+      },
+      {
+        title: 'Strategi Penguasaan Soal Olimpiade Matematika & Sains Tingkat Pertama',
+        subject: 'Umum',
+        authorOrPublisher: 'Tim Pembina Olimpiade Sains Indonesia',
+        type: 'pendamping',
+        editionOrYear: 'Edisi Mutakhir',
+        chaptersOrCoverage: 'Latihan soal penalaran non-rutin aljabar, geometri lingkaran berpotongan, dan aplikasi mekanika.',
+        description: 'Kumpulan soal pengayaan olimpiade yang mengasah ketajaman analisis matematis dan saintifik santri.',
+      },
+    ],
     file_url: '/documents/Silabus_OGSO_2026.xlsx',
     file_name: 'Silabus_OGSO_2026_Jenjang_2.xlsx',
     file_size: '14.8 KB',
@@ -196,6 +301,53 @@ const INITIAL_SYLLABUSES: SyllabusItem[] = [
         ],
       },
     ],
+    book_references: [
+      {
+        title: 'Buku Pelajaran Fisika Kelas 3 KMI & 1 Intensif',
+        subject: 'Fisika',
+        authorOrPublisher: 'Darussalam Press — Pondok Modern Darussalam Gontor',
+        type: 'wajib',
+        editionOrYear: 'Edisi Resmi KMI',
+        chaptersOrCoverage: 'Bab Hukum Coulomb & Muatan Listrik, Hukum Ohm & Rangkaian Arus Listrik, Medan Magnetik, Transformator & Induksi Elektromagnetik, serta Astronomi Tata Surya.',
+        description: 'Buku pegangan materi elektromagnetik dan fisika modern tingkat dasar untuk santri kelas 3 KMI dan 1 Intensif.',
+      },
+      {
+        title: 'Buku Pelajaran Biologi Kelas 3 KMI & 1 Intensif',
+        subject: 'Biologi',
+        authorOrPublisher: 'Darussalam Press — Pondok Modern Darussalam Gontor',
+        type: 'wajib',
+        editionOrYear: 'Edisi Resmi KMI',
+        chaptersOrCoverage: 'Bab Organ Ekskresi (Nefron Ginjal, Hati, Kulit), Fisiologi Reproduksi Manusia, Sistem Koordinasi Saraf & Hormon, serta Genetika Pewarisan Sifat Monohibrid/Dihibrid.',
+        description: 'Buku acuan regulasi sistem homeostasis manusia dan transmisi sifat keturunan makhluk hidup.',
+      },
+      {
+        title: 'Buku Pelajaran Matematika Kelas 3 KMI & 1 Intensif',
+        subject: 'Matematika',
+        authorOrPublisher: 'Darussalam Press — Pondok Modern Darussalam Gontor',
+        type: 'wajib',
+        editionOrYear: 'Edisi Resmi KMI',
+        chaptersOrCoverage: 'Bab Teorema Kesebangunan Geometri, Volume & Luas Bangun Ruang Sisi Datar (Prisma & Limas), Jari-jari Lingkaran Dalam/Luar Segitiga, Rumus Barisan & Deret Bilangan, Bangun Ruang Sisi Lengkung (Tabung, Kerucut, Bola).',
+        description: 'Buku teks utama untuk memperdalam pemecahan masalah geometri ruang tiga dimensi dan pola barisan deret.',
+      },
+      {
+        title: 'Buku IPA Terpadu Kelas IX SMP/MTs Standar Nasional',
+        subject: 'Umum',
+        authorOrPublisher: 'Pusat Perbukuan Kemendikbudristek RI',
+        type: 'pendamping',
+        editionOrYear: 'Edisi Standar Nasional',
+        chaptersOrCoverage: 'Pengayaan bab listrik statis atomik, bioteknologi dasar, dan materi genetika DNA/RNA.',
+        description: 'Rujukan pendamping untuk melengkapi wawasan riset sains terapan dan soal-soal olimpiade nasional.',
+      },
+      {
+        title: 'Bank Soal dan Pembahasan Olimpiade Sains Matematika & IPA',
+        subject: 'Umum',
+        authorOrPublisher: 'Tim Pembina Olimpiade / Penerbit Mandiri',
+        type: 'pendamping',
+        editionOrYear: 'Edisi Seleksi Nasional',
+        chaptersOrCoverage: 'Koleksi soal isian singkat analitis kesebangunan, perhitungan medan magnet, dan persilangan sifat genetik.',
+        description: 'Instrumen latihan intensif untuk membiasakan santri dengan tipe soal CBT olimpiade tingkat lanjut.',
+      },
+    ],
     file_url: '/documents/Silabus_OGSO_2026.xlsx',
     file_name: 'Silabus_OGSO_2026_Jenjang_3.xlsx',
     file_size: '14.8 KB',
@@ -239,6 +391,62 @@ const INITIAL_SYLLABUSES: SyllabusItem[] = [
           { title: 'Logika Matematika', kelas: '4 KMI' },
           { title: 'Trigonometri', kelas: '4 KMI' },
         ],
+      },
+    ],
+    book_references: [
+      {
+        title: 'Buku Pelajaran Fisika Kelas 4 KMI & 3 Intensif',
+        subject: 'Fisika',
+        authorOrPublisher: 'Darussalam Press — Pondok Modern Darussalam Gontor',
+        type: 'wajib',
+        editionOrYear: 'Edisi Resmi KMI',
+        chaptersOrCoverage: 'Bab Vektor Satuan & Komponen Resultan, Kinematika Gerak Lurus (GLB, GLBB, Gerak Vertikal), Dinamika Gerak Melingkar (GMB/GMBB), Aplikasi Hukum Newton I, II, III dan Gaya Gesek.',
+        description: 'Buku materi wajib KMI untuk penguasaan mekanika fisika analitis tingkat menengah-atas.',
+      },
+      {
+        title: 'Buku Pelajaran Biologi Kelas 4 KMI',
+        subject: 'Biologi',
+        authorOrPublisher: 'Darussalam Press — Pondok Modern Darussalam Gontor',
+        type: 'wajib',
+        editionOrYear: 'Edisi Resmi KMI',
+        chaptersOrCoverage: 'Bab Histologi Jaringan Tumbuhan Tingkat Tinggi, Fisiologi Rangka & Mekanisme Kontraksi Otot Manusia, Hukum Asortasi Bebas Mendel (Persilangan Dihibrid), dan Kunci Determinasi Taksonomi Makhluk Hidup.',
+        description: 'Buku pegangan KMI yang mengintegrasikan botani seluler tumbuhan, fisiologi gerak manusia, dan genetika populasi.',
+      },
+      {
+        title: 'Buku Pelajaran Matematika / Al-Hisab Kelas 4 KMI & 3 Intensif',
+        subject: 'Matematika',
+        authorOrPublisher: 'Darussalam Press — Pondok Modern Darussalam Gontor',
+        type: 'wajib',
+        editionOrYear: 'Edisi Resmi KMI',
+        chaptersOrCoverage: 'Bab Eksponensial & Rasionalisasi Bentuk Akar Kompleks, Persamaan Kuadrat & Analisis Diskriminan Titik Balik Parabola, Logika Formal (Tabel Kebenaran, Implikasi, Konvers, Kontraposisi), Perbandingan Trigonometri Sudut Istimewa.',
+        description: 'Buku matematika resmi KMI pembangun pondasi berpikir deduktif, kalkulasi aljabar tingkat lanjut, dan geometri trigonometri.',
+      },
+      {
+        title: 'Fisika untuk SMA/MA Kelas X',
+        subject: 'Fisika',
+        authorOrPublisher: 'Penerbit Erlangga (Marthen Kanginan) / Kemendikbudristek',
+        type: 'pendamping',
+        editionOrYear: 'Kurikulum Merdeka & Nasional',
+        chaptersOrCoverage: 'Pendalaman bab analisis vektor, dinamika partikel, dan hukum-hukum gerak Newton multidimensi.',
+        description: 'Buku standar rujukan nasional olimpiade sains fisika SMA dengan pendekatan pemodelan matematis.',
+      },
+      {
+        title: 'Campbell Biology: Konsep & Esensi (Buku Terjemahan)',
+        subject: 'Biologi',
+        authorOrPublisher: 'Penerbit Erlangga / Pearson Education',
+        type: 'pendamping',
+        editionOrYear: 'Edisi Terjemahan Resmi',
+        chaptersOrCoverage: 'Rujukan standar sel, jaringan tumbuhan, mekanisme kontraksi aktin-miosin, dan genetika molekuler Mendel.',
+        description: 'Literatur baku dan standar tertinggi kompetisi sains biologi di tingkat nasional dan internasional.',
+      },
+      {
+        title: 'Matematika Wajib & Peminatan SMA/MA Kelas X',
+        subject: 'Matematika',
+        authorOrPublisher: 'Kemendikbudristek RI / Pusat Kurikulum',
+        type: 'pendamping',
+        editionOrYear: 'Edisi Standar',
+        chaptersOrCoverage: 'Pengayaan konsep fungsi kuadrat, relasi nilai minimum/maksimum, dan identitas trigonometri kuadran.',
+        description: 'Materi pendukung pemantapan konsep untuk menjawab variasi soal berbobot olimpiade.',
       },
     ],
     file_url: '/documents/Silabus_OGSO_2026.xlsx',
@@ -296,6 +504,62 @@ const INITIAL_SYLLABUSES: SyllabusItem[] = [
           { title: 'Fungsi Komposisi dan Fungsi Invers', kelas: '5 KMI' },
           { title: 'Limit Fungsi', kelas: '5 KMI' },
         ],
+      },
+    ],
+    book_references: [
+      {
+        title: 'Buku Pelajaran Fisika Kelas 5 KMI',
+        subject: 'Fisika',
+        authorOrPublisher: 'Darussalam Press — Pondok Modern Darussalam Gontor',
+        type: 'wajib',
+        editionOrYear: 'Edisi Resmi KMI',
+        chaptersOrCoverage: 'Bab Pembiasan Cahaya Lensa Tipis & Cermin Lengkung, Teori Kinetik Gas & Termodinamika Kalor, Rangkaian Listrik Tertutup Loop Tunggal/Ganda (Hukum Kirchhoff).',
+        description: 'Buku teks utama santri kelas 5 KMI untuk analisis mendalam optika geometri, kalor lanjut, dan sirkuit listrik dinamis.',
+      },
+      {
+        title: 'Buku Pelajaran Biologi Kelas 5 KMI',
+        subject: 'Biologi',
+        authorOrPublisher: 'Darussalam Press — Pondok Modern Darussalam Gontor',
+        type: 'wajib',
+        editionOrYear: 'Edisi Resmi KMI',
+        chaptersOrCoverage: 'Bab Aliran Energi & Arus Biogeokimia Ekosistem, Fisiologi Sistem Saraf Pusat & Organ Sensorik/Indera, Farmakologi Zat Psikotropika/Narkotika, Prinsip Rekayasa Bioteknologi Konvensional & Modern.',
+        description: 'Buku acuan KMI untuk pemahaman ekologi komprehensif, neurobiologi manusia, dan bioteknologi terapan.',
+      },
+      {
+        title: 'Buku Pelajaran Kimia Kelas 5 KMI',
+        subject: 'Kimia',
+        authorOrPublisher: 'Darussalam Press — Pondok Modern Darussalam Gontor',
+        type: 'wajib',
+        editionOrYear: 'Edisi Resmi KMI',
+        chaptersOrCoverage: 'Bab Sejarah Kimia & Profil Kimiawan Muslim (Jabir bin Hayyan, Al-Razi, dll.), Teori Struktur Atom, Tabel Periodik Unsur, Ikatan Kimia (Kovalen & Ionik), Tata Nama Senyawa IUPAC, Penyetaraan Persamaan Reaksi Kimia, Stoikiometri & Konsep Mol Avogadro.',
+        description: 'Buku teks resmi kurikulum KMI yang menggabungkan sejarah peradaban sains Islam dengan kimia stoikiometri analitis.',
+      },
+      {
+        title: 'Buku Pelajaran Matematika / Hisab Al-’Ali Kelas 5 KMI',
+        subject: 'Matematika',
+        authorOrPublisher: 'Darussalam Press — Pondok Modern Darussalam Gontor',
+        type: 'wajib',
+        editionOrYear: 'Edisi Resmi KMI',
+        chaptersOrCoverage: 'Bab Statistika Deskriptif (Kuartil, Rataan, Ragam), Rumus Trigonometri Jumlah & Selisih Dua Sudut, Aljabar Fungsi Komposisi & Invers (f o g), dan Teorema Dasar Limit Fungsi Aljabar.',
+        description: 'Buku pegangan matematika tingkat tertinggi di KMI Gontor menuju persiapan kalkulus dan aljabar tingkat lanjut.',
+      },
+      {
+        title: 'Kimia untuk SMA/MA Kelas XI (Stoikiometri & Struktur Materi)',
+        subject: 'Kimia',
+        authorOrPublisher: 'Penerbit Erlangga (Unggul Sudarmo) / Kemendikbudristek',
+        type: 'pendamping',
+        editionOrYear: 'Edisi Standar Nasional',
+        chaptersOrCoverage: 'Rujukan intensif stoikiometri larutan, hukum dasar kimia Lavoisier/Proust/Dalton, dan konfigurasi elektron mekanika kuantum.',
+        description: 'Literatur utama yang melengkapi latihan perhitungan mol, volume molar gas ideal, dan pereaksi pembatas.',
+      },
+      {
+        title: 'Panduan & Pengayaan Olimpiade Matematika dan Sains MAFIKIB',
+        subject: 'Umum',
+        authorOrPublisher: 'Tim Pembina Olimpiade Sains Indonesia / Puspresnas',
+        type: 'pendamping',
+        editionOrYear: 'Edisi Seleksi Nasional',
+        chaptersOrCoverage: 'Bank soal penalaran komprehensif 4 pilar sains: Fisika, Biologi, Kimia, dan Matematika tingkat lanjut.',
+        description: 'Kumpulan soal latihan berbasis penalaran kritis dan pemecahan masalah multidisiplin sains.',
       },
     ],
     file_url: '/documents/Silabus_OGSO_2026.xlsx',
@@ -421,10 +685,17 @@ class MateriService {
       }
     }
 
-    list = list.map((s) => ({
-      ...s,
-      jenjang: normalizeMateriJenjang(s.jenjang),
-    }))
+    list = list.map((s) => {
+      const normalizedJenjang = normalizeMateriJenjang(s.jenjang)
+      const initialMatch = INITIAL_SYLLABUSES.find((init) => init.jenjang === normalizedJenjang)
+      return {
+        ...s,
+        jenjang: normalizedJenjang,
+        target_kelas: s.target_kelas || initialMatch?.target_kelas,
+        breakdown: (s.breakdown && s.breakdown.length > 0) ? s.breakdown : initialMatch?.breakdown,
+        book_references: (s.book_references && s.book_references.length > 0) ? s.book_references : initialMatch?.book_references,
+      }
+    })
 
     if (publishedOnly) {
       return list.filter((s) => s.is_published)

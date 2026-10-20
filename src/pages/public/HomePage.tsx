@@ -21,6 +21,9 @@ import {
   LogIn,
   School,
   GraduationCap,
+  Columns3,
+  CalendarDays,
+  Moon,
 } from 'lucide-react'
 import {
   websiteContentService,
@@ -34,6 +37,8 @@ export const HomePage: React.FC = () => {
   )
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0)
   const [activeTimelineCategory, setActiveTimelineCategory] = useState<string>('all')
+  const [timelineViewMode, setTimelineViewMode] = useState<'kanban' | 'calendar'>('kanban')
+  const [calendarMonthFilter, setCalendarMonthFilter] = useState<'all' | '10' | '11' | '12'>('all')
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -449,128 +454,128 @@ export const HomePage: React.FC = () => {
             <div className="group p-6 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
               <div className="space-y-3.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2.5 py-1 rounded-lg group-hover:bg-[#166534] group-hover:text-white transition-colors">
+                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-lg group-hover:bg-[#166534] group-hover:text-white transition-colors">
                     Tingkat 1
                   </span>
-                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">4 Peserta</span>
+                  <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/70 px-2.5 py-0.5 rounded-full">4 Peserta</span>
                 </div>
                 <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-[#166534] transition-colors">Jenjang 1</h3>
-                <div className="text-xs font-bold text-slate-800 bg-[#F5F8F4] p-2.5 rounded-xl border border-slate-200/60">
+                <div className="text-xs font-bold text-slate-800 bg-[#F5F8F4] p-3 rounded-xl border border-slate-200/60">
                   Kelas 1 KMI
                 </div>
-                <div className="space-y-1.5 text-[11px] text-slate-600">
-                  <div className="font-bold text-slate-800">Materi Ujian:</div>
-                  <div className="flex items-center gap-1.5">&bull; <span>Matematika</span></div>
-                  <div className="flex items-center gap-1.5">&bull; <span>Fisika</span></div>
-                  <div className="flex items-center gap-1.5">&bull; <span>Biologi</span></div>
+                <div className="space-y-2 text-xs text-slate-600 pt-1">
+                  <div className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">Materi Ujian:</div>
+                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" /><span>Matematika</span></div>
+                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-sky-600 shrink-0" /><span>Fisika</span></div>
+                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" /><span>Biologi</span></div>
                 </div>
               </div>
-              <div className="pt-3 border-t border-slate-100 mt-4 text-[10px] text-slate-400 font-medium">
+              <div className="pt-3.5 border-t border-slate-100 mt-4 text-[11px] text-slate-400 font-medium">
                 Pondok Modern Darussalam Gontor
               </div>
             </div>
 
             {/* Jenjang 2 */}
-            <div className="group p-6 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
-              <div className="space-y-3.5">
+            <div className="group p-6 sm:p-7 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2.5 py-1 rounded-lg group-hover:bg-[#166534] group-hover:text-white transition-colors">
+                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-lg group-hover:bg-[#166534] group-hover:text-white transition-colors">
                     Tingkat 2
                   </span>
-                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">4 Peserta</span>
+                  <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/70 px-2.5 py-0.5 rounded-full">4 Peserta</span>
                 </div>
                 <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-[#166534] transition-colors">Jenjang 2</h3>
-                <div className="text-xs font-bold text-slate-800 bg-[#F5F8F4] p-2.5 rounded-xl border border-slate-200/60">
+                <div className="text-xs font-bold text-slate-800 bg-[#F5F8F4] p-3 rounded-xl border border-slate-200/60">
                   Kelas 2 KMI
                 </div>
-                <div className="space-y-1.5 text-[11px] text-slate-600">
-                  <div className="font-bold text-slate-800">Materi Ujian:</div>
-                  <div className="flex items-center gap-1.5">&bull; <span>Matematika</span></div>
-                  <div className="flex items-center gap-1.5">&bull; <span>Fisika</span></div>
-                  <div className="flex items-center gap-1.5">&bull; <span>Biologi</span></div>
+                <div className="space-y-2 text-xs text-slate-600 pt-1">
+                  <div className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">Materi Ujian:</div>
+                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" /><span>Matematika</span></div>
+                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-sky-600 shrink-0" /><span>Fisika</span></div>
+                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" /><span>Biologi</span></div>
                 </div>
               </div>
-              <div className="pt-3 border-t border-slate-100 mt-4 text-[10px] text-slate-400 font-medium">
+              <div className="pt-3.5 border-t border-slate-100 mt-4 text-[11px] text-slate-400 font-medium">
                 Pondok Modern Darussalam Gontor
               </div>
             </div>
 
             {/* Jenjang 3 */}
-            <div className="group p-6 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
-              <div className="space-y-3.5">
+            <div className="group p-6 sm:p-7 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2.5 py-1 rounded-lg group-hover:bg-[#166534] group-hover:text-white transition-colors">
+                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-lg group-hover:bg-[#166534] group-hover:text-white transition-colors">
                     Tingkat 3
                   </span>
-                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">4 Peserta</span>
+                  <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/70 px-2.5 py-0.5 rounded-full">4 Peserta</span>
                 </div>
                 <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-[#166534] transition-colors">Jenjang 3</h3>
-                <div className="text-xs font-bold text-slate-800 bg-[#F5F8F4] p-2.5 rounded-xl border border-slate-200/60">
+                <div className="text-xs font-bold text-slate-800 bg-[#F5F8F4] p-3 rounded-xl border border-slate-200/60">
                   Kelas 1 Int & 3 KMI
                 </div>
-                <div className="space-y-1.5 text-[11px] text-slate-600">
-                  <div className="font-bold text-slate-800">Materi Ujian:</div>
-                  <div className="flex items-center gap-1.5">&bull; <span>Matematika</span></div>
-                  <div className="flex items-center gap-1.5">&bull; <span>Fisika</span></div>
-                  <div className="flex items-center gap-1.5">&bull; <span>Biologi</span></div>
+                <div className="space-y-2 text-xs text-slate-600 pt-1">
+                  <div className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">Materi Ujian:</div>
+                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" /><span>Matematika</span></div>
+                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-sky-600 shrink-0" /><span>Fisika</span></div>
+                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" /><span>Biologi</span></div>
                 </div>
               </div>
-              <div className="pt-3 border-t border-slate-100 mt-4 text-[10px] text-slate-400 font-medium">
+              <div className="pt-3.5 border-t border-slate-100 mt-4 text-[11px] text-slate-400 font-medium">
                 Pondok Modern Darussalam Gontor
               </div>
             </div>
 
             {/* Jenjang 4 */}
-            <div className="group p-6 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
-              <div className="space-y-3.5">
+            <div className="group p-6 sm:p-7 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2.5 py-1 rounded-lg group-hover:bg-[#166534] group-hover:text-white transition-colors">
+                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-lg group-hover:bg-[#166534] group-hover:text-white transition-colors">
                     Tingkat 4
                   </span>
-                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">4 Peserta</span>
+                  <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/70 px-2.5 py-0.5 rounded-full">4 Peserta</span>
                 </div>
                 <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-[#166534] transition-colors">Jenjang 4</h3>
-                <div className="text-xs font-bold text-slate-800 bg-[#F5F8F4] p-2.5 rounded-xl border border-slate-200/60">
+                <div className="text-xs font-bold text-slate-800 bg-[#F5F8F4] p-3 rounded-xl border border-slate-200/60">
                   Kelas 3 Int & 4 KMI
                 </div>
-                <div className="space-y-1.5 text-[11px] text-slate-600">
-                  <div className="font-bold text-slate-800">Materi Ujian:</div>
-                  <div className="flex items-center gap-1.5">&bull; <span>Matematika</span></div>
-                  <div className="flex items-center gap-1.5">&bull; <span>Fisika</span></div>
-                  <div className="flex items-center gap-1.5">&bull; <span>Biologi</span></div>
+                <div className="space-y-2 text-xs text-slate-600 pt-1">
+                  <div className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">Materi Ujian:</div>
+                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" /><span>Matematika</span></div>
+                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-sky-600 shrink-0" /><span>Fisika</span></div>
+                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" /><span>Biologi</span></div>
                 </div>
               </div>
-              <div className="pt-3 border-t border-slate-100 mt-4 text-[10px] text-slate-400 font-medium">
+              <div className="pt-3.5 border-t border-slate-100 mt-4 text-[11px] text-slate-400 font-medium">
                 Pondok Modern Darussalam Gontor
               </div>
             </div>
 
             {/* Jenjang 5 (Special Card with Emerald & Gold Glow) */}
-            <div className="group p-6 rounded-3xl bg-gradient-to-b from-emerald-50/70 via-white to-white border-2 border-[#166534] shadow-md hover:border-emerald-600 hover:-translate-y-2.5 hover:shadow-2xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
+            <div className="group p-6 sm:p-7 rounded-3xl bg-gradient-to-b from-emerald-50/70 via-white to-white border-2 border-[#166534] shadow-md hover:border-emerald-600 hover:-translate-y-2.5 hover:shadow-2xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#A7F3D0]/40 to-transparent pointer-events-none rounded-bl-full" />
 
-              <div className="space-y-3.5 relative z-10">
+              <div className="space-y-4 relative z-10">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-white bg-[#166534] px-2.5 py-1 rounded-lg shadow-xs group-hover:bg-emerald-700 transition-colors">
+                  <span className="text-xs font-black text-white bg-[#166534] px-3 py-1 rounded-lg shadow-xs group-hover:bg-emerald-700 transition-colors">
                     Tingkat 5
                   </span>
-                  <span className="text-[11px] font-bold text-white bg-emerald-800 px-2.5 py-0.5 rounded-full shadow-xs">4 Peserta</span>
+                  <span className="text-[11px] font-bold text-white bg-emerald-800 px-3 py-0.5 rounded-full shadow-xs">4 Peserta</span>
                 </div>
                 <div>
                   <h3 className="text-xl font-black text-[#0C241B]">Jenjang 5</h3>
-                  <span className="text-[10px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full inline-block mt-1">
+                  <span className="text-[10px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full inline-block mt-1">
                     Materi Lengkap + Kimia
                   </span>
                 </div>
-                <div className="text-xs font-bold text-emerald-950 bg-emerald-100/70 p-2.5 rounded-xl border border-emerald-300/80">
+                <div className="text-xs font-bold text-emerald-950 bg-emerald-100/70 p-3 rounded-xl border border-emerald-300/80">
                   Kelas 5 KMI
                 </div>
-                <div className="space-y-1.5 text-[11px] text-slate-700">
-                  <div className="font-bold text-emerald-900">Materi Terpadu:</div>
-                  <div className="flex items-center gap-1.5">&bull; <span>Matematika</span></div>
-                  <div className="flex items-center gap-1.5">&bull; <span>Fisika</span></div>
-                  <div className="flex items-center gap-1.5">&bull; <span>Biologi</span></div>
-                  <div className="flex items-center gap-1.5 font-bold text-[#166534]">&bull; <span>Kimia Khusus</span></div>
+                <div className="space-y-2 text-xs text-slate-700 pt-1">
+                  <div className="font-bold text-emerald-900 text-[11px] uppercase tracking-wider">Materi Terpadu:</div>
+                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" /><span>Matematika</span></div>
+                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-sky-600 shrink-0" /><span>Fisika</span></div>
+                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" /><span>Biologi</span></div>
+                  <div className="flex items-center gap-2.5 font-bold text-[#166534]"><span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" /><span>Kimia Khusus</span></div>
                 </div>
               </div>
               <div className="pt-3 border-t border-emerald-200 mt-4 text-[10px] text-[#166534] font-bold relative z-10">
@@ -582,99 +587,370 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* SECTION 05 — COMPETITION TIMELINE (Data-Driven Official Tentative Dates) */}
+      {/* SECTION 05 — COMPETITION TIMELINE (Kalender Kanban & Agenda Terjadwal)     */}
       {/* ========================================================================= */}
       <section className="py-20 lg:py-28 bg-white border-b border-emerald-950/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+          {/* Section Header with View Mode Switcher */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2 border-b border-slate-100">
             <div className="space-y-3 max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
                 <Calendar className="w-3.5 h-3.5 text-[#166534]" />
-                <span>Rangkaian Agenda</span>
+                <span>Rangkaian Agenda & Alur Kompetisi</span>
               </div>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0C241B]">
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0C241B] tracking-tight">
                 Jadwal Tentatif OGSO 2026
               </h2>
-              <p className="text-sm text-slate-600">
-                Seluruh rangkaian kegiatan dilaksanakan secara daring terkoordinasi antar-kampus Pondok Modern Darussalam Gontor.
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Seluruh rangkaian kegiatan dilaksanakan secara daring terkoordinasi antar-kampus
+                Pondok Modern Darussalam Gontor di seluruh Indonesia.
               </p>
             </div>
 
-            {/* Filter Tabs */}
-            <div className="flex flex-wrap gap-2">
-              {[
-                { id: 'all', label: 'Semua Agenda' },
-                { id: 'seremoni', label: 'Persiapan & Pembukaan' },
-                { id: 'penyisihan', label: 'Babak Penyisihan' },
-                { id: 'final', label: 'Babak Final' },
-              ].map((tab) => (
+            {/* View Mode Toggle & Filter */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Kanban vs Calendar Switcher */}
+              <div className="flex items-center p-1 rounded-xl bg-slate-100/90 border border-slate-200">
                 <button
-                  key={tab.id}
                   type="button"
-                  onClick={() => setActiveTimelineCategory(tab.id)}
+                  onClick={() => setTimelineViewMode('kanban')}
                   className={cn(
-                    'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors',
-                    activeTimelineCategory === tab.id
+                    'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer',
+                    timelineViewMode === 'kanban'
                       ? 'bg-[#166534] text-white shadow-xs'
-                      : 'bg-[#F5F8F4] text-slate-600 hover:bg-slate-200'
+                      : 'text-slate-600 hover:text-slate-900'
                   )}
                 >
-                  {tab.label}
+                  <Columns3 className="w-3.5 h-3.5" />
+                  <span>Mode Kanban</span>
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => setTimelineViewMode('calendar')}
+                  className={cn(
+                    'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer',
+                    timelineViewMode === 'calendar'
+                      ? 'bg-[#166534] text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  )}
+                >
+                  <CalendarDays className="w-3.5 h-3.5" />
+                  <span>Mode Kalender</span>
+                </button>
+              </div>
+
+              {/* Category Filter Tabs */}
+              {timelineViewMode === 'kanban' ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { id: 'all', label: 'Semua Fase' },
+                    { id: 'seremoni', label: 'Persiapan' },
+                    { id: 'penyisihan', label: 'Penyisihan' },
+                    { id: 'final', label: 'Final' },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveTimelineCategory(tab.id)}
+                      className={cn(
+                        'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer',
+                        activeTimelineCategory === tab.id
+                          ? 'bg-slate-800 text-white shadow-xs'
+                          : 'bg-[#F5F8F4] text-slate-600 hover:bg-slate-200'
+                      )}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { id: 'all', label: 'Semua Bulan' },
+                    { id: '10', label: 'Oktober 2026' },
+                    { id: '11', label: 'November 2026' },
+                    { id: '12', label: 'Desember 2026' },
+                  ].map((month) => (
+                    <button
+                      key={month.id}
+                      type="button"
+                      onClick={() => setCalendarMonthFilter(month.id as any)}
+                      className={cn(
+                        'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer',
+                        calendarMonthFilter === month.id
+                          ? 'bg-slate-800 text-white shadow-xs'
+                          : 'bg-[#F5F8F4] text-slate-600 hover:bg-slate-200'
+                      )}
+                    >
+                      {month.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Timeline Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredTimeline.map((item) => (
-              <div
-                key={item.id}
-                className="p-5 rounded-2xl bg-[#F5F8F4] border border-emerald-900/10 hover:border-emerald-600/40 hover:bg-white hover:shadow-md transition-all flex flex-col justify-between"
-              >
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-100 text-[#166534]">
-                      {item.category}
-                    </span>
-                    {item.isTentative && (
-                      <span className="text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
-                        Tentatif
+          {/* ========================================================================= */}
+          {/* VIEW 1: KANBAN BOARD VIEW                                                 */}
+          {/* ========================================================================= */}
+          {timelineViewMode === 'kanban' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+              {[
+                {
+                  id: 'persiapan',
+                  phaseNumber: '01',
+                  title: 'Persiapan & Simulasi',
+                  subtitle: 'Technical Meeting & SEB',
+                  topBar: 'bg-sky-500',
+                  headerBg: 'bg-sky-50/70 border-sky-200',
+                  headerText: 'text-sky-900',
+                  countBadge: 'bg-sky-100 text-sky-800',
+                  itemFilter: (item: any) =>
+                    (item.category === 'persiapan' || item.category === 'simulasi') &&
+                    item.id !== 'pengumuman-penyisihan',
+                },
+                {
+                  id: 'penyisihan',
+                  phaseNumber: '02',
+                  title: 'Pembukaan & Penyisihan',
+                  subtitle: 'Ujian CBT Daring Terpusat',
+                  topBar: 'bg-emerald-600',
+                  headerBg: 'bg-emerald-50/70 border-emerald-200',
+                  headerText: 'text-emerald-900',
+                  countBadge: 'bg-emerald-100 text-emerald-800',
+                  itemFilter: (item: any) =>
+                    item.category === 'seremoni' || item.category === 'penyisihan',
+                },
+                {
+                  id: 'evaluasi',
+                  phaseNumber: '03',
+                  title: 'Penjurian & Seleksi',
+                  subtitle: 'Rekapitulasi Nilai & Finalis',
+                  topBar: 'bg-amber-500',
+                  headerBg: 'bg-amber-50/70 border-amber-200',
+                  headerText: 'text-amber-900',
+                  countBadge: 'bg-amber-100 text-amber-800',
+                  itemFilter: (item: any) => item.id === 'pengumuman-penyisihan',
+                },
+                {
+                  id: 'final',
+                  phaseNumber: '04',
+                  title: 'Babak Final & Awarding',
+                  subtitle: 'Penentuan Juara & Medali',
+                  topBar: 'bg-rose-600',
+                  headerBg: 'bg-rose-50/70 border-rose-200',
+                  headerText: 'text-rose-900',
+                  countBadge: 'bg-rose-100 text-rose-800',
+                  itemFilter: (item: any) =>
+                    item.category === 'final' || item.category === 'penutupan',
+                },
+              ].map((column) => {
+                const columnItems = filteredTimeline.filter(column.itemFilter)
+
+                return (
+                  <div
+                    key={column.id}
+                    className="flex flex-col rounded-2xl bg-slate-50/80 border border-slate-200 shadow-2xs overflow-hidden"
+                  >
+                    {/* Top colored accent line */}
+                    <div className={cn('h-1.5 w-full', column.topBar)} />
+
+                    {/* Column Header */}
+                    <div
+                      className={cn(
+                        'px-4 py-3.5 border-b border-slate-200/80 flex items-center justify-between',
+                        column.headerBg
+                      )}
+                    >
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                            Fase {column.phaseNumber}
+                          </span>
+                        </div>
+                        <h3 className={cn('text-sm font-extrabold leading-snug', column.headerText)}>
+                          {column.title}
+                        </h3>
+                        <p className="text-[11px] text-slate-500">{column.subtitle}</p>
+                      </div>
+
+                      <span
+                        className={cn(
+                          'text-xs font-bold px-2.5 py-0.5 rounded-full shrink-0 shadow-2xs',
+                          column.countBadge
+                        )}
+                      >
+                        {columnItems.length}
                       </span>
-                    )}
+                    </div>
+
+                    {/* Kanban Card List with generous whitespace */}
+                    <div className="p-3.5 space-y-3.5 min-h-[300px]">
+                      {columnItems.length > 0 ? (
+                        columnItems.map((item) => {
+                          const dateParts = item.dateDisplay.split(', ')
+                          const dayName = dateParts[0] || 'Hari'
+                          const dateStr = dateParts[1] || item.dateDisplay
+
+                          return (
+                            <div
+                              key={item.id}
+                              className="bg-white rounded-xl border border-slate-200/90 hover:border-emerald-500/80 shadow-xs hover:shadow-md transition-all p-4 space-y-3 group"
+                            >
+                              {/* Top Bar in Card: Category and Tentative status */}
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/60">
+                                    {item.category}
+                                  </span>
+                                  <span className="text-[10px] font-medium text-slate-500">
+                                    {dayName}, {dateStr.split(' ')[0]} {dateStr.split(' ')[1]}
+                                  </span>
+                                </div>
+                                {item.isTentative && (
+                                  <span className="text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+                                    Tentatif
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Title */}
+                              <h4 className="font-bold text-sm text-[#0C241B] leading-snug group-hover:text-emerald-800 transition-colors">
+                                {item.title}
+                              </h4>
+
+                              {/* Target Levels */}
+                              {item.levels && (
+                                <div className="flex items-start gap-2 text-xs font-semibold text-emerald-900 bg-emerald-50/60 p-2 rounded-lg border border-emerald-100">
+                                  <School className="w-3.5 h-3.5 text-emerald-700 mt-0.5 shrink-0" />
+                                  <span className="leading-snug">{item.levels}</span>
+                                </div>
+                              )}
+
+                              {/* Date & Time with ample whitespace */}
+                              <div className="pt-3 border-t border-slate-100 space-y-1.5">
+                                <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+                                  <Calendar className="w-3.5 h-3.5 text-[#166534] shrink-0" />
+                                  <span>{item.dateDisplay}</span>
+                                </div>
+
+                                {item.hijriDate && (
+                                  <div className="flex items-center gap-2 text-[11px] text-slate-500 pl-5.5">
+                                    <Moon className="w-3 h-3 text-slate-400 shrink-0" />
+                                    <span>{item.hijriDate}</span>
+                                  </div>
+                                )}
+
+                                {item.time && (
+                                  <div className="flex items-center gap-2 text-xs text-slate-600 pl-5.5">
+                                    <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                                    <span>{item.time}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })
+                      ) : (
+                        <div className="p-6 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">
+                          Tidak ada agenda dalam filter ini.
+                        </div>
+                      )}
+                    </div>
                   </div>
+                )
+              })}
+            </div>
+          )}
 
-                  <h3 className="font-bold text-base text-[#0C241B] leading-snug">
-                    {item.title}
-                  </h3>
+          {/* ========================================================================= */}
+          {/* VIEW 2: INTERACTIVE CALENDAR MONTH VIEW                                    */}
+          {/* ========================================================================= */}
+          {timelineViewMode === 'calendar' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {filteredTimeline
+                  .filter((item) => {
+                    if (calendarMonthFilter === 'all') return true
+                    if (calendarMonthFilter === '10') return item.dateDisplay.includes('Oktober')
+                    if (calendarMonthFilter === '11') return item.dateDisplay.includes('November')
+                    if (calendarMonthFilter === '12') return item.dateDisplay.includes('Desember')
+                    return true
+                  })
+                  .map((item) => {
+                    const dateParts = item.dateDisplay.split(', ')
+                    const dayName = dateParts[0] || 'Hari'
+                    const dateStr = dateParts[1] || item.dateDisplay
+                    const dayNum = dateStr.split(' ')[0] || ''
+                    const monthName = dateStr.split(' ')[1] || ''
 
-                  {item.levels && (
-                    <div className="text-xs font-semibold text-emerald-800">
-                      Sasaran: {item.levels}
-                    </div>
-                  )}
-                </div>
+                    return (
+                      <div
+                        key={item.id}
+                        className="bg-white rounded-2xl border border-slate-200/90 hover:border-emerald-500 shadow-xs hover:shadow-md transition-all p-5 flex flex-col justify-between space-y-4"
+                      >
+                        <div className="space-y-3">
+                          {/* Calendar Date Badge Header */}
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-50 text-[#166534] border border-emerald-200/80 flex flex-col items-center justify-center shrink-0 shadow-2xs font-black">
+                                <span className="text-[10px] uppercase tracking-wider text-emerald-800 leading-none">
+                                  {dayName}
+                                </span>
+                                <span className="text-xl font-extrabold text-[#0C241B] leading-none mt-1">
+                                  {dayNum}
+                                </span>
+                                <span className="text-[9px] uppercase font-bold text-emerald-700 leading-none mt-0.5">
+                                  {monthName}
+                                </span>
+                              </div>
 
-                <div className="pt-4 mt-4 border-t border-emerald-950/10 space-y-1">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-                    <Calendar className="w-3.5 h-3.5 text-[#166534]" />
-                    <span>{item.dateDisplay}</span>
-                  </div>
-                  {item.hijriDate && (
-                    <div className="text-[11px] text-slate-500 pl-5">
-                      {item.hijriDate}
-                    </div>
-                  )}
-                  {item.time && (
-                    <div className="flex items-center gap-1.5 text-xs text-slate-600 pl-5">
-                      <Clock className="w-3 h-3 text-slate-400" />
-                      <span>{item.time}</span>
-                    </div>
-                  )}
-                </div>
+                              <div>
+                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100/80 text-emerald-900 border border-emerald-200">
+                                  {item.category}
+                                </span>
+                                {item.isTentative && (
+                                  <span className="ml-1.5 text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                                    Tentatif
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Agenda Title */}
+                          <h4 className="font-extrabold text-base text-[#0C241B] leading-snug">
+                            {item.title}
+                          </h4>
+
+                          {/* Target Levels */}
+                          {item.levels && (
+                            <div className="text-xs font-semibold text-emerald-900 bg-emerald-50 p-2 rounded-lg border border-emerald-100">
+                              Sasaran: {item.levels}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Timing and Hijri Dates */}
+                        <div className="pt-3 border-t border-slate-100 space-y-1 text-xs">
+                          <div className="flex items-center gap-2 font-bold text-slate-800">
+                            <Clock className="w-3.5 h-3.5 text-[#166534]" />
+                            <span>{item.time || 'Waktu Fleksibel'}</span>
+                          </div>
+
+                          {item.hijriDate && (
+                            <div className="flex items-center gap-2 text-[11px] text-slate-500 pl-5.5">
+                              <Moon className="w-3 h-3 text-slate-400" />
+                              <span>{item.hijriDate}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
       </section>
 
