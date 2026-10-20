@@ -1080,7 +1080,7 @@ export const HomePage: React.FC = () => {
                       <Trophy className="w-10 h-10 sm:w-12 sm:h-12 text-amber-950" />
                     </div>
                     <div className="absolute -bottom-2 -right-2 px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow-md">
-                      Piala Bergilir
+                      Juara Umum
                     </div>
                   </div>
 
@@ -1093,7 +1093,7 @@ export const HomePage: React.FC = () => {
                       Piala Juara Umum Kampus
                     </h3>
                     <p className="text-sm sm:text-base text-amber-100/90 leading-relaxed max-w-2xl font-normal">
-                      Kampus kontingen dengan perolehan pemenang terbanyak dianugerahi <strong className="text-amber-300 font-bold">Piala Bergilir Penghargaan Khusus</strong>.
+                      Kampus kontingen dengan perolehan pemenang terbanyak dianugerahi <strong className="text-amber-300 font-bold">Piala Penghargaan Khusus</strong>.
                     </p>
                   </div>
                 </div>

@@ -266,7 +266,7 @@ export const GALLERY_PHOTOS: GalleryPhoto[] = [
   },
   {
     id: 22,
-    title: 'Penyerahan Piala Bergilir Juara Umum',
+    title: 'Penyerahan Piala Juara Umum',
     category: 'prestasi',
     categoryLabel: 'Juara Umum',
     location: 'Panggung Utama OGSO',
@@ -274,7 +274,7 @@ export const GALLERY_PHOTOS: GalleryPhoto[] = [
     url: '/foto/ogso-gallery-22.jpg',
     width: 1200,
     height: 800,
-    description: 'Penetapan kontingen peraih Piala Bergilir Direktur KMI.',
+    description: 'Penetapan kontingen peraih Piala Juara Umum Direktur KMI.',
   },
   {
     id: 23,
