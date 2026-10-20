@@ -296,136 +296,159 @@ export const HomePage: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* 1. Matematika */}
-            <div className="relative overflow-hidden group p-7 rounded-3xl bg-white border border-emerald-900/10 hover:border-indigo-400/60 hover:-translate-y-2.5 hover:shadow-2xl hover:shadow-indigo-900/5 transition-all duration-300 flex flex-col justify-between">
+            <div className="relative overflow-hidden group p-7 rounded-3xl bg-white border border-slate-200 hover:border-indigo-400 hover:-translate-y-2 hover:shadow-xl hover:shadow-indigo-950/5 transition-all duration-300 flex flex-col justify-between">
               {/* Background Watermark Icon */}
-              <Binary className="absolute -right-4 -bottom-4 w-36 h-36 text-indigo-500/5 group-hover:text-indigo-500/15 group-hover:scale-125 group-hover:rotate-12 transition-all duration-500 pointer-events-none" />
+              <Binary className="absolute -right-5 -top-5 w-32 h-32 text-indigo-500/10 group-hover:text-indigo-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 pointer-events-none" />
 
-              <div className="space-y-4 relative z-10">
-                <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-indigo-800 to-[#166534] text-white flex items-center justify-center shadow-md group-hover:scale-110 group-hover:shadow-indigo-600/30 transition-all duration-300">
-                  <Binary className="w-6 h-6 text-[#A7F3D0]" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-indigo-900 transition-colors">Matematika</h3>
-                  <span className="inline-block text-[11px] font-semibold text-indigo-800 bg-indigo-50 border border-indigo-200/60 px-2.5 py-0.5 rounded-full mt-1">
+              <div className="relative z-10">
+                {/* Header: Icon Box & Badge */}
+                <div className="flex items-center justify-between gap-3 mb-5">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-700 to-[#166534] text-white flex items-center justify-center shadow-md shadow-indigo-900/10 group-hover:scale-105 group-hover:shadow-indigo-600/25 transition-all duration-300 shrink-0">
+                    <Binary className="w-7 h-7 text-[#A7F3D0]" />
+                  </div>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-indigo-800 bg-indigo-50 border border-indigo-200/70 shadow-2xs">
                     Jenjang 1 – 5
                   </span>
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Aljabar, aritmetika, geometri, trigonometri, barisan dan deret, hingga kalkulus limit fungsi dan statistika analitik.
-                </p>
+
+                <div className="space-y-2.5">
+                  <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-indigo-900 transition-colors">
+                    Matematika
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed min-h-[64px]">
+                    Aljabar, aritmetika, geometri, trigonometri, barisan dan deret, hingga kalkulus limit fungsi dan statistika analitik.
+                  </p>
+                </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 mt-6 relative z-10 flex items-center justify-between">
+              <div className="pt-4 border-t border-slate-100 mt-6 relative z-10 flex items-center justify-between gap-3">
                 <Link
                   to="/materi/silabus"
-                  className="text-xs font-bold text-indigo-800 hover:text-indigo-950 flex items-center gap-1.5 group-hover:underline"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-800 hover:text-indigo-950 group-hover:underline"
                 >
                   <span>Lihat Silabus</span>
-                  <ChevronDown className="w-3.5 h-3.5 -rotate-90 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </Link>
-                <span className="text-[10px] font-semibold text-slate-400">Kelas 1–5</span>
+                <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg">
+                  Kelas 1–5
+                </span>
               </div>
             </div>
 
             {/* 2. Fisika */}
-            <div className="relative overflow-hidden group p-7 rounded-3xl bg-white border border-emerald-900/10 hover:border-sky-400/60 hover:-translate-y-2.5 hover:shadow-2xl hover:shadow-sky-900/5 transition-all duration-300 flex flex-col justify-between">
+            <div className="relative overflow-hidden group p-7 rounded-3xl bg-white border border-slate-200 hover:border-sky-400 hover:-translate-y-2 hover:shadow-xl hover:shadow-sky-950/5 transition-all duration-300 flex flex-col justify-between">
               {/* Background Watermark Icon */}
-              <Atom className="absolute -right-4 -bottom-4 w-36 h-36 text-sky-500/5 group-hover:text-sky-500/15 group-hover:scale-125 group-hover:rotate-12 transition-all duration-500 pointer-events-none" />
+              <Atom className="absolute -right-5 -top-5 w-32 h-32 text-sky-500/10 group-hover:text-sky-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 pointer-events-none" />
 
-              <div className="space-y-4 relative z-10">
-                <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-sky-800 to-[#166534] text-white flex items-center justify-center shadow-md group-hover:scale-110 group-hover:shadow-sky-600/30 transition-all duration-300">
-                  <Atom className="w-6 h-6 text-[#A7F3D0]" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-sky-900 transition-colors">Fisika</h3>
-                  <span className="inline-block text-[11px] font-semibold text-sky-800 bg-sky-50 border border-sky-200/60 px-2.5 py-0.5 rounded-full mt-1">
+              <div className="relative z-10">
+                <div className="flex items-center justify-between gap-3 mb-5">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-700 to-[#166534] text-white flex items-center justify-center shadow-md shadow-sky-900/10 group-hover:scale-105 group-hover:shadow-sky-600/25 transition-all duration-300 shrink-0">
+                    <Atom className="w-7 h-7 text-[#A7F3D0]" />
+                  </div>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-sky-800 bg-sky-50 border border-sky-200/70 shadow-2xs">
                     Jenjang 1 – 5
                   </span>
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Pengukuran, mekanika Newton, getaran & gelombang, optika geometri, termodinamika kalor, hingga elektromagnetika modern.
-                </p>
+
+                <div className="space-y-2.5">
+                  <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-sky-900 transition-colors">
+                    Fisika
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed min-h-[64px]">
+                    Pengukuran, mekanika Newton, getaran & gelombang, optika geometri, termodinamika kalor, hingga elektromagnetika modern.
+                  </p>
+                </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 mt-6 relative z-10 flex items-center justify-between">
+              <div className="pt-4 border-t border-slate-100 mt-6 relative z-10 flex items-center justify-between gap-3">
                 <Link
                   to="/materi/silabus"
-                  className="text-xs font-bold text-sky-800 hover:text-sky-950 flex items-center gap-1.5 group-hover:underline"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-800 hover:text-sky-950 group-hover:underline"
                 >
                   <span>Lihat Silabus</span>
-                  <ChevronDown className="w-3.5 h-3.5 -rotate-90 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </Link>
-                <span className="text-[10px] font-semibold text-slate-400">Kelas 1–5</span>
+                <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg">
+                  Kelas 1–5
+                </span>
               </div>
             </div>
 
             {/* 3. Biologi */}
-            <div className="relative overflow-hidden group p-7 rounded-3xl bg-white border border-emerald-900/10 hover:border-emerald-500 hover:-translate-y-2.5 hover:shadow-2xl hover:shadow-emerald-900/5 transition-all duration-300 flex flex-col justify-between">
+            <div className="relative overflow-hidden group p-7 rounded-3xl bg-white border border-slate-200 hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl hover:shadow-emerald-950/5 transition-all duration-300 flex flex-col justify-between">
               {/* Background Watermark Icon */}
-              <Microscope className="absolute -right-4 -bottom-4 w-36 h-36 text-emerald-500/5 group-hover:text-emerald-500/15 group-hover:scale-125 group-hover:rotate-12 transition-all duration-500 pointer-events-none" />
+              <Microscope className="absolute -right-5 -top-5 w-32 h-32 text-emerald-500/10 group-hover:text-emerald-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 pointer-events-none" />
 
-              <div className="space-y-4 relative z-10">
-                <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-[#166534] to-[#0A2E1A] text-white flex items-center justify-center shadow-md group-hover:scale-110 group-hover:shadow-emerald-600/30 transition-all duration-300">
-                  <Microscope className="w-6 h-6 text-[#A7F3D0]" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-[#166534] transition-colors">Biologi</h3>
-                  <span className="inline-block text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 rounded-full mt-1">
+              <div className="relative z-10">
+                <div className="flex items-center justify-between gap-3 mb-5">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#166534] to-[#0A2E1A] text-white flex items-center justify-center shadow-md shadow-emerald-900/10 group-hover:scale-105 group-hover:shadow-emerald-600/25 transition-all duration-300 shrink-0">
+                    <Microscope className="w-7 h-7 text-[#A7F3D0]" />
+                  </div>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/70 shadow-2xs">
                     Jenjang 1 – 5
                   </span>
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Organisasi kehidupan, fisiologi sistem manusia, botani, pewarisan sifat genetika, ekologi ekosistem, dan bioteknologi.
-                </p>
+
+                <div className="space-y-2.5">
+                  <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-[#166534] transition-colors">
+                    Biologi
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed min-h-[64px]">
+                    Organisasi kehidupan, fisiologi sistem manusia, botani, pewarisan sifat genetika, ekologi ekosistem, dan bioteknologi.
+                  </p>
+                </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 mt-6 relative z-10 flex items-center justify-between">
+              <div className="pt-4 border-t border-slate-100 mt-6 relative z-10 flex items-center justify-between gap-3">
                 <Link
                   to="/materi/silabus"
-                  className="text-xs font-bold text-[#166534] hover:text-[#0C241B] flex items-center gap-1.5 group-hover:underline"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#166534] hover:text-[#0C241B] group-hover:underline"
                 >
                   <span>Lihat Silabus</span>
-                  <ChevronDown className="w-3.5 h-3.5 -rotate-90 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </Link>
-                <span className="text-[10px] font-semibold text-slate-400">Kelas 1–5</span>
+                <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg">
+                  Kelas 1–5
+                </span>
               </div>
             </div>
 
-            {/* 4. Kimia (Special Badge: Jenjang 5 Only) */}
-            <div className="relative overflow-hidden group p-7 rounded-3xl bg-white border-2 border-[#D5C49A]/80 hover:border-amber-500 hover:-translate-y-2.5 hover:shadow-2xl hover:shadow-amber-900/10 transition-all duration-300 flex flex-col justify-between">
+            {/* 4. Kimia (Khusus Jenjang 5) */}
+            <div className="relative overflow-hidden group p-7 rounded-3xl bg-white border border-amber-300/80 hover:border-amber-500 hover:-translate-y-2 hover:shadow-xl hover:shadow-amber-950/10 transition-all duration-300 flex flex-col justify-between">
               {/* Background Watermark Icon */}
-              <FlaskConical className="absolute -right-4 -bottom-4 w-36 h-36 text-amber-500/5 group-hover:text-amber-500/15 group-hover:scale-125 group-hover:rotate-12 transition-all duration-500 pointer-events-none" />
+              <FlaskConical className="absolute -right-5 -top-5 w-32 h-32 text-amber-500/10 group-hover:text-amber-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 pointer-events-none" />
 
-              <div className="absolute top-4 right-4 z-20">
-                <span className="text-[10px] font-extrabold text-amber-950 bg-gradient-to-r from-amber-200 to-amber-300 border border-amber-400 px-2.5 py-1 rounded-full shadow-xs">
-                  Khusus Jenjang 5
-                </span>
-              </div>
-
-              <div className="space-y-4 relative z-10">
-                <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-amber-600 via-yellow-600 to-[#166534] text-white flex items-center justify-center shadow-md group-hover:scale-110 group-hover:shadow-amber-600/30 transition-all duration-300">
-                  <FlaskConical className="w-6 h-6 text-amber-100" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-amber-900 transition-colors">Kimia</h3>
-                  <span className="inline-block text-[11px] font-semibold text-amber-900 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-full mt-1">
-                    Kelas 5 KMI
+              <div className="relative z-10">
+                <div className="flex items-center justify-between gap-3 mb-5">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-600 via-yellow-600 to-[#166534] text-white flex items-center justify-center shadow-md shadow-amber-900/10 group-hover:scale-105 group-hover:shadow-amber-600/25 transition-all duration-300 shrink-0">
+                    <FlaskConical className="w-7 h-7 text-amber-100" />
+                  </div>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-100 to-amber-200 border border-amber-300 shadow-2xs">
+                    Khusus Jenjang 5
                   </span>
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Struktur atom, sistem periodik unsur, tata nama senyawa, persamaan reaksi, konsep mol, dan profil ilmuwan kimia Muslim.
-                </p>
+
+                <div className="space-y-2.5">
+                  <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-amber-900 transition-colors">
+                    Kimia
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed min-h-[64px]">
+                    Struktur atom, sistem periodik unsur, tata nama senyawa, persamaan reaksi, konsep mol, dan profil ilmuwan kimia Muslim.
+                  </p>
+                </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 mt-6 relative z-10 flex items-center justify-between">
+              <div className="pt-4 border-t border-slate-100 mt-6 relative z-10 flex items-center justify-between gap-3">
                 <Link
                   to="/materi/silabus"
-                  className="text-xs font-bold text-amber-800 hover:text-amber-950 flex items-center gap-1.5 group-hover:underline"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 hover:text-amber-950 group-hover:underline"
                 >
                   <span>Lihat Silabus</span>
-                  <ChevronDown className="w-3.5 h-3.5 -rotate-90 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </Link>
-                <span className="text-[10px] font-semibold text-amber-700 bg-amber-100/60 px-2 py-0.5 rounded">Kelas 5</span>
+                <span className="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg">
+                  Kelas 5 KMI
+                </span>
               </div>
             </div>
           </div>
