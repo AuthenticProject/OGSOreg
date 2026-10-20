@@ -55,25 +55,48 @@ export const PublicParticipantPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Certificate Verification Banner */}
-        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-[#0C241B] via-[#0E3527] to-[#14532D] text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-md">
-          <div className="space-y-2 text-center md:text-left">
-            <div className="flex items-center justify-center md:justify-start gap-2 text-sm font-bold text-[#A7F3D0]">
-              <ShieldCheck className="w-5 h-5 text-[#A7F3D0]" />
-              <span>Verifikasi Keaslian Sertifikat Digital OGSO</span>
+        {/* Hall of Fame & Certificate Gateways */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Hall of Fame Gateway */}
+          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-[#0C241B] via-[#0E3527] to-[#14532D] text-white flex flex-col justify-between space-y-4 shadow-md">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-bold text-[#A7F3D0]">
+                <Trophy className="w-5 h-5 text-[#D5C49A]" />
+                <span>OGSO Hall of Fame (Klasemen 20 Kampus)</span>
+              </div>
+              <p className="text-xs text-emerald-100/80 leading-relaxed">
+                Akses klasemen resmi antar-kampus berdasarkan sistem bobot skor (Juara 1: 5 pt s/d Harapan 2: 1 pt), tren performa historis, dan rekapitulasi medali sepanjang masa.
+              </p>
             </div>
-            <p className="text-xs text-emerald-100/80 max-w-2xl leading-relaxed">
-              Setiap e-certificate pemenang dan peserta dilengkapi nomor sertifikat unik dan kode QR. Anda dapat memverifikasi validitas sertifikat secara online melalui portal verifikasi resmi.
-            </p>
+            <Link
+              to="/hall-of-fame"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-xs text-[#0C241B] bg-gradient-to-r from-[#A7F3D0] to-[#86EFAC] hover:from-[#86EFAC] hover:to-[#4ADE80] shrink-0 shadow-md transition-all self-start cursor-pointer"
+            >
+              <Trophy className="w-4 h-4" />
+              <span>Buka Portal Hall of Fame</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
 
-          <Link
-            to="/verify"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-xs text-[#0C241B] bg-gradient-to-r from-[#A7F3D0] to-[#86EFAC] hover:from-[#86EFAC] hover:to-[#4ADE80] shrink-0 shadow-md transition-all"
-          >
-            <ShieldCheck className="w-4 h-4" />
-            <span>Cek Validitas Sertifikat</span>
-          </Link>
+          {/* Certificate Verification Banner */}
+          <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 text-slate-800 flex flex-col justify-between space-y-4 shadow-xs">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-bold text-[#166534]">
+                <ShieldCheck className="w-5 h-5 text-[#166534]" />
+                <span>Verifikasi Sertifikat Digital OGSO</span>
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Setiap e-certificate pemenang dan peserta dilengkapi nomor unik dan kode verifikasi resmi yang dapat divalidasi keabsahannya secara langsung.
+              </p>
+            </div>
+            <Link
+              to="/verify"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-xs text-[#166534] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 shrink-0 transition-all self-start cursor-pointer"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>Cek Validitas Sertifikat</span>
+            </Link>
+          </div>
         </div>
 
         {/* Search & Filter Bar */}

@@ -30,6 +30,7 @@ import {
   websiteContentService,
   type WebsiteContentConfig,
 } from '../../services/websiteContentService'
+import { hallOfFameService } from '../../services/hallOfFameService'
 import { PhotoMarqueeGallery } from '../../components/public/PhotoMarqueeGallery'
 import { cn } from '../../lib/utils'
 import { getWhatsAppLink } from '../../lib/whatsapp'
@@ -38,6 +39,7 @@ export const HomePage: React.FC = () => {
   const [content, setContent] = useState<WebsiteContentConfig>(() =>
     websiteContentService.getContent()
   )
+  const [hofOverview] = useState(() => hallOfFameService.getHallOfFameOverview())
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0)
   const [activeTimelineCategory, setActiveTimelineCategory] = useState<string>('all')
   const [timelineViewMode, setTimelineViewMode] = useState<'kanban' | 'calendar'>('kanban')
@@ -1231,6 +1233,106 @@ export const HomePage: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* SECTION 06.5 — HALL OF FAME PREVIEW (Compact Executive Standings)         */}
+      {/* ========================================================================= */}
+      <section className="py-16 sm:py-20 bg-gradient-to-b from-[#0C241B] to-[#071510] text-white border-b border-emerald-900/40 relative overflow-hidden">
+        {/* Luminous Glow */}
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-10">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-xs font-bold text-[#A7F3D0]">
+                <Trophy className="w-3.5 h-3.5 text-[#D5C49A]" />
+                <span>
+                  OGSO Hall of Fame {hofOverview.latestPeriod ? `• ${hofOverview.latestPeriod.name}` : ''}
+                </span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-sans">
+                Klasemen Prestasi Antar-Kampus Terkini
+              </h2>
+              <p className="text-xs sm:text-sm text-emerald-100/80 max-w-xl leading-relaxed">
+                Rekapitulasi resmi perolehan medali dan poin olimpiade sains Kulliyatu-l-Mu’allimin Al-Islamiyah seluruh pondok cabang Gontor.
+              </p>
+            </div>
+
+            <Link
+              to="/hall-of-fame"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs text-[#0C241B] bg-gradient-to-r from-[#A7F3D0] to-[#86EFAC] hover:opacity-90 transition-all self-start sm:self-auto shrink-0 shadow-md cursor-pointer"
+            >
+              <span>Jelajahi Hall of Fame</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {/* Top 3 Campuses Podiums / Verified Empty State */}
+          {hofOverview.topThreeCampuses.length > 0 &&
+          hofOverview.topThreeCampuses.some((c) => c.total_points > 0) ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {hofOverview.topThreeCampuses.map((c, i) => (
+                <Link
+                  key={c.campus}
+                  to={`/hall-of-fame/kampus/${c.campusSlug}`}
+                  className={cn(
+                    'group p-6 rounded-2xl transition-all duration-200 border flex flex-col justify-between space-y-4 cursor-pointer',
+                    i === 0
+                      ? 'bg-gradient-to-b from-emerald-950/90 to-[#0C241B] border-[#D5C49A]/60 shadow-lg hover:border-[#D5C49A]'
+                      : 'bg-emerald-950/40 border-emerald-800/40 hover:border-emerald-500/50'
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={cn(
+                        'px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider',
+                        i === 0
+                          ? 'bg-[#D5C49A] text-[#0C241B]'
+                          : i === 1
+                          ? 'bg-slate-200 text-slate-800'
+                          : 'bg-amber-100 text-amber-900'
+                      )}
+                    >
+                      Peringkat #{i + 1}
+                    </span>
+                    <span className="text-[11px] font-mono text-emerald-300 font-bold">
+                      {c.total_points} Poin
+                    </span>
+                  </div>
+
+                  <div>
+                    <h3 className="font-extrabold text-lg text-white group-hover:text-[#A7F3D0] transition-colors">
+                      {c.campus}
+                    </h3>
+                    <div className="text-xs text-emerald-200/70 mt-1 flex items-center gap-2">
+                      <span>🥇 {c.gold}</span>
+                      <span>🥈 {c.silver}</span>
+                      <span>🥉 {c.bronze}</span>
+                      <span>H1: {c.honorable_1}</span>
+                      <span>H2: {c.honorable_2}</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-emerald-900/40 flex items-center justify-between text-[11px] font-semibold text-[#A7F3D0]">
+                    <span>Buka Profil Kontingen</span>
+                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 rounded-2xl bg-emerald-950/30 border border-emerald-800/40 text-center space-y-2">
+              <Trophy className="w-8 h-8 text-[#D5C49A] mx-auto opacity-80" />
+              <div className="text-sm font-bold text-white">
+                Hasil Klasemen Sedang Direkapitulasi
+              </div>
+              <p className="text-xs text-emerald-200/70 max-w-md mx-auto">
+                Peringkat analitik resmi akan ditampilkan segera setelah seluruh hasil babak final disahkan oleh Panitia Pusat OGSO.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 

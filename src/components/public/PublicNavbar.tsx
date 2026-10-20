@@ -5,6 +5,7 @@ import {
   BookOpen,
   Archive,
   Trophy,
+  Medal,
   LogIn,
   LayoutDashboard,
   Menu,
@@ -19,6 +20,7 @@ export const PublicNavbar: React.FC = () => {
   const location = useLocation()
   const [isScrolled, setIsScrolled] = useState(false)
   const [materiDropdownOpen, setMateriDropdownOpen] = useState(false)
+  const [participantDropdownOpen, setParticipantDropdownOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
@@ -33,9 +35,12 @@ export const PublicNavbar: React.FC = () => {
   useEffect(() => {
     setMobileMenuOpen(false)
     setMateriDropdownOpen(false)
+    setParticipantDropdownOpen(false)
   }, [location.pathname])
 
   const isMateriActive = location.pathname.startsWith('/materi')
+  const isParticipantActive =
+    location.pathname.startsWith('/participant') || location.pathname.startsWith('/hall-of-fame')
 
   return (
     <header
@@ -202,20 +207,78 @@ export const PublicNavbar: React.FC = () => {
               )}
             </div>
 
-            <NavLink
-              to="/participant"
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
-                  isActive
+            {/* Participant Dropdown (Periode & Hall of Fame) */}
+            <div className="relative">
+              <button
+                type="button"
+                className={cn(
+                  'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer',
+                  isParticipantActive
                     ? 'text-[#A7F3D0] bg-emerald-950/70 border border-emerald-500/30'
                     : 'text-emerald-100/90 hover:text-white hover:bg-emerald-900/30'
-                )
-              }
-            >
-              <Trophy className="w-4 h-4 text-[#D5C49A]" />
-              <span>Participant</span>
-            </NavLink>
+                )}
+                onClick={() => setParticipantDropdownOpen((prev) => !prev)}
+                aria-expanded={participantDropdownOpen}
+              >
+                <Trophy className="w-4 h-4 text-[#D5C49A]" />
+                <span>Participant</span>
+                <ChevronDown
+                  className={cn(
+                    'w-4 h-4 text-emerald-400 transition-transform duration-200',
+                    participantDropdownOpen && 'rotate-180'
+                  )}
+                />
+              </button>
+
+              {participantDropdownOpen && (
+                <div className="absolute top-full left-0 mt-2 w-72 rounded-2xl bg-[#0C241B] border border-emerald-800/70 shadow-2xl p-2.5 z-50 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-150">
+                  <NavLink
+                    to="/participant"
+                    className={({ isActive }) =>
+                      cn(
+                        'flex items-start gap-3.5 p-3 rounded-xl text-xs transition-colors',
+                        isActive
+                          ? 'bg-emerald-900/60 text-[#A7F3D0]'
+                          : 'text-emerald-100/90 hover:text-white hover:bg-emerald-900/30'
+                      )
+                    }
+                  >
+                    <Trophy className="w-5 h-5 text-[#A7F3D0] mt-0.5 shrink-0" />
+                    <div className="space-y-0.5">
+                      <div className="font-bold text-sm">Periode & Pemenang</div>
+                      <div className="text-[11px] text-emerald-300/80 leading-snug">
+                        Arsip hasil kompetisi resmi per tahun
+                      </div>
+                    </div>
+                  </NavLink>
+
+                  <NavLink
+                    to="/hall-of-fame"
+                    className={({ isActive }) =>
+                      cn(
+                        'flex items-start gap-3.5 p-3 rounded-xl text-xs transition-colors mt-1',
+                        isActive
+                          ? 'bg-emerald-900/60 text-[#A7F3D0]'
+                          : 'text-emerald-100/90 hover:text-white hover:bg-emerald-900/30'
+                      )
+                    }
+                  >
+                    <Medal className="w-5 h-5 text-[#D5C49A] mt-0.5 shrink-0" />
+                    <div className="space-y-0.5">
+                      <div className="font-bold text-sm flex items-center gap-1.5">
+                        <span>Hall of Fame</span>
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#D5C49A] text-[#0C241B]">
+                          Baru
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-emerald-300/80 leading-snug">
+                        Klasemen poin, medali & analitik 20 kampus
+                      </div>
+                    </div>
+                  </NavLink>
+                </div>
+              )}
+            </div>
           </nav>
 
           {/* Action Button: JUKLAK Download & Admin Login */}
@@ -389,7 +452,22 @@ export const PublicNavbar: React.FC = () => {
                 }
               >
                 <Trophy className="w-4 h-4 text-[#D5C49A]" />
-                <span>Participant & Periode</span>
+                <span>Periode & Hasil Juara</span>
+              </NavLink>
+
+              <NavLink
+                to="/hall-of-fame"
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors',
+                    isActive
+                      ? 'bg-emerald-900/60 text-[#A7F3D0]'
+                      : 'text-emerald-100 hover:text-white hover:bg-emerald-900/30'
+                  )
+                }
+              >
+                <Medal className="w-4 h-4 text-[#D5C49A]" />
+                <span>Hall of Fame (Klasemen 20 Kampus)</span>
               </NavLink>
 
               <NavLink

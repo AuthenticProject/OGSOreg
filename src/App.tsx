@@ -12,6 +12,8 @@ import { RegistrationInfoPage } from './pages/public/RegistrationInfoPage'
 import { PublicParticipantPage } from './pages/public/PublicParticipantPage'
 import { PublicPeriodDetailPage } from './pages/public/PublicPeriodDetailPage'
 import { GalleryPage } from './pages/public/GalleryPage'
+import { HallOfFamePage } from './pages/public/HallOfFamePage'
+import { HallOfFameManagementPage } from './pages/HallOfFameManagementPage'
 
 // Existing Dashboard Pages
 import { DashboardPage } from './pages/DashboardPage'
@@ -62,6 +64,11 @@ export function App() {
             {/* Public Competition Periods & Published Winners */}
             <Route path="/participant" element={<PublicParticipantPage />} />
             <Route path="/participant/:periodId" element={<PublicPeriodDetailPage />} />
+
+            {/* Public Hall of Fame & Academic Rankings */}
+            <Route path="/hall-of-fame" element={<HallOfFamePage />} />
+            <Route path="/hall-of-fame/kampus/:campusSlug" element={<HallOfFamePage />} />
+            <Route path="/participant/hall-of-fame-public" element={<Navigate to="/hall-of-fame" replace />} />
 
             {/* Public Syllabus & Question Bank */}
             <Route path="/materi" element={<Navigate to="/materi/silabus" replace />} />
@@ -132,6 +139,7 @@ export function App() {
 
             {/* 2. PARTICIPANT MANAGEMENT (ADMIN DASHBOARD) */}
             <Route path="/participant/periode" element={<PeriodListPage />} />
+            <Route path="/participant/hall-of-fame" element={<HallOfFameManagementPage />} />
             <Route
               path="/participant/periode/:periodId"
               element={

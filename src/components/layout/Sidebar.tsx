@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   X,
   Award,
+  Trophy,
   Globe,
   ExternalLink,
 } from 'lucide-react'
@@ -144,6 +145,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           title: 'Periode',
           href: '/participant/periode',
           icon: Calendar,
+        },
+        {
+          title: 'Hall of Fame',
+          href: '/participant/hall-of-fame',
+          icon: Trophy,
         },
       ],
     },
