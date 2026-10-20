@@ -42,9 +42,9 @@ export const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        {/* Brand Icon */}
-        <div className="inline-flex items-center justify-center w-14 h-14 mb-3">
-          <img src="/logo.png" alt="Logo OGSOreg" className="w-14 h-14 object-contain drop-shadow-md" />
+        {/* Brand Icon with Green Contrast Box */}
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#166534] via-[#0F3D20] to-[#0B2F19] p-2.5 shadow-lg shadow-emerald-900/20 border border-emerald-700/40 mb-3.5">
+          <img src="/logo.png" alt="Logo OGSOreg" className="w-full h-full object-contain drop-shadow-sm" />
         </div>
 
         <h2 className="text-2xl sm:text-3xl font-extrabold text-[#0F172A] tracking-tight">
