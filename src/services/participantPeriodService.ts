@@ -338,21 +338,36 @@ class ParticipantPeriodService {
       let list: CompetitionPeriod[]
       if (!raw) {
         list = sortPeriodsNewestFirst(INITIAL_PERIODS)
-        localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(list))
-        return list
+      } else {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Ensure default INITIAL_PERIODS are merged if missing
+          const existingIds = new Set(parsed.map((p) => p?.id))
+          const missing = INITIAL_PERIODS.filter((ip) => !existingIds.has(ip.id))
+          const combined = missing.length > 0 ? [...parsed, ...missing] : parsed
+          list = sortPeriodsNewestFirst(combined)
+        } else {
+          list = sortPeriodsNewestFirst(INITIAL_PERIODS)
+        }
       }
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        // Ensure default INITIAL_PERIODS are merged if missing
-        const existingIds = new Set(parsed.map((p) => p?.id))
-        const missing = INITIAL_PERIODS.filter((ip) => !existingIds.has(ip.id))
-        const combined = missing.length > 0 ? [...parsed, ...missing] : parsed
-        list = sortPeriodsNewestFirst(combined)
-        return list
-      }
-      list = sortPeriodsNewestFirst(INITIAL_PERIODS)
-      localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(list))
-      return list
+
+      // Always dynamically calculate and sync total_winners from actual winners in storage
+      const allWinners = this.getWinners()
+      const synced = list.map((p) => {
+        const pWinners = allWinners.filter((w) => {
+          if (!w || !w.period_id) return false
+          if (w.period_id === p.id || (p.slug && w.period_id === p.slug)) return true
+          if (p.id.startsWith('period-') && w.period_id === p.id.replace('period-', '')) return true
+          return false
+        })
+        return {
+          ...p,
+          total_winners: pWinners.length,
+        }
+      })
+
+      localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(synced))
+      return synced
     } catch {
       return sortPeriodsNewestFirst(INITIAL_PERIODS)
     }
@@ -486,7 +501,13 @@ class ParticipantPeriodService {
     }
 
     if (periodId) {
-      list = list.filter((w) => w && w.period_id === periodId)
+      list = list.filter((w) => {
+        if (!w || !w.period_id) return false
+        if (w.period_id === periodId) return true
+        if (periodId.startsWith('period-') && w.period_id === periodId.replace('period-', '')) return true
+        if (!periodId.startsWith('period-') && w.period_id === `period-${periodId}`) return true
+        return false
+      })
     }
 
     const normalized = list.map((w) => ({

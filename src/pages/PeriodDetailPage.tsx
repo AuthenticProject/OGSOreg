@@ -19,12 +19,14 @@ import {
   ShieldAlert,
   Layers,
   LayoutGrid,
+  FileSpreadsheet,
 } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
 import { SectionCard } from '../components/ui/SectionCard'
 import { EmptyState } from '../components/feedback/EmptyState'
 import { useAuth } from '../context/AuthContext'
+import { WinnerImportModal } from '../components/winners/WinnerImportModal'
 import {
   participantPeriodService,
   LEGACY_LOMBA_OPTIONS,
@@ -76,6 +78,7 @@ export const PeriodDetailPage: React.FC = () => {
 
   // Modals
   const [isAddWinnerModalOpen, setIsAddWinnerModalOpen] = useState(false)
+  const [isImportWinnerModalOpen, setIsImportWinnerModalOpen] = useState(false)
   const [editingWinner, setEditingWinner] = useState<PeriodWinner | null>(null)
   const [previewCert, setPreviewCert] = useState<PeriodCertificate | null>(null)
 
@@ -397,14 +400,25 @@ export const PeriodDetailPage: React.FC = () => {
         actions={
           <div className="flex items-center gap-2">
             {isSuperAdmin && (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleOpenAddWinner}
-                leftIcon={<Plus className="w-4 h-4 mr-1" />}
-              >
-                Tambah Data Juara
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsImportWinnerModalOpen(true)}
+                  leftIcon={<FileSpreadsheet className="w-4 h-4 mr-1 text-emerald-700" />}
+                  className="bg-emerald-50/60 hover:bg-emerald-100/70 border-emerald-300 text-emerald-900 font-semibold"
+                >
+                  Impor Excel Juara
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleOpenAddWinner}
+                  leftIcon={<Plus className="w-4 h-4 mr-1" />}
+                >
+                  Tambah Data Juara
+                </Button>
+              </>
             )}
           </div>
         }
@@ -1329,6 +1343,18 @@ export const PeriodDetailPage: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+      {/* Modal Import Excel Juara */}
+      {period && (
+        <WinnerImportModal
+          isOpen={isImportWinnerModalOpen}
+          onClose={() => setIsImportWinnerModalOpen(false)}
+          period={period}
+          existingWinners={winners}
+          onSuccess={() => {
+            loadPeriodData()
+          }}
+        />
       )}
     </div>
   )

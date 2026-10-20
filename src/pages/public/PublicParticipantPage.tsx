@@ -144,20 +144,25 @@ export const PublicParticipantPage: React.FC = () => {
                   </div>
 
                   {/* Highlights */}
-                  <div className="grid grid-cols-2 gap-2 pt-2 text-xs">
-                    <div className="p-2.5 rounded-xl bg-[#F5F8F4] border border-slate-100">
-                      <div className="text-[10px] text-slate-500">Juara Diumumkan</div>
-                      <div className="text-sm font-bold text-[#166534]">
-                        {period.total_winners || 0} Pemenang
+                  {(() => {
+                    const actualWinnersCount = participantPeriodService.getWinners(period.id).length
+                    return (
+                      <div className="grid grid-cols-2 gap-2 pt-2 text-xs">
+                        <div className="p-2.5 rounded-xl bg-[#F5F8F4] border border-slate-100">
+                          <div className="text-[10px] text-slate-500">Juara Diumumkan</div>
+                          <div className="text-sm font-bold text-[#166534]">
+                            {actualWinnersCount} Pemenang
+                          </div>
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-[#F5F8F4] border border-slate-100">
+                          <div className="text-[10px] text-slate-500">Status Publikasi</div>
+                          <div className="text-xs font-bold text-slate-800">
+                            {period.is_published ? 'Resmi Terbit' : 'Draf Internal'}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="p-2.5 rounded-xl bg-[#F5F8F4] border border-slate-100">
-                      <div className="text-[10px] text-slate-500">Status Publikasi</div>
-                      <div className="text-xs font-bold text-slate-800">
-                        {period.is_published ? 'Resmi Terbit' : 'Draf Internal'}
-                      </div>
-                    </div>
-                  </div>
+                    )
+                  })()}
                 </div>
 
                 <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
