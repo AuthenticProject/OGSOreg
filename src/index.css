@@ -295,6 +295,66 @@
   box-shadow: 0 10px 25px -5px rgba(217, 119, 6, 0.15);
 }
 
+/* Holographic / Iridescent Sheen for Juara Umum */
+@keyframes holo-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.holographic-sheen {
+  background: linear-gradient(
+    135deg,
+    #67e8f9 0%,
+    #e879f9 25%,
+    #a78bfa 50%,
+    #38bdf8 75%,
+    #f472b6 100%
+  );
+  background-size: 250% 250%;
+  animation: holo-flow 7s ease infinite;
+}
+
+.holographic-border-flow {
+  background: linear-gradient(
+    115deg,
+    #38bdf8 0%,
+    #c084fc 20%,
+    #f472b6 40%,
+    #34d399 60%,
+    #818cf8 80%,
+    #38bdf8 100%
+  );
+  background-size: 300% 300%;
+  animation: holo-flow 6s linear infinite;
+}
+
+.holographic-overlay {
+  background: linear-gradient(
+    125deg,
+    rgba(56, 189, 248, 0.08) 0%,
+    rgba(232, 121, 249, 0.12) 30%,
+    rgba(167, 139, 250, 0.1) 60%,
+    rgba(52, 211, 153, 0.08) 100%
+  );
+  background-size: 200% 200%;
+  animation: holo-flow 10s ease infinite;
+}
+
+.holographic-glow {
+  box-shadow: 
+    0 0 30px -5px rgba(232, 121, 249, 0.3),
+    0 0 45px -10px rgba(56, 189, 248, 0.35),
+    0 20px 40px -15px rgba(129, 140, 248, 0.25);
+}
+
+
 /* ==========================================================================
    Continuous Running-Text Photo Gallery Marquee Animations
    ========================================================================== */

@@ -1064,46 +1064,59 @@ export const HomePage: React.FC = () => {
           </div>
 
           {/* ========================================================================= */}
-          {/* BARIS 1: PIALA JUARA UMUM KAMPUS (SUPREME HIGHLIGHT) */}
+          {/* BARIS 1: PIALA JUARA UMUM KAMPUS (SUPREME HIGHLIGHT - HOLOGRAPHIC THEME) */}
           {/* ========================================================================= */}
           <div className="mb-10 sm:mb-12">
-            <div className="relative p-6 sm:p-10 rounded-3xl bg-gradient-to-r from-amber-950/70 via-emerald-950/80 to-amber-950/70 border-2 border-amber-400 shadow-2xl shadow-amber-500/25 overflow-hidden group hover:border-amber-300 hover:shadow-amber-400/35 transition-all duration-300 shimmer-sweep">
-              {/* Ambient Glow & Decorative Elements */}
-              <div className="absolute -top-24 -right-24 w-80 h-80 bg-amber-400/20 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-bl from-amber-400/25 via-amber-300/10 to-transparent pointer-events-none rounded-bl-full" />
+            <div className="relative rounded-3xl p-[2px] holographic-border-flow holographic-glow group hover:scale-[1.01] transition-all duration-500">
+              <div className="relative p-6 sm:p-10 rounded-[22px] bg-gradient-to-r from-[#0a1128]/95 via-[#0f172a]/95 to-[#1e1138]/95 overflow-hidden shimmer-sweep">
+                {/* Iridescent Holographic Overlay & Dynamic Ambient Glows */}
+                <div className="absolute inset-0 holographic-overlay pointer-events-none mix-blend-screen opacity-80" />
+                <div className="absolute -top-24 -right-24 w-80 h-80 bg-fuchsia-500/25 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-cyan-400/25 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-72 h-72 bg-violet-500/20 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute top-0 right-0 w-44 h-44 bg-gradient-to-bl from-cyan-300/25 via-fuchsia-400/15 to-transparent pointer-events-none rounded-bl-full" />
 
-              <div className="relative z-10 flex flex-col lg:flex-row items-center lg:items-center justify-between gap-6 lg:gap-10">
-                {/* Left: Trophy Icon & Core Info */}
-                <div className="flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-5 sm:gap-6 flex-1">
-                  <div className="relative shrink-0">
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-600 text-amber-950 flex items-center justify-center shadow-xl shadow-amber-500/40 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-                      <Trophy className="w-10 h-10 sm:w-12 sm:h-12 text-amber-950" />
+                <div className="relative z-10 flex flex-col lg:flex-row items-center lg:items-center justify-between gap-6 lg:gap-10">
+                  {/* Left: Trophy Icon & Core Info */}
+                  <div className="flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-5 sm:gap-6 flex-1">
+                    <div className="relative shrink-0">
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl holographic-sheen text-slate-950 flex items-center justify-center shadow-2xl shadow-cyan-500/30 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 border border-white/40">
+                        <Trophy className="w-10 h-10 sm:w-12 sm:h-12 text-slate-950 drop-shadow-md" />
+                      </div>
+                      <div className="absolute -bottom-2 -right-2 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-cyan-300 via-fuchsia-300 to-indigo-300 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow-md shadow-fuchsia-500/40 border border-white/60">
+                        Juara Umum
+                      </div>
                     </div>
-                    <div className="absolute -bottom-2 -right-2 px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow-md">
-                      Juara Umum
+
+                    <div className="space-y-2">
+                      <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-950/80 border border-fuchsia-400/50 text-fuchsia-200 text-xs font-black uppercase tracking-widest shadow-inner shadow-fuchsia-500/20 backdrop-blur-sm">
+                        <Sparkles className="w-3.5 h-3.5 text-cyan-300 animate-pulse" />
+                        <span className="bg-gradient-to-r from-cyan-300 via-fuchsia-300 to-indigo-200 bg-clip-text text-transparent font-black">
+                          Penghargaan Tertinggi Kontingen
+                        </span>
+                      </div>
+                      <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-fuchsia-200 tracking-tight">
+                        Piala Juara Umum Kampus
+                      </h3>
+                      <p className="text-sm sm:text-base text-slate-200/90 leading-relaxed max-w-2xl font-normal">
+                        Kampus kontingen dengan perolehan pemenang terbanyak dianugerahi{' '}
+                        <strong className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-pink-300 to-indigo-200 font-bold">
+                          Piala Penghargaan Khusus
+                        </strong>.
+                      </p>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-950/90 border border-amber-400/60 text-[#D5C49A] text-xs font-black uppercase tracking-widest shadow-inner">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                      <span>Penghargaan Tertinggi Kontingen</span>
+                  {/* Right: Badge / Key Highlight Pill */}
+                  <div className="shrink-0 w-full sm:w-auto flex flex-col sm:flex-row lg:flex-col gap-3 justify-center">
+                    <div className="px-5 py-3.5 rounded-2xl bg-slate-950/70 border border-cyan-400/40 text-center space-y-0.5 backdrop-blur-md shadow-lg shadow-cyan-500/10 group-hover:border-fuchsia-400/50 transition-colors">
+                      <div className="text-[11px] font-extrabold uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-fuchsia-300">
+                        Kategori Kontingen
+                      </div>
+                      <div className="text-sm sm:text-base font-extrabold text-white">
+                        Akumulasi Medali Terbanyak
+                      </div>
                     </div>
-                    <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
-                      Piala Juara Umum Kampus
-                    </h3>
-                    <p className="text-sm sm:text-base text-amber-100/90 leading-relaxed max-w-2xl font-normal">
-                      Kampus kontingen dengan perolehan pemenang terbanyak dianugerahi <strong className="text-amber-300 font-bold">Piala Penghargaan Khusus</strong>.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Right: Badge / Key Highlight Pill */}
-                <div className="shrink-0 w-full sm:w-auto flex flex-col sm:flex-row lg:flex-col gap-3 justify-center">
-                  <div className="px-5 py-3.5 rounded-2xl bg-black/40 border border-amber-400/40 text-center space-y-0.5 backdrop-blur-md">
-                    <div className="text-[11px] font-extrabold uppercase tracking-widest text-[#D5C49A]">Kategori Kontingen</div>
-                    <div className="text-sm sm:text-base font-extrabold text-white">Akumulasi Medali Terbanyak</div>
                   </div>
                 </div>
               </div>
