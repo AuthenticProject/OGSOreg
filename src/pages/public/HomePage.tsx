@@ -1062,6 +1062,56 @@ export const HomePage: React.FC = () => {
             </p>
           </div>
 
+          {/* ========================================================================= */}
+          {/* BARIS 1: PIALA JUARA UMUM KAMPUS (SUPREME HIGHLIGHT) */}
+          {/* ========================================================================= */}
+          <div className="mb-10 sm:mb-12">
+            <div className="relative p-6 sm:p-10 rounded-3xl bg-gradient-to-r from-amber-950/70 via-emerald-950/80 to-amber-950/70 border-2 border-amber-400 shadow-2xl shadow-amber-500/25 overflow-hidden group hover:border-amber-300 hover:shadow-amber-400/35 transition-all duration-300 shimmer-sweep">
+              {/* Ambient Glow & Decorative Elements */}
+              <div className="absolute -top-24 -right-24 w-80 h-80 bg-amber-400/20 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-bl from-amber-400/25 via-amber-300/10 to-transparent pointer-events-none rounded-bl-full" />
+
+              <div className="relative z-10 flex flex-col lg:flex-row items-center lg:items-center justify-between gap-6 lg:gap-10">
+                {/* Left: Trophy Icon & Core Info */}
+                <div className="flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-5 sm:gap-6 flex-1">
+                  <div className="relative shrink-0">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-600 text-amber-950 flex items-center justify-center shadow-xl shadow-amber-500/40 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                      <Trophy className="w-10 h-10 sm:w-12 sm:h-12 text-amber-950" />
+                    </div>
+                    <div className="absolute -bottom-2 -right-2 px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow-md">
+                      Piala Bergilir
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-950/90 border border-amber-400/60 text-[#D5C49A] text-xs font-black uppercase tracking-widest shadow-inner">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Penghargaan Tertinggi Kontingen</span>
+                    </div>
+                    <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
+                      Piala Juara Umum Kampus
+                    </h3>
+                    <p className="text-sm sm:text-base text-amber-100/90 leading-relaxed max-w-2xl font-normal">
+                      Kampus kontingen dengan perolehan pemenang terbanyak dianugerahi <strong className="text-amber-300 font-bold">Piala Bergilir Penghargaan Khusus</strong>.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Right: Badge / Key Highlight Pill */}
+                <div className="shrink-0 w-full sm:w-auto flex flex-col sm:flex-row lg:flex-col gap-3 justify-center">
+                  <div className="px-5 py-3.5 rounded-2xl bg-black/40 border border-amber-400/40 text-center space-y-0.5 backdrop-blur-md">
+                    <div className="text-[11px] font-extrabold uppercase tracking-widest text-[#D5C49A]">Kategori Kontingen</div>
+                    <div className="text-sm sm:text-base font-extrabold text-white">Akumulasi Medali Terbanyak</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ========================================================================= */}
+          {/* BARIS 2: JUARA 1, 2, 3 (MEDALI EMAS, PERAK, PERUNGGU) */}
+          {/* ========================================================================= */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             {/* Juara 1 — Emas */}
             <div className="p-8 rounded-3xl bg-gradient-to-b from-amber-950/50 via-emerald-950/40 to-black/60 border-2 border-amber-400/80 shadow-2xl shadow-amber-500/10 text-center space-y-5 hover:-translate-y-3 hover:shadow-amber-400/25 transition-all duration-300 shimmer-sweep group relative overflow-hidden">
@@ -1121,36 +1171,50 @@ export const HomePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Special Mentions & Campus Trophy (Elevated Interactive Glass Cards) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div className="p-6 rounded-2xl glass-panel-dark hover:-translate-y-1.5 hover:border-[#A7F3D0]/40 hover:shadow-xl transition-all duration-300 group text-xs space-y-2">
-              <div className="font-bold text-sm text-[#A7F3D0] flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#A7F3D0] group-hover:rotate-12 transition-transform" />
-                <span>Juara Harapan 1 & 2</span>
+          {/* ========================================================================= */}
+          {/* BARIS 3: JUARA HARAPAN 1 & 2 DAN E-CERTIFICATE SELURUH PESERTA */}
+          {/* ========================================================================= */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Juara Harapan 1 & 2 */}
+            <div className="p-6 sm:p-7 rounded-3xl glass-panel-dark hover:-translate-y-1.5 hover:border-[#A7F3D0]/50 hover:shadow-xl transition-all duration-300 group border border-emerald-500/20 flex flex-col justify-between space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-[#A7F3D0] text-xs font-bold">
+                    <Sparkles className="w-3.5 h-3.5 text-[#A7F3D0] group-hover:rotate-12 transition-transform" />
+                    <span>Apresiasi Finalis</span>
+                  </div>
+                  <span className="text-xs text-emerald-300/70 font-semibold">Babak Final</span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black text-white">Juara Harapan 1 & 2</h3>
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  Mendapatkan <strong>Medali Akrilik</strong> serta Piagam Penghargaan resmi dari Panitia Pusat OGSO.
+                </p>
               </div>
-              <p className="text-slate-300 leading-relaxed">
-                Mendapatkan <strong>Medali Akrilik</strong> serta Piagam Penghargaan resmi dari Panitia Pusat OGSO.
-              </p>
+              <div className="pt-3 border-t border-emerald-900/40 flex items-center gap-2 text-xs text-[#A7F3D0] font-medium">
+                <Award className="w-4 h-4 text-[#A7F3D0] shrink-0" />
+                <span>Medali Akrilik Eksklusif + Piagam Penghargaan</span>
+              </div>
             </div>
 
-            <div className="p-6 rounded-2xl glass-panel-dark hover:-translate-y-1.5 hover:border-amber-400/40 hover:shadow-xl transition-all duration-300 group border-amber-500/20 text-xs space-y-2">
-              <div className="font-bold text-sm text-[#D5C49A] flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-[#D5C49A] group-hover:scale-110 transition-transform" />
-                <span>Piala Juara Umum Kampus</span>
+            {/* E-Certificate Seluruh Peserta */}
+            <div className="p-6 sm:p-7 rounded-3xl glass-panel-dark hover:-translate-y-1.5 hover:border-emerald-400/50 hover:shadow-xl transition-all duration-300 group border border-emerald-500/20 flex flex-col justify-between space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-emerald-300 text-xs font-bold">
+                    <FileText className="w-3.5 h-3.5 text-emerald-300 group-hover:scale-110 transition-transform" />
+                    <span>Seluruh Peserta</span>
+                  </div>
+                  <span className="text-xs text-emerald-300/70 font-semibold">Semua Babak</span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black text-white">E-Certificate Seluruh Peserta</h3>
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  Setiap santri peserta resmi mendapatkan <strong>e-certificate keikutsertaan</strong> yang didistribusikan melalui pembimbing kampus.
+                </p>
               </div>
-              <p className="text-slate-300 leading-relaxed">
-                Kampus kontingen dengan perolehan pemenang terbanyak dianugerahi <strong>Piala Bergilir Penghargaan Khusus</strong>.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl glass-panel-dark hover:-translate-y-1.5 hover:border-emerald-400/40 hover:shadow-xl transition-all duration-300 group text-xs space-y-2">
-              <div className="font-bold text-sm text-emerald-300 flex items-center gap-2">
-                <Award className="w-4 h-4 text-emerald-300 group-hover:rotate-12 transition-transform" />
-                <span>E-Certificate Seluruh Peserta</span>
+              <div className="pt-3 border-t border-emerald-900/40 flex items-center gap-2 text-xs text-emerald-300 font-medium">
+                <ShieldCheck className="w-4 h-4 text-emerald-300 shrink-0" />
+                <span>Sertifikat Digital Resmi dengan Verifikasi Keabsahan</span>
               </div>
-              <p className="text-slate-300 leading-relaxed">
-                Setiap santri peserta resmi mendapatkan <strong>e-certificate keikutsertaan</strong> yang didistribusikan melalui pembimbing kampus.
-              </p>
             </div>
           </div>
         </div>
