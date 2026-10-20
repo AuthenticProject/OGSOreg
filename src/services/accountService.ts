@@ -63,31 +63,19 @@ class AccountService {
   }
 
   private loadStore() {
+    let loadedProfiles: AppUserProfile[] = []
+    let loadedPasswords: Record<string, string> = {}
+
     if (typeof window !== 'undefined' && window.localStorage) {
       try {
         const rawProfiles = window.localStorage.getItem(LOCAL_USERS_STORAGE_KEY)
         const rawPasswords = window.localStorage.getItem(LOCAL_PASSWORDS_STORAGE_KEY)
         if (rawProfiles && rawPasswords) {
-          this.inMemoryProfiles = JSON.parse(rawProfiles)
-          this.inMemoryPasswords = JSON.parse(rawPasswords)
-
-          // Sinkronisasi & Migrasi: Wajibkan 20 akun admin kampus ganti password jika masih pakai sandi default
-          let needsPersist = false
-          for (const p of this.inMemoryProfiles) {
-            if (p.role === 'campus_admin') {
-              const currentPass = this.inMemoryPasswords[p.username]
-              if (!currentPass || currentPass === SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD) {
-                if (!p.must_change_password) {
-                  p.must_change_password = true
-                  needsPersist = true
-                }
-              }
-            }
+          const parsed = JSON.parse(rawProfiles)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            loadedProfiles = parsed
+            loadedPasswords = JSON.parse(rawPasswords) || {}
           }
-          if (needsPersist) {
-            this.persistStore()
-          }
-          return
         }
       } catch {
         // Fall back to default
@@ -95,8 +83,33 @@ class AccountService {
     }
 
     const initial = initializeDefaultLocalProfiles()
-    this.inMemoryProfiles = initial.profiles
-    this.inMemoryPasswords = initial.passwords
+    if (loadedProfiles.length === 0) {
+      loadedProfiles = initial.profiles
+      loadedPasswords = initial.passwords
+    } else {
+      // Ensure all 21 official accounts from INITIAL_ACCOUNT_ROSTER exist in memory
+      for (const defProfile of initial.profiles) {
+        if (!loadedProfiles.some((p) => p.username.toLowerCase() === defProfile.username.toLowerCase())) {
+          loadedProfiles.push(defProfile)
+        }
+        if (!loadedPasswords[defProfile.username]) {
+          loadedPasswords[defProfile.username] = initial.passwords[defProfile.username]
+        }
+      }
+    }
+
+    this.inMemoryProfiles = loadedProfiles
+    this.inMemoryPasswords = loadedPasswords
+
+    // Sinkronisasi & Migrasi: Wajibkan 20 akun admin kampus ganti password jika masih pakai sandi default
+    for (const p of this.inMemoryProfiles) {
+      if (p.role === 'campus_admin') {
+        const currentPass = this.inMemoryPasswords[p.username]
+        if (!currentPass || currentPass === SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD) {
+          p.must_change_password = true
+        }
+      }
+    }
     this.persistStore()
   }
 
@@ -109,6 +122,89 @@ class AccountService {
         // Ignore
       }
     }
+  }
+
+  /**
+   * Universal resilient user finder by ID, auth_user_id, or username (case-insensitive).
+   * Checks in-memory cache, Supabase live database, and official account roster.
+   */
+  async findUser(identifier: string): Promise<AppUserProfile | undefined> {
+    if (!identifier) return undefined
+    const cleanId = identifier.trim()
+    const cleanLower = cleanId.toLowerCase()
+
+    // 1. Search in-memory profiles first (by id, auth_user_id, or username)
+    let found = this.inMemoryProfiles.find(
+      (p) =>
+        p.id === cleanId ||
+        p.auth_user_id === cleanId ||
+        p.username.toLowerCase() === cleanLower
+    )
+    if (found) return found
+
+    // 2. Query Supabase live database if configured
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .or(`id.eq.${cleanId},auth_user_id.eq.${cleanId},username.ilike.${cleanLower}`)
+          .maybeSingle()
+
+        if (!error && data) {
+          const sp = data as AppUserProfile
+          const idx = this.inMemoryProfiles.findIndex(
+            (p) => p.username.toLowerCase() === sp.username.toLowerCase() || p.id === sp.id
+          )
+          if (idx >= 0) {
+            this.inMemoryProfiles[idx] = { ...this.inMemoryProfiles[idx], ...sp }
+          } else {
+            this.inMemoryProfiles.push(sp)
+          }
+          if (!this.inMemoryPasswords[sp.username]) {
+            this.inMemoryPasswords[sp.username] =
+              sp.role === 'super_admin' ? LOCAL_DEV_SUPER_ADMIN_PASSWORD : SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD
+          }
+          this.persistStore()
+          return sp
+        }
+      } catch (err) {
+        console.warn('findUser Supabase lookup error:', err)
+      }
+    }
+
+    // 3. Fallback: check INITIAL_ACCOUNT_ROSTER to restore official accounts
+    const rosterAccount = INITIAL_ACCOUNT_ROSTER.find(
+      (a) => a.username.toLowerCase() === cleanLower
+    )
+    if (rosterAccount) {
+      const now = new Date().toISOString()
+      const restoredUser: AppUserProfile = {
+        id: `usr-${cleanLower}`,
+        auth_user_id: `auth-${cleanLower}`,
+        username: rosterAccount.username,
+        email: rosterAccount.email,
+        display_name: rosterAccount.display_name,
+        role: rosterAccount.role,
+        campus_id: rosterAccount.campus_id,
+        is_active: true,
+        must_change_password: rosterAccount.role === 'campus_admin',
+        last_login_at: null,
+        created_at: now,
+        updated_at: now,
+      }
+      this.inMemoryProfiles.push(restoredUser)
+      if (!this.inMemoryPasswords[restoredUser.username]) {
+        this.inMemoryPasswords[restoredUser.username] =
+          restoredUser.role === 'super_admin'
+            ? LOCAL_DEV_SUPER_ADMIN_PASSWORD
+            : SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD
+      }
+      this.persistStore()
+      return restoredUser
+    }
+
+    return undefined
   }
 
   /**
@@ -214,6 +310,19 @@ class AccountService {
               .single()
 
             if (profileData) {
+              const sp = profileData as AppUserProfile
+              const idx = this.inMemoryProfiles.findIndex(
+                (p) => p.username.toLowerCase() === sp.username.toLowerCase() || p.id === sp.id
+              )
+              if (idx >= 0) {
+                this.inMemoryProfiles[idx] = { ...this.inMemoryProfiles[idx], ...sp }
+              } else {
+                this.inMemoryProfiles.push(sp)
+              }
+              this.inMemoryPasswords[sp.username.toLowerCase()] = password
+              this.inMemoryPasswords[sp.username] = password
+              this.persistStore()
+
               // Update last_login_at
               await supabase
                 .from('user_profiles')
@@ -222,8 +331,8 @@ class AccountService {
 
               return {
                 success: true,
-                profile: profileData as AppUserProfile,
-                mustChangePassword: profileData.must_change_password,
+                profile: sp,
+                mustChangePassword: sp.must_change_password,
               }
             }
           } else {
@@ -235,9 +344,11 @@ class AccountService {
       }
     }
 
-    const profile = this.inMemoryProfiles.find((p) => p.username.toLowerCase() === username)
+    const cleanUsername = username.trim().toLowerCase()
+    const profile = this.inMemoryProfiles.find((p) => p.username.toLowerCase() === cleanUsername)
     const expectedPassword =
-      this.inMemoryPasswords[username] ||
+      this.inMemoryPasswords[cleanUsername] ||
+      this.inMemoryPasswords[profile?.username || ''] ||
       (profile?.role === 'super_admin' ? LOCAL_DEV_SUPER_ADMIN_PASSWORD : SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD)
     const isPasswordValid =
       expectedPassword === password ||
@@ -248,9 +359,8 @@ class AccountService {
       return { success: false, error: 'Nama pengguna atau kata sandi tidak valid.' }
     }
 
-    if (this.inMemoryPasswords[username] !== password) {
-      this.inMemoryPasswords[username] = password
-    }
+    this.inMemoryPasswords[profile.username] = password
+    this.inMemoryPasswords[cleanUsername] = password
 
     if (!profile.is_active) {
       return {
@@ -318,13 +428,14 @@ class AccountService {
       return { success: false, error: 'Kata sandi harus memiliki minimal 1 angka atau simbol unik.' }
     }
 
-    // Verify current password against registered password
-    const profile = this.inMemoryProfiles.find((p) => p.username.toLowerCase() === userKey)
+    // Verify current password against registered password using resilient findUser
+    const profile = await this.findUser(userKey)
     if (!profile) {
       return { success: false, error: 'Pengguna tidak ditemukan.' }
     }
 
     const expectedCurrentPass =
+      this.inMemoryPasswords[profile.username] ||
       this.inMemoryPasswords[userKey] ||
       (profile.role === 'super_admin' ? LOCAL_DEV_SUPER_ADMIN_PASSWORD : SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD)
 
@@ -338,12 +449,11 @@ class AccountService {
         const { error: updateAuthErr } = await supabase.auth.updateUser({ password: newPass })
         if (updateAuthErr) {
           console.warn('Supabase updateUser warning:', updateAuthErr.message)
-        } else {
-          await supabase
-            .from('user_profiles')
-            .update({ must_change_password: false, updated_at: new Date().toISOString() })
-            .eq('username', userKey)
         }
+        await supabase
+          .from('user_profiles')
+          .update({ must_change_password: false, updated_at: new Date().toISOString() })
+          .or(`id.eq.${profile.id},username.ilike.${profile.username}`)
       } catch (err: any) {
         console.warn('Supabase password change error:', err)
       }
@@ -352,13 +462,12 @@ class AccountService {
     // Local in-memory update (super admin can see this updated password via getUserPassword / getAllUserPasswords)
     profile.must_change_password = false
     profile.updated_at = new Date().toISOString()
+    this.inMemoryPasswords[profile.username] = newPass
     this.inMemoryPasswords[userKey] = newPass
     this.persistStore()
     return { success: true }
   }
 
-  /**
-   * Retrieves all user profiles (Accessible by Super Admin).
   /**
    * Retrieves profile by username.
    */
@@ -384,7 +493,24 @@ class AccountService {
           .order('role', { ascending: false })
           .order('username', { ascending: true })
         if (!error && data && data.length > 0) {
-          return data as AppUserProfile[]
+          const spList = data as AppUserProfile[]
+          // Sync live Supabase profiles into this.inMemoryProfiles
+          for (const sp of spList) {
+            const idx = this.inMemoryProfiles.findIndex(
+              (p) => p.username.toLowerCase() === sp.username.toLowerCase() || p.id === sp.id
+            )
+            if (idx >= 0) {
+              this.inMemoryProfiles[idx] = { ...this.inMemoryProfiles[idx], ...sp }
+            } else {
+              this.inMemoryProfiles.push(sp)
+            }
+            if (!this.inMemoryPasswords[sp.username]) {
+              this.inMemoryPasswords[sp.username] =
+                sp.role === 'super_admin' ? LOCAL_DEV_SUPER_ADMIN_PASSWORD : SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD
+            }
+          }
+          this.persistStore()
+          return spList
         }
       } catch {
         // Fall back to local
@@ -406,10 +532,7 @@ class AccountService {
       return { success: false, error: 'Hanya Super Admin yang diizinkan mengubah status akun.' }
     }
 
-    const targetKey = targetUserIdOrUsername.toLowerCase().trim()
-    const user = this.inMemoryProfiles.find(
-      (p) => p.id === targetUserIdOrUsername || p.username.toLowerCase() === targetKey
-    )
+    const user = await this.findUser(targetUserIdOrUsername)
     if (!user) return { success: false, error: 'Pengguna tidak ditemukan.' }
 
     if (isSupabaseConfigured()) {
@@ -441,10 +564,7 @@ class AccountService {
       return { success: false, error: 'Hanya Super Admin yang diizinkan mereset akses pengguna.' }
     }
 
-    const targetKey = targetUserIdOrUsername.toLowerCase().trim()
-    const user = this.inMemoryProfiles.find(
-      (p) => p.id === targetUserIdOrUsername || p.username.toLowerCase() === targetKey
-    )
+    const user = await this.findUser(targetUserIdOrUsername)
     if (!user) return { success: false, error: 'Pengguna tidak ditemukan.' }
     if (user.role === 'super_admin') {
       return { success: false, error: 'Kata sandi Super Admin tidak dapat direset dengan fungsi ini.' }
@@ -453,6 +573,7 @@ class AccountService {
     user.must_change_password = true
     user.updated_at = new Date().toISOString()
     this.inMemoryPasswords[user.username] = SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD
+    this.inMemoryPasswords[user.username.toLowerCase()] = SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD
     this.persistStore()
 
     if (isSupabaseConfigured()) {
@@ -486,10 +607,7 @@ class AccountService {
       return { success: false, error: 'Format email tidak valid.' }
     }
 
-    const targetKey = targetUserIdOrUsername.toLowerCase().trim()
-    const user = this.inMemoryProfiles.find(
-      (p) => p.id === targetUserIdOrUsername || p.username.toLowerCase() === targetKey
-    )
+    const user = await this.findUser(targetUserIdOrUsername)
     if (!user) return { success: false, error: 'Pengguna tidak ditemukan.' }
 
     user.email = newEmail.toLowerCase().trim()
@@ -533,10 +651,14 @@ class AccountService {
       return undefined
     }
     const key = (username || '').trim().toLowerCase()
+    const user = this.inMemoryProfiles.find(
+      (p) => p.username.toLowerCase() === key || p.id === username
+    )
+    const uname = user ? user.username : key
     return (
-      this.inMemoryPasswords[key] ||
-      this.inMemoryPasswords[username] ||
-      (username === 'admin' ? LOCAL_DEV_SUPER_ADMIN_PASSWORD : SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD)
+      this.inMemoryPasswords[uname] ||
+      this.inMemoryPasswords[uname.toLowerCase()] ||
+      (uname === 'admin' ? LOCAL_DEV_SUPER_ADMIN_PASSWORD : SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD)
     )
   }
 
@@ -558,7 +680,7 @@ class AccountService {
    * Directly sets/updates an account's password (Super Admin only).
    */
   async setUserPassword(
-    username: string,
+    usernameOrId: string,
     newPasswordInput: string,
     currentUserRole: string = 'super_admin',
     mustChangePasswordOnNextLogin: boolean = false
@@ -571,18 +693,17 @@ class AccountService {
       return { success: false, error: 'Kata sandi minimal 6 karakter.' }
     }
 
-    const key = (username || '').trim().toLowerCase()
-    const user = this.inMemoryProfiles.find((p) => p.username.toLowerCase() === key)
+    const user = await this.findUser(usernameOrId)
     if (!user) return { success: false, error: 'Pengguna tidak ditemukan.' }
 
     this.inMemoryPasswords[user.username] = newPassword
+    this.inMemoryPasswords[user.username.toLowerCase()] = newPassword
     user.must_change_password = mustChangePasswordOnNextLogin
     user.updated_at = new Date().toISOString()
     this.persistStore()
 
-    if (isSupabaseConfigured() && user.auth_user_id) {
+    if (isSupabaseConfigured()) {
       try {
-        await supabase.auth.admin.updateUserById(user.auth_user_id, { password: newPassword })
         await supabase
           .from('user_profiles')
           .update({
@@ -615,7 +736,7 @@ class AccountService {
       return { success: false, error: 'Hanya Super Admin yang diizinkan mengubah data akun pengguna.' }
     }
 
-    const user = this.inMemoryProfiles.find((p) => p.id === userId || p.username.toLowerCase() === userId.toLowerCase())
+    const user = await this.findUser(userId)
     if (!user) return { success: false, error: 'Pengguna tidak ditemukan.' }
 
     if (data.display_name !== undefined) user.display_name = data.display_name.trim()
@@ -710,7 +831,7 @@ class AccountService {
     userId: string,
     updates: Partial<Pick<AppUserProfile, 'display_name' | 'email' | 'campus_id' | 'is_active'>>
   ): Promise<{ success: boolean; user?: AppUserProfile; error?: string }> {
-    const profile = this.inMemoryProfiles.find((p) => p.id === userId)
+    const profile = await this.findUser(userId)
     if (!profile) {
       return { success: false, error: 'Pengguna tidak ditemukan.' }
     }
