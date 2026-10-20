@@ -29,6 +29,7 @@ import {
   websiteContentService,
   type WebsiteContentConfig,
 } from '../../services/websiteContentService'
+import { PhotoMarqueeGallery } from '../../components/public/PhotoMarqueeGallery'
 import { cn } from '../../lib/utils'
 
 export const HomePage: React.FC = () => {
@@ -185,6 +186,11 @@ export const HomePage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* ========================================================================= */}
+      {/* SECTION 01.5 — RUNNING TEXT PHOTO GALLERY (Dokumentasi & Kilas Balik)     */}
+      {/* ========================================================================= */}
+      <PhotoMarqueeGallery variant="light" />
 
       {/* ========================================================================= */}
       {/* SECTION 02 — ABOUT OGSO (Editorial & Academic Philosophy) */}

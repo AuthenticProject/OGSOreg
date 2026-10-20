@@ -89,6 +89,15 @@ export const PublicFooter: React.FC = () => {
               </li>
               <li>
                 <Link
+                  to="/galeri"
+                  className="hover:text-white transition-colors flex items-center gap-1.5"
+                >
+                  <ChevronRight className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Galeri Dokumentasi</span>
+                </Link>
+              </li>
+              <li>
+                <Link
                   to="/participant"
                   className="hover:text-white transition-colors flex items-center gap-1.5"
                 >

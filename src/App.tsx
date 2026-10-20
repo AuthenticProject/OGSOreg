@@ -11,6 +11,7 @@ import { AboutPage } from './pages/public/AboutPage'
 import { RegistrationInfoPage } from './pages/public/RegistrationInfoPage'
 import { PublicParticipantPage } from './pages/public/PublicParticipantPage'
 import { PublicPeriodDetailPage } from './pages/public/PublicPeriodDetailPage'
+import { GalleryPage } from './pages/public/GalleryPage'
 
 // Existing Dashboard Pages
 import { DashboardPage } from './pages/DashboardPage'
@@ -55,6 +56,8 @@ export function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/tentang" element={<AboutPage />} />
             <Route path="/pendaftaran" element={<RegistrationInfoPage />} />
+            <Route path="/galeri" element={<GalleryPage />} />
+            <Route path="/gallery" element={<Navigate to="/galeri" replace />} />
 
             {/* Public Competition Periods & Published Winners */}
             <Route path="/participant" element={<PublicParticipantPage />} />

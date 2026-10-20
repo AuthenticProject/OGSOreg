@@ -238,3 +238,67 @@
   border: 1.5px solid #D97706;
   box-shadow: 0 10px 25px -5px rgba(217, 119, 6, 0.15);
 }
+
+/* ==========================================================================
+   Continuous Running-Text Photo Gallery Marquee Animations
+   ========================================================================== */
+@keyframes marquee-left {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes marquee-right {
+  0% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-marquee-left {
+  display: flex;
+  width: max-content;
+  animation: marquee-left 45s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-right {
+  display: flex;
+  width: max-content;
+  animation: marquee-right 45s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-left-fast {
+  display: flex;
+  width: max-content;
+  animation: marquee-left 28s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-right-fast {
+  display: flex;
+  width: max-content;
+  animation: marquee-right 28s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-left:hover,
+.animate-marquee-right:hover,
+.animate-marquee-left-fast:hover,
+.animate-marquee-right-fast:hover {
+  animation-play-state: paused;
+}
+
+.marquee-pause:hover .animate-marquee-left,
+.marquee-pause:hover .animate-marquee-right,
+.marquee-pause:hover .animate-marquee-left-fast,
+.marquee-pause:hover .animate-marquee-right-fast {
+  animation-play-state: paused;
+}
+
