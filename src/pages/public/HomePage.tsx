@@ -24,6 +24,7 @@ import {
   Columns3,
   CalendarDays,
   Moon,
+  FileText,
 } from 'lucide-react'
 import {
   websiteContentService,
@@ -66,50 +67,90 @@ export const HomePage: React.FC = () => {
   return (
     <div className="w-full bg-[#F5F8F4] text-[#0C241B]">
       {/* ========================================================================= */}
-      {/* SECTION 01 — HERO SECTION (Deep Forest Palette with Scientific Geometry) */}
+      {/* SECTION 01 — HERO SECTION (Deep Forest Palette with Cinematic Stage & Geometry) */}
       {/* ========================================================================= */}
-      <section className="relative min-h-[92vh] bg-gradient-to-b from-[#0C241B] via-[#0D2D22] to-[#0A1E17] text-white overflow-hidden flex items-center justify-center py-20 lg:py-28">
-        {/* Background Subtle Scientific Particles & Geometry SVG */}
-        <div className="absolute inset-0 pointer-events-none opacity-20">
-          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern id="scientific-grid" width="60" height="60" patternUnits="userSpaceOnUse">
-                <circle cx="30" cy="30" r="1" fill="#A7F3D0" />
-                <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#166534" strokeWidth="0.5" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#scientific-grid)" />
+      <section className="relative min-h-[96vh] bg-[#071510] text-white overflow-hidden flex items-center justify-center py-24 lg:py-32">
+        {/* Layer 1: Real Auditorium Stage Photo Ambient Backdrop */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
+          <img
+            src="/foto/ogso-gallery-16.jpg"
+            alt=""
+            className="w-full h-full object-cover object-center opacity-30 filter saturate-150 contrast-125 mix-blend-luminosity scale-105"
+          />
+          {/* Multi-layered dark forest vignette for optimal text readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0C241B]/92 via-[#0A1E17]/85 to-[#071510]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,transparent_0%,rgba(7,21,16,0.92)_75%)]" />
+        </div>
+
+        {/* Layer 2: Luminous Top Celestial God Rays & Emerald-Gold Aurora */}
+        <div className="absolute -top-36 left-1/2 -translate-x-1/2 w-[1200px] h-[600px] bg-gradient-to-b from-emerald-400/25 via-emerald-600/10 to-transparent blur-3xl pointer-events-none animate-beam-pulse" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[380px] bg-[radial-gradient(ellipse_at_top,rgba(213,196,154,0.2)_0%,transparent_70%)] pointer-events-none blur-2xl" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-radial from-emerald-500/20 via-emerald-800/10 to-transparent blur-3xl pointer-events-none animate-glow-pulse" />
+        <div className="absolute top-12 left-10 w-96 h-96 bg-radial from-[#166534]/35 to-transparent blur-3xl pointer-events-none animate-float-slow" />
+        <div className="absolute bottom-10 right-10 w-[450px] h-[450px] bg-radial from-[#A7F3D0]/15 to-transparent blur-3xl pointer-events-none animate-float-reverse" />
+
+        {/* Layer 3: Sacred Islamic 8-Point Star Mandala Rotator (Center-Background Watermark) */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[760px] h-[760px] pointer-events-none opacity-15 animate-spin-very-slow hidden md:block">
+          <svg viewBox="0 0 200 200" className="w-full h-full" fill="none" stroke="#A7F3D0" strokeWidth="0.65">
+            <circle cx="100" cy="100" r="96" strokeDasharray="3 3" />
+            <circle cx="100" cy="100" r="72" />
+            <rect x="36" y="36" width="128" height="128" stroke="#A7F3D0" />
+            <rect x="36" y="36" width="128" height="128" stroke="#A7F3D0" transform="rotate(45 100 100)" />
+            <polygon points="100,6 124,76 194,100 124,124 100,194 76,124 6,100 76,76" stroke="#D5C49A" strokeWidth="0.5" />
+            <polygon points="100,16 120,80 184,100 120,120 100,184 80,120 16,100 80,80" stroke="#10B981" strokeWidth="0.5" transform="rotate(22.5 100 100)" />
+            <circle cx="100" cy="100" r="46" strokeDasharray="2 4" stroke="#A7F3D0" />
+            <circle cx="100" cy="100" r="24" fill="#A7F3D0" fillOpacity="0.06" />
           </svg>
         </div>
 
-        {/* Floating Ambient Glowing Orbs */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] bg-radial from-emerald-500/20 via-emerald-800/10 to-transparent blur-3xl pointer-events-none animate-glow-pulse" />
-        <div className="absolute top-12 left-10 w-80 h-80 bg-radial from-[#166534]/30 to-transparent blur-2xl pointer-events-none animate-float-slow" />
-        <div className="absolute bottom-10 right-10 w-96 h-96 bg-radial from-[#A7F3D0]/10 to-transparent blur-3xl pointer-events-none animate-float-reverse" />
-
-        {/* Orbiting Wireframe Scientific Atom Ring (Decorative Right) */}
-        <div className="absolute -right-20 top-1/3 w-96 h-96 pointer-events-none opacity-15 hidden lg:block">
+        {/* Layer 4: Orbiting Wireframe Scientific Atom Rings */}
+        <div className="absolute -right-24 top-1/4 w-[420px] h-[420px] pointer-events-none opacity-20 hidden lg:block">
           <div className="w-full h-full border-2 border-dashed border-[#A7F3D0] rounded-full animate-orbit" />
           <div className="absolute inset-8 border border-emerald-400 rounded-full animate-orbit-reverse" />
           <div className="absolute inset-20 border border-[#D5C49A] rounded-full animate-orbit" />
         </div>
 
-        {/* Orbiting Wireframe Scientific Atom Ring (Decorative Left) */}
-        <div className="absolute -left-20 bottom-10 w-80 h-80 pointer-events-none opacity-10 hidden lg:block">
+        <div className="absolute -left-24 bottom-16 w-96 h-96 pointer-events-none opacity-15 hidden lg:block">
           <div className="w-full h-full border border-dashed border-[#A7F3D0] rounded-full animate-orbit-reverse" />
           <div className="absolute inset-10 border border-[#166534] rounded-full animate-orbit" />
+          <div className="absolute inset-24 border border-emerald-300 rounded-full animate-orbit" />
         </div>
 
+        {/* Layer 5: Cyber-Academic Perspective Floor Grid */}
+        <div className="absolute bottom-0 left-0 right-0 h-44 hero-perspective-grid pointer-events-none opacity-35" />
+
+        {/* Layer 6: Floating 3D Glass Badges (Desktop Side Accents) */}
+        <div className="hidden 2xl:flex absolute left-10 top-1/3 -translate-y-1/2 items-center gap-3.5 p-3.5 rounded-2xl glass-panel-dark border border-emerald-400/30 shadow-2xl animate-float-slow pointer-events-none backdrop-blur-md">
+          <div className="w-11 h-11 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-[#A7F3D0] shadow-inner">
+            <Atom className="w-6 h-6 animate-spin-very-slow" />
+          </div>
+          <div className="text-left pr-2">
+            <div className="text-xs font-bold text-white tracking-wide">MAFIKIB Modern</div>
+            <div className="text-[10px] text-emerald-300/80">Matematika • Fisika • Kimia • Biologi</div>
+          </div>
+        </div>
+
+        <div className="hidden 2xl:flex absolute right-10 top-1/3 -translate-y-1/2 items-center gap-3.5 p-3.5 rounded-2xl glass-panel-dark border border-[#D5C49A]/40 shadow-2xl animate-float-reverse pointer-events-none backdrop-blur-md">
+          <div className="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-[#D5C49A] shadow-inner">
+            <BookOpen className="w-6 h-6" />
+          </div>
+          <div className="text-left pr-2">
+            <div className="text-xs font-bold text-white tracking-wide">Ayat-Ayat Kauniyah</div>
+            <div className="text-[10px] text-amber-200/80">Integrasi Nilai Qur’ani & Sains</div>
+          </div>
+        </div>
+
+        {/* Main Content Area */}
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full z-10">
           <div className="text-center max-w-4xl mx-auto space-y-6">
             {/* Official Event Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-xs font-semibold tracking-wide text-[#A7F3D0] shadow-sm backdrop-blur-md hover:border-emerald-400/60 transition-colors">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-950/90 border border-emerald-400/40 text-xs font-semibold tracking-wide text-[#A7F3D0] shadow-lg shadow-emerald-950/60 backdrop-blur-md hover:border-emerald-300 transition-colors">
               <img src="/logo.png" alt="Logo OGSO" className="w-4 h-4 object-contain" />
               <span>{content.competitionInfo.name} {content.competitionInfo.arabicYear}/{content.competitionInfo.masehiYear}</span>
             </div>
 
             {/* Creative Display Headline */}
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.1] font-sans">
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.1] font-sans drop-shadow-md">
               Where Knowledge{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#A7F3D0] via-[#86EFAC] to-[#D5C49A] drop-shadow-sm">
                 Meets Discovery.
@@ -118,13 +159,13 @@ export const HomePage: React.FC = () => {
 
             {/* Official Indonesian Competition Theme */}
             <div className="max-w-3xl mx-auto">
-              <blockquote className="text-base sm:text-xl font-medium text-[#D5C49A] italic px-5 py-3 border-y border-emerald-800/40 bg-emerald-950/50 rounded-2xl backdrop-blur-md shadow-inner">
+              <blockquote className="text-base sm:text-xl font-medium text-[#D5C49A] italic px-6 py-3.5 border-y border-emerald-500/30 bg-emerald-950/60 rounded-2xl backdrop-blur-md shadow-2xl">
                 “{content.hero.officialTheme}”
               </blockquote>
             </div>
 
             {/* Subheadline */}
-            <p className="text-sm sm:text-base text-emerald-100/80 max-w-2xl mx-auto font-normal leading-relaxed">
+            <p className="text-sm sm:text-base text-emerald-100/90 max-w-2xl mx-auto font-normal leading-relaxed drop-shadow-sm">
               {content.hero.subheadline}
             </p>
 
@@ -132,7 +173,7 @@ export const HomePage: React.FC = () => {
             <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3.5">
               <Link
                 to="/pendaftaran"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl font-bold text-sm text-[#0C241B] bg-gradient-to-r from-[#A7F3D0] via-[#86EFAC] to-[#4ADE80] hover:from-[#86EFAC] hover:to-[#22C55E] shadow-xl shadow-emerald-950/50 hover:shadow-emerald-900/60 hover:-translate-y-0.5 transition-all duration-300 shimmer-sweep"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl font-bold text-sm text-[#0C241B] bg-gradient-to-r from-[#A7F3D0] via-[#86EFAC] to-[#4ADE80] hover:from-[#86EFAC] hover:to-[#22C55E] shadow-xl shadow-emerald-950/60 hover:shadow-emerald-500/25 hover:-translate-y-0.5 transition-all duration-300 shimmer-sweep"
               >
                 <span>{content.hero.primaryCtaText}</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -140,7 +181,7 @@ export const HomePage: React.FC = () => {
 
               <a
                 href="#tentang"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-sm text-emerald-100 bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-600/40 hover:border-emerald-400/80 hover:-translate-y-0.5 transition-all duration-300"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-sm text-emerald-100 bg-emerald-950/70 hover:bg-emerald-900/90 border border-emerald-500/40 hover:border-emerald-300 hover:-translate-y-0.5 transition-all duration-300 backdrop-blur-md"
               >
                 <Compass className="w-4 h-4 text-[#A7F3D0]" />
                 <span>{content.hero.secondaryCtaText}</span>
@@ -149,7 +190,7 @@ export const HomePage: React.FC = () => {
               <a
                 href={content.hero.officialJuklakUrl}
                 download="Petunjuk_Pelaksanaan_OGSO_2026.pdf"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl font-semibold text-xs text-[#D5C49A] bg-emerald-950/40 hover:bg-emerald-900/50 border border-[#D5C49A]/30 hover:border-[#D5C49A]/60 hover:-translate-y-0.5 transition-all duration-300"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl font-semibold text-xs text-[#D5C49A] bg-emerald-950/50 hover:bg-emerald-900/70 border border-[#D5C49A]/40 hover:border-[#D5C49A]/70 hover:-translate-y-0.5 transition-all duration-300 backdrop-blur-md"
                 title="Unduh Petunjuk Pelaksanaan (JUKLAK) Resmi PDF"
               >
                 <Download className="w-4 h-4" />
@@ -157,30 +198,50 @@ export const HomePage: React.FC = () => {
               </a>
             </div>
 
-            {/* Key Facts Highlights Strip (Elevated Interactive Glass Cards) */}
-            <div className="pt-10 grid grid-cols-2 sm:grid-cols-4 gap-3.5 max-w-4xl mx-auto">
-              <div className="p-4 rounded-2xl glass-panel-dark hover:-translate-y-2 hover:border-[#A7F3D0]/40 hover:shadow-2xl transition-all duration-300 shimmer-sweep group cursor-default text-left">
-                <div className="text-3xl font-black text-white group-hover:text-[#A7F3D0] transition-colors">20</div>
-                <div className="text-[11px] font-bold text-[#A7F3D0] uppercase tracking-wider mt-0.5">Kampus Cabang</div>
-                <div className="text-[10px] text-emerald-300/70">Delegasi se-Indonesia</div>
+            {/* Key Facts Highlights Strip (Elevated Interactive Glass Cards with Rich Icons) */}
+            <div className="pt-10 grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4 max-w-4xl mx-auto">
+              <div className="p-4 sm:p-5 rounded-2xl glass-panel-dark border border-emerald-400/20 hover:-translate-y-2 hover:border-[#A7F3D0]/60 hover:shadow-[0_0_25px_rgba(167,243,208,0.2)] transition-all duration-300 shimmer-sweep group cursor-default text-left relative overflow-hidden">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-3xl sm:text-4xl font-black text-white group-hover:text-[#A7F3D0] transition-colors">20</div>
+                  <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <School className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="text-[11px] font-bold text-[#A7F3D0] uppercase tracking-wider">Kampus Cabang</div>
+                <div className="text-[10px] text-emerald-300/80 mt-0.5">Delegasi se-Indonesia</div>
               </div>
 
-              <div className="p-4 rounded-2xl glass-panel-dark hover:-translate-y-2 hover:border-[#A7F3D0]/40 hover:shadow-2xl transition-all duration-300 shimmer-sweep group cursor-default text-left">
-                <div className="text-3xl font-black text-white group-hover:text-[#A7F3D0] transition-colors">5</div>
-                <div className="text-[11px] font-bold text-[#A7F3D0] uppercase tracking-wider mt-0.5">Jenjang Tingkat</div>
-                <div className="text-[10px] text-emerald-300/70">Kelas 1 hingga Kelas 5 KMI</div>
+              <div className="p-4 sm:p-5 rounded-2xl glass-panel-dark border border-amber-400/20 hover:-translate-y-2 hover:border-[#D5C49A]/60 hover:shadow-[0_0_25px_rgba(213,196,154,0.2)] transition-all duration-300 shimmer-sweep group cursor-default text-left relative overflow-hidden">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-3xl sm:text-4xl font-black text-white group-hover:text-[#D5C49A] transition-colors">5</div>
+                  <div className="p-1.5 rounded-lg bg-amber-500/10 text-[#D5C49A] border border-amber-500/20">
+                    <GraduationCap className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="text-[11px] font-bold text-[#D5C49A] uppercase tracking-wider">Jenjang Tingkat</div>
+                <div className="text-[10px] text-amber-200/80 mt-0.5">Kelas 1 hingga Kelas 5 KMI</div>
               </div>
 
-              <div className="p-4 rounded-2xl glass-panel-dark hover:-translate-y-2 hover:border-[#A7F3D0]/40 hover:shadow-2xl transition-all duration-300 shimmer-sweep group cursor-default text-left">
-                <div className="text-3xl font-black text-white group-hover:text-[#A7F3D0] transition-colors">40</div>
-                <div className="text-[11px] font-bold text-[#A7F3D0] uppercase tracking-wider mt-0.5">Soal Isian</div>
-                <div className="text-[10px] text-emerald-300/70">Short essay berbasis nalar</div>
+              <div className="p-4 sm:p-5 rounded-2xl glass-panel-dark border border-emerald-400/20 hover:-translate-y-2 hover:border-[#A7F3D0]/60 hover:shadow-[0_0_25px_rgba(167,243,208,0.2)] transition-all duration-300 shimmer-sweep group cursor-default text-left relative overflow-hidden">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-3xl sm:text-4xl font-black text-white group-hover:text-[#A7F3D0] transition-colors">40</div>
+                  <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="text-[11px] font-bold text-[#A7F3D0] uppercase tracking-wider">Soal Isian</div>
+                <div className="text-[10px] text-emerald-300/80 mt-0.5">Short essay berbasis nalar</div>
               </div>
 
-              <div className="p-4 rounded-2xl glass-panel-dark hover:-translate-y-2 hover:border-[#A7F3D0]/40 hover:shadow-2xl transition-all duration-300 shimmer-sweep group cursor-default text-left">
-                <div className="text-3xl font-black text-white group-hover:text-[#A7F3D0] transition-colors">90</div>
-                <div className="text-[11px] font-bold text-[#A7F3D0] uppercase tracking-wider mt-0.5">Menit Ujian</div>
-                <div className="text-[10px] text-emerald-300/70">CBT via Safe Exam Browser</div>
+              <div className="p-4 sm:p-5 rounded-2xl glass-panel-dark border border-teal-400/20 hover:-translate-y-2 hover:border-[#A7F3D0]/60 hover:shadow-[0_0_25px_rgba(45,212,191,0.2)] transition-all duration-300 shimmer-sweep group cursor-default text-left relative overflow-hidden">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-3xl sm:text-4xl font-black text-white group-hover:text-[#A7F3D0] transition-colors">90</div>
+                  <div className="p-1.5 rounded-lg bg-teal-500/10 text-teal-300 border border-teal-500/20">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="text-[11px] font-bold text-[#A7F3D0] uppercase tracking-wider">Menit Ujian</div>
+                <div className="text-[10px] text-emerald-300/80 mt-0.5">CBT via Safe Exam Browser</div>
               </div>
             </div>
           </div>
