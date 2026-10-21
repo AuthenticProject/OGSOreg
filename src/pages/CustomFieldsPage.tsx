@@ -21,6 +21,9 @@ import {
   Check,
   RotateCcw,
   GripVertical,
+  Save,
+  GraduationCap,
+  KeyRound,
 } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
@@ -45,6 +48,15 @@ import {
   moodleColumnConfigService,
   type MoodleColumnConfig,
 } from '../services/moodle/moodleColumnConfigService'
+import {
+  getCourseMappingConfig,
+  saveCourseMappingConfig,
+  resetCourseMappingConfig,
+  subscribeCourseMappingConfig,
+  generateJenjangShortnamesFromPattern,
+  type MoodleCourseMappingConfig,
+} from '../services/moodle/moodleCourseMapping'
+import type { StudentJenjang } from '../types/student'
 
 export const CustomFieldsPage: React.FC = () => {
   const { isSuperAdmin } = useAuth()
@@ -94,12 +106,54 @@ export const CustomFieldsPage: React.FC = () => {
   const [draggedMoodleIndex, setDraggedMoodleIndex] = useState<number | null>(null)
   const [dragOverMoodleIndex, setDragOverMoodleIndex] = useState<number | null>(null)
 
+  // Moodle Course Mapping & Value Template Config (Password, Jenjang Output, Course 2)
+  const [courseConfig, setCourseConfig] = useState<MoodleCourseMappingConfig>(() =>
+    getCourseMappingConfig()
+  )
+
   useEffect(() => {
-    const unsub = moodleColumnConfigService.subscribe((cols) => {
+    const unsubCols = moodleColumnConfigService.subscribe((cols) => {
       setMoodleColumns(cols)
     })
-    return () => unsub()
+    const unsubMapping = subscribeCourseMappingConfig((cfg) => {
+      setCourseConfig(cfg)
+    })
+    return () => {
+      unsubCols()
+      unsubMapping()
+    }
   }, [])
+
+  const handleSaveCourseConfig = () => {
+    saveCourseMappingConfig(courseConfig)
+    showFeedback('success', 'Konfigurasi template nilai Moodle (password, output jenjang, dan course 2) berhasil disimpan.')
+  }
+
+  const handleResetCourseConfig = () => {
+    resetCourseMappingConfig()
+    const def = getCourseMappingConfig()
+    setCourseConfig(def)
+    showFeedback('success', 'Template nilai Moodle dikembalikan ke nilai bawaan resmi.')
+  }
+
+  const handleJenjangValueChange = (jenjang: StudentJenjang, val: string) => {
+    setCourseConfig((prev) => ({
+      ...prev,
+      jenjangShortnames: {
+        ...prev.jenjangShortnames,
+        [jenjang]: val,
+      },
+    }))
+  }
+
+  const handleApplyJenjangPreset = (pattern: string) => {
+    const newShortnames = generateJenjangShortnamesFromPattern(pattern)
+    setCourseConfig((prev) => ({
+      ...prev,
+      jenjangShortnames: newShortnames,
+    }))
+    showFeedback('success', `Format output jenjang diubah menggunakan "${pattern}". Klik "Simpan Template Nilai" untuk menyimpan perubahan.`)
+  }
 
   const handleStartEditMoodleHeader = (col: MoodleColumnConfig) => {
     setEditingMoodleColId(col.id)
@@ -952,9 +1006,179 @@ export const CustomFieldsPage: React.FC = () => {
             </div>
 
             <p className="text-[11px] text-slate-300">
-              Format di atas adalah baris header berkas CSV resmi yang akan diunggah ke Moodle LMS OGSO (Bulk User Upload). Seluruh header kolom, urutan, dan keaktifannya dapat Anda sesuaikan secara bebas di bawah ini.
+              Format di atas adalah baris header berkas CSV resmi yang akan diunggah ke Moodle LMS OGSO (Bulk User Upload). Seluruh header kolom, urutan, keaktifannya, serta nilai bawaan isinya (password, output jenjang, dan course 2) dapat Anda sesuaikan secara bebas di bawah ini.
             </p>
           </div>
+
+          {/* Section: Konfigurasi Nilai Template Isi CSV Moodle */}
+          <SectionCard
+            title="Konfigurasi Nilai Bawaan / Template Isi CSV Moodle"
+            subtitle="Sesuaikan nilai default yang akan diisikan ke kolom berkas CSV Moodle: Password awal santri, format penamaan output Jenjang (course1), dan nama kursus kedua (course2)."
+            action={
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleResetCourseConfig}
+                  leftIcon={<RotateCcw className="w-3.5 h-3.5 mr-1" />}
+                  title="Kembalikan nilai template ke default pabrik"
+                >
+                  Reset Template
+                </Button>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={handleSaveCourseConfig}
+                  leftIcon={<Save className="w-3.5 h-3.5 mr-1" />}
+                >
+                  Simpan Template Nilai
+                </Button>
+              </div>
+            }
+          >
+            <div className="space-y-5 text-xs p-1">
+              {/* 1. Password Awal Santri */}
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <KeyRound className="w-4 h-4 text-brand-maroon" />
+                    <span className="font-bold text-slate-800 text-xs">
+                      1. Password Awal Santri (Template Default Password)
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-mono text-brand-maroon bg-brand-maroon/10 px-2.5 py-0.5 rounded-full font-bold">
+                    Kolom: password
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Password ini akan otomatis diisikan pada kolom <code>password</code> di setiap baris santri saat ekspor berkas CSV Moodle. Anda dapat mengubahnya ke pola apa pun yang diinginkan (misal: <code>ogso_2026!</code>, <code>Santri2026*</code>, <code>Gontor#123</code>).
+                </p>
+                <div className="flex items-center gap-2.5 max-w-md">
+                  <input
+                    type="text"
+                    value={courseConfig.defaultPassword || ''}
+                    onChange={(e) => setCourseConfig({ ...courseConfig, defaultPassword: e.target.value })}
+                    placeholder="ogso_2026!"
+                    className="w-full px-3 py-2 text-xs font-mono rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-brand-maroon"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCourseConfig({ ...courseConfig, defaultPassword: 'ogso_2026!' })}
+                    className="px-2.5 py-2 text-[11px] rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-medium whitespace-nowrap cursor-pointer"
+                    title="Gunakan default ogso_2026!"
+                  >
+                    ogso_2026!
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. Format Output Jenjang (course1) */}
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-emerald-700" />
+                    <span className="font-bold text-slate-800 text-xs">
+                      2. Format Nilai Output Jenjang (Course 1)
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-mono text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full font-bold">
+                    Kolom: course1
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Tentukan teks yang akan dihasilkan pada kolom <code>course1</code> untuk tiap jenjang santri. Anda bisa memilih preset cepat di bawah atau mengetik nilai kustom bebas (misal: <code>JENJANG 1</code>, <code>JENJANG</code>, atau kode kursus resmi LMS).
+                </p>
+
+                {/* Preset Cepat */}
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <span className="text-[11px] text-slate-600 font-semibold">Terapkan Format Cepat:</span>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyJenjangPreset('JENJANG')}
+                    className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 hover:bg-emerald-200 transition-colors cursor-pointer"
+                    title="Ubah nilai output jadi 'JENJANG 1', 'JENJANG 2', dst."
+                  >
+                    JENJANG 1..5
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyJenjangPreset('JENJANG_{n}')}
+                    className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-200 text-slate-800 border border-slate-300 hover:bg-slate-300 transition-colors cursor-pointer"
+                    title="Ubah nilai output jadi 'JENJANG_1', 'JENJANG_2', dst."
+                  >
+                    JENJANG_1..5
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyJenjangPreset('ogso_j{n}')}
+                    className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-200 text-slate-800 border border-slate-300 hover:bg-slate-300 transition-colors cursor-pointer"
+                    title="Kembalikan format bawaan 'ogso_j1', 'ogso_j2', dst."
+                  >
+                    ogso_j1..j5
+                  </button>
+                </div>
+
+                {/* Individual per-jenjang inputs */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 pt-2">
+                  {(['Jenjang 1', 'Jenjang 2', 'Jenjang 3', 'Jenjang 4', 'Jenjang 5'] as StudentJenjang[]).map((cls) => (
+                    <div key={cls} className="p-3 rounded-lg border border-slate-200 bg-white space-y-1">
+                      <label className="block font-bold text-slate-700 text-[11px]">
+                        {cls}
+                      </label>
+                      <input
+                        type="text"
+                        value={courseConfig.jenjangShortnames[cls] || ''}
+                        onChange={(e) => handleJenjangValueChange(cls, e.target.value)}
+                        placeholder={`misal: JENJANG ${cls.slice(-1)}`}
+                        className="w-full px-2.5 py-1.5 text-xs font-mono rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. Nilai Bawaan Course 2 */}
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sliders className="w-4 h-4 text-blue-700" />
+                    <span className="font-bold text-slate-800 text-xs">
+                      3. Nilai Bawaan Kolom Course 2 (Simulasi / Sesi)
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-mono text-blue-800 bg-blue-100 px-2.5 py-0.5 rounded-full font-bold">
+                    Kolom: course2
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Tentukan teks yang diisikan ke kolom <code>course2</code> untuk seluruh santri (misal: <code>simulation</code>, <code>simulasi_2026</code>, <code>sesi_1</code>, dll).
+                </p>
+                <div className="flex items-center gap-2.5 max-w-md">
+                  <input
+                    type="text"
+                    value={courseConfig.simulationShortname}
+                    onChange={(e) => setCourseConfig({ ...courseConfig, simulationShortname: e.target.value })}
+                    placeholder="simulation"
+                    className="w-full px-3 py-2 text-xs font-mono rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCourseConfig({ ...courseConfig, simulationShortname: 'simulation' })}
+                    className="px-2.5 py-2 text-[11px] rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-medium whitespace-nowrap cursor-pointer"
+                  >
+                    simulation
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCourseConfig({ ...courseConfig, simulationShortname: 'simulasi_2026' })}
+                    className="px-2.5 py-2 text-[11px] rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-medium whitespace-nowrap cursor-pointer"
+                  >
+                    simulasi_2026
+                  </button>
+                </div>
+              </div>
+            </div>
+          </SectionCard>
 
           {/* Matrix of Columns in Moodle CSV */}
           <SectionCard

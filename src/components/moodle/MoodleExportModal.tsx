@@ -3,7 +3,6 @@ import {
   FileSpreadsheet,
   Download,
   AlertCircle,
-  AlertTriangle,
   CheckCircle2,
   X,
   Eye,
@@ -23,6 +22,8 @@ import {
   FileCode,
   Table as TableIcon,
   Check,
+  Sparkles,
+  RefreshCw,
 } from 'lucide-react'
 import { Button } from '../ui/Button'
 import {
@@ -38,7 +39,11 @@ import {
 import { downloadMoodleUsersExcelFromRows } from '../../services/moodle/moodleExcelExporter'
 import {
   getCourseMappingConfig,
+  saveCourseMappingConfig,
+  subscribeCourseMappingConfig,
+  generateJenjangShortnamesFromPattern,
   type MoodleCourseMappingConfig,
+  type StudentJenjang,
 } from '../../services/moodle/moodleCourseMapping'
 import {
   moodleColumnConfigService,
@@ -72,12 +77,14 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
   onExportComplete,
 }) => {
   const { isSuperAdmin, assignedCampus } = useAuth()
-  const [password, setPassword] = useState(DEFAULT_INITIAL_PASSWORD)
+  const initialCfg = useMemo(() => getCourseMappingConfig(), [])
+  const [courseConfig, setCourseConfig] = useState<MoodleCourseMappingConfig>(initialCfg)
+  const [password, setPassword] = useState(initialCfg.defaultPassword || DEFAULT_INITIAL_PASSWORD)
+  const [simulationCourse, setSimulationCourse] = useState(
+    initialCfg.simulationShortname || 'simulation'
+  )
   const [showPasswordText, setShowPasswordText] = useState(false)
   const [isMappingModalOpen, setIsMappingModalOpen] = useState(false)
-  const [courseConfig, setCourseConfig] = useState<MoodleCourseMappingConfig>(
-    getCourseMappingConfig()
-  )
   const [showInstructions, setShowInstructions] = useState(false)
   const [exportFeedback, setExportFeedback] = useState<string | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
@@ -93,10 +100,18 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
   const [activeColumns, setActiveColumns] = useState<MoodleColumnConfig[]>([])
 
   useEffect(() => {
-    const unsub = moodleColumnConfigService.subscribe((cols) => {
+    const unsubCols = moodleColumnConfigService.subscribe((cols) => {
       setActiveColumns(cols.filter((c) => c.include_in_moodle))
     })
-    return () => unsub()
+    const unsubCourse = subscribeCourseMappingConfig((cfg) => {
+      setCourseConfig(cfg)
+      if (cfg.defaultPassword) setPassword(cfg.defaultPassword)
+      if (cfg.simulationShortname) setSimulationCourse(cfg.simulationShortname)
+    })
+    return () => {
+      unsubCols()
+      unsubCourse()
+    }
   }, [])
 
   // Map base summary from raw students
@@ -188,15 +203,52 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
     setExportFeedback('Seluruh isi baris data dikembalikan ke hasil pemetaan bawaan sistem.')
   }
 
+  // Apply all template values (Password, Course 1 / Jenjang, Course 2) to all rows
+  const handleApplyTemplateValues = (
+    newPassword?: string,
+    newSimulation?: string,
+    newShortnames?: Record<StudentJenjang, string>
+  ) => {
+    const pwdToUse = (newPassword ?? password).trim() || DEFAULT_INITIAL_PASSWORD
+    const simToUse = (newSimulation ?? simulationCourse).trim() || 'simulation'
+    const shortnamesToUse = newShortnames ?? courseConfig.jenjangShortnames
+
+    const updatedCfg: MoodleCourseMappingConfig = {
+      ...courseConfig,
+      defaultPassword: pwdToUse,
+      simulationShortname: simToUse,
+      jenjangShortnames: shortnamesToUse,
+      isVerified: true,
+      lastUpdated: new Date().toISOString(),
+    }
+
+    saveCourseMappingConfig(updatedCfg)
+    setCourseConfig(updatedCfg)
+    if (newPassword !== undefined) setPassword(pwdToUse)
+    if (newSimulation !== undefined) setSimulationCourse(simToUse)
+
+    const remapped = mapStudentsToMoodleExport(students, {
+      customPassword: pwdToUse,
+      courseMappingConfig: updatedCfg,
+    })
+
+    setEditableRows(remapped.mappedRows)
+    setRawCsvText(generateMoodleUsersCsv(remapped.mappedRows))
+    setHasManualEdits(true)
+    setExportFeedback(
+      `Template nilai (Password: "${pwdToUse}", Course 2: "${simToUse}") berhasil diterapkan ke seluruh ${remapped.mappedRows.length} baris CSV!`
+    )
+  }
+
   // Batch apply password to all rows
   const handleApplyPasswordToAll = () => {
-    setHasManualEdits(true)
-    setEditableRows((prev) => {
-      const next = prev.map((r) => ({ ...r, password }))
-      setRawCsvText(generateMoodleUsersCsv(next))
-      return next
-    })
-    setExportFeedback(`Password "${password}" berhasil diterapkan ke seluruh ${editableRows.length} baris.`)
+    handleApplyTemplateValues(password, simulationCourse)
+  }
+
+  // Batch apply Jenjang preset
+  const handleApplyJenjangPreset = (pattern: string) => {
+    const generated = generateJenjangShortnamesFromPattern(pattern)
+    handleApplyTemplateValues(password, simulationCourse, generated)
   }
 
   // Raw CSV sync back to table
@@ -409,69 +461,80 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
               <div className="p-3 rounded-xl border border-purple-200 bg-purple-50/60">
                 <span className="text-[10px] font-bold uppercase text-purple-800">Course Simulasi</span>
                 <p className="text-xs font-mono font-bold text-purple-800 mt-1 truncate">
-                  {courseConfig.simulationShortname}
+                  {simulationCourse}
                 </p>
               </div>
             </div>
 
-            {/* Course Mapping Quick Status Banner */}
-            <div
-              className={`p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                courseConfig.isVerified
-                  ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900'
-                  : 'bg-amber-50/90 border-amber-300 text-amber-950'
-              }`}
-            >
-              <div className="flex items-start gap-2.5">
-                {courseConfig.isVerified ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                ) : (
-                  <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                )}
-                <div className="space-y-0.5">
-                  <h4 className="font-bold text-xs">
-                    {courseConfig.isVerified
-                      ? 'Pemetaan Course Moodle Telah Terverifikasi'
-                      : 'Perhatian: Pemetaan Course Moodle Belum Diverifikasi'}
-                  </h4>
-                  <p className="text-[11px] opacity-90 leading-relaxed">
-                    Course 1: <code>ogso_k1</code> s/d <code>ogso_k5</code> &bull; Course 2:{' '}
-                    <code>{courseConfig.simulationShortname}</code>. Anda dapat mengedit shortname langsung pada setiap baris di bawah ini.
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsMappingModalOpen(true)}
-                leftIcon={<Settings className="w-3.5 h-3.5 mr-1" />}
-                className="bg-white text-xs shrink-0 self-start sm:self-center border-current hover:bg-slate-50 cursor-pointer"
-              >
-                Konfigurasi Shortname
-              </Button>
-            </div>
-
-            {/* Password Configuration Strip */}
-            <div className="p-4 rounded-xl border border-border bg-slate-50/50 space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-1.5 font-bold text-slate-800 text-xs">
-                    <KeyRound className="w-3.5 h-3.5 text-[#166534]" />
-                    <span>Password Awal Masal (Default Initial Password)</span>
+            {/* Template & Default Values Configurator Strip */}
+            <div className="p-4 rounded-xl border border-border bg-slate-50/80 space-y-3.5 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/70 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-md bg-emerald-700 text-white flex items-center justify-center">
+                    <Sparkles className="w-3.5 h-3.5" />
                   </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    Ketik password baru lalu klik &ldquo;Terapkan ke Semua Baris&rdquo; untuk mengubah isi kolom password seluruh santri.
-                  </p>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900">
+                      Konfigurasi Template Nilai CSV Moodle (Editable Content)
+                    </h4>
+                    <p className="text-[11px] text-muted-foreground">
+                      Ubah password awal, format jenjang (Course 1), atau Course 2 lalu terapkan massal ke seluruh baris.
+                    </p>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <div className="relative flex items-center w-48">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsMappingModalOpen(true)}
+                    leftIcon={<Settings className="w-3.5 h-3.5 mr-1 text-slate-600" />}
+                    className="bg-white text-xs border-border hover:bg-slate-50 cursor-pointer h-7"
+                    title="Buka dialog pengaturan pemetaan detail per jenjang"
+                  >
+                    Kustom Per-Jenjang
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => handleApplyTemplateValues()}
+                    leftIcon={<RefreshCw className="w-3.5 h-3.5 mr-1" />}
+                    className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs cursor-pointer font-bold h-7 shadow-xs"
+                    title="Terapkan password, jenjang, dan course 2 ke seluruh baris tabel"
+                  >
+                    Terapkan ke Seluruh Baris
+                  </Button>
+                </div>
+              </div>
+
+              {/* 3 Config Columns */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* 1. Password Awal */}
+                <div className="p-3 bg-white rounded-lg border border-border/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                      <KeyRound className="w-3.5 h-3.5 text-emerald-700" />
+                      <span>Password Awal Santri</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPassword(DEFAULT_INITIAL_PASSWORD)
+                        handleApplyTemplateValues(DEFAULT_INITIAL_PASSWORD, simulationCourse)
+                      }}
+                      className="text-[10px] text-emerald-700 hover:underline cursor-pointer"
+                      title="Reset ke ogso_2026!"
+                    >
+                      Reset Bawaan
+                    </button>
+                  </div>
+                  <div className="relative flex items-center">
                     <input
                       type={showPasswordText ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-3 py-1.5 pr-8 text-xs font-mono rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-[#22C55E] bg-white"
+                      placeholder="e.g. Santri2026*"
+                      className="w-full px-2.5 py-1.5 pr-8 text-xs font-mono rounded border border-border focus:outline-none focus:ring-1 focus:ring-emerald-600 bg-slate-50/50"
                     />
                     <button
                       type="button"
@@ -482,19 +545,129 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
                       {showPasswordText ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </button>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleApplyPasswordToAll}
-                    className="text-xs bg-white whitespace-nowrap cursor-pointer"
-                  >
-                    Terapkan ke Semua Baris
-                  </Button>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      Isi kolom <code>password</code>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleApplyPasswordToAll}
+                      className="text-[10px] text-emerald-800 font-bold hover:underline cursor-pointer"
+                    >
+                      Terapkan &rarr;
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Format Output Jenjang (Course 1) */}
+                <div className="p-3 bg-white rounded-lg border border-border/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                      <span>Format Jenjang (Course 1)</span>
+                    </label>
+                    <span className="text-[10px] font-mono text-muted-foreground truncate max-w-[110px]" title={courseConfig.jenjangShortnames['Jenjang 1']}>
+                      J1: {courseConfig.jenjangShortnames['Jenjang 1']}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleApplyJenjangPreset('JENJANG')}
+                      className="px-2 py-1 rounded text-[10px] font-mono font-medium border border-border bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 transition-colors cursor-pointer"
+                      title="Ubah format seluruh jenjang menjadi: JENJANG 1, JENJANG 2, dst."
+                    >
+                      JENJANG 1..5
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleApplyJenjangPreset('JENJANG_')}
+                      className="px-2 py-1 rounded text-[10px] font-mono font-medium border border-border bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 transition-colors cursor-pointer"
+                      title="Ubah format seluruh jenjang menjadi: JENJANG_1, JENJANG_2, dst."
+                    >
+                      JENJANG_1..5
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleApplyJenjangPreset('ogso_j')}
+                      className="px-2 py-1 rounded text-[10px] font-mono font-medium border border-border bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 transition-colors cursor-pointer"
+                      title="Ubah format seluruh jenjang menjadi: ogso_j1, ogso_j2, dst."
+                    >
+                      ogso_j1..j5
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleApplyJenjangPreset('ogso_k')}
+                      className="px-2 py-1 rounded text-[10px] font-mono font-medium border border-border bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 transition-colors cursor-pointer"
+                      title="Ubah format seluruh jenjang menjadi: ogso_k1, ogso_k2, dst."
+                    >
+                      ogso_k1..k5
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    Klik preset di atas untuk langsung ganti.
+                  </p>
+                </div>
+
+                {/* 3. Course 2 Default */}
+                <div className="p-3 bg-white rounded-lg border border-border/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                      <span>Course 2 (Simulasi / Sesi)</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSimulationCourse('simulation')
+                        handleApplyTemplateValues(password, 'simulation')
+                      }}
+                      className="text-[10px] text-emerald-700 hover:underline cursor-pointer"
+                      title="Reset ke simulation"
+                    >
+                      Reset Bawaan
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      value={simulationCourse}
+                      onChange={(e) => setSimulationCourse(e.target.value)}
+                      placeholder="e.g. simulation atau simulasi_2026"
+                      className="w-full px-2.5 py-1.5 text-xs font-mono rounded border border-border focus:outline-none focus:ring-1 focus:ring-emerald-600 bg-slate-50/50"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleApplyTemplateValues(password, simulationCourse)}
+                      className="h-8 px-2 text-[10px] bg-white whitespace-nowrap cursor-pointer shrink-0"
+                    >
+                      Terapkan
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-1 overflow-x-auto text-[10px]">
+                    <span className="text-muted-foreground text-[9px]">Pilihan:</span>
+                    {['simulation', 'simulasi_2026', 'sesi_1', 'ujian_ogso'].map((val) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => {
+                          setSimulationCourse(val)
+                          handleApplyTemplateValues(password, val)
+                        }}
+                        className={`px-1.5 py-0.5 rounded border text-[10px] font-mono cursor-pointer transition-colors ${
+                          simulationCourse === val
+                            ? 'bg-purple-100 text-purple-900 border-purple-300 font-bold'
+                            : 'bg-slate-50 text-slate-700 border-border hover:bg-slate-100'
+                        }`}
+                      >
+                        {val}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
               {baseSummary.passwordPolicyWarning && (
-                <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-[11px] flex items-start gap-2">
+                <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-[11px] flex items-start gap-2">
                   <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
                   <p className="leading-relaxed">
                     <strong>Peringatan Kebijakan Password:</strong> {baseSummary.passwordPolicyWarning}

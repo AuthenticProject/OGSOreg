@@ -127,7 +127,7 @@ export function mapStudentsToMoodleExport(
   options: MoodleExportOptions = {}
 ): MoodleExportValidationSummary {
   const config = options.courseMappingConfig || getCourseMappingConfig()
-  const passwordToUse = options.customPassword || DEFAULT_INITIAL_PASSWORD
+  const passwordToUse = options.customPassword || config.defaultPassword || DEFAULT_INITIAL_PASSWORD
   const sanitize = options.sanitizeFormulaInjection !== false
 
   const pwdPolicy = checkMoodlePasswordPolicy(passwordToUse)

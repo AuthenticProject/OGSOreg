@@ -1,9 +1,12 @@
 import type { StudentJenjang } from '../../types/student'
+export type { StudentJenjang }
 import { normalizeJenjang } from '../dataNormalizer'
+import { cloudSyncService } from '../supabase/cloudSyncService'
 
 export const MOODLE_COURSE_MAPPING_STORAGE_KEY = 'ogsoreg_moodle_course_mappings_v2'
 
 export interface MoodleCourseMappingConfig {
+  defaultPassword?: string
   jenjangShortnames: Record<StudentJenjang, string>
   simulationShortname: string
   isVerified: boolean // Whether administrator has verified these shortnames against the target Moodle site
@@ -11,10 +14,11 @@ export interface MoodleCourseMappingConfig {
 }
 
 /**
- * Standard default shortname proposals for OGSO Moodle LMS (https://ogso.gontor.ac.id/).
- * Must be verified by administrators before production deployment.
+ * Standard default template proposals for OGSO Moodle LMS (https://ogso.gontor.ac.id/).
+ * Can be freely edited by administrators to any custom password, jenjang output, or course2.
  */
 export const DEFAULT_COURSE_MAPPINGS: MoodleCourseMappingConfig = {
+  defaultPassword: 'ogso_2026!',
   jenjangShortnames: {
     'Jenjang 1': 'ogso_j1',
     'Jenjang 2': 'ogso_j2',
@@ -24,6 +28,25 @@ export const DEFAULT_COURSE_MAPPINGS: MoodleCourseMappingConfig = {
   },
   simulationShortname: 'simulation',
   isVerified: false,
+}
+
+const listeners = new Set<(config: MoodleCourseMappingConfig) => void>()
+
+export function subscribeCourseMappingConfig(callback: (config: MoodleCourseMappingConfig) => void): () => void {
+  listeners.add(callback)
+  return () => {
+    listeners.delete(callback)
+  }
+}
+
+function notifyCourseMappingListeners(config: MoodleCourseMappingConfig) {
+  listeners.forEach((fn) => {
+    try {
+      fn(config)
+    } catch {
+      // Ignore listener error
+    }
+  })
 }
 
 /**
@@ -43,6 +66,7 @@ export function getCourseMappingConfig(): MoodleCourseMappingConfig {
         const legacyParsed = JSON.parse(legacyRaw) as any
         const legacyNames = legacyParsed?.jenjangShortnames || {}
         return {
+          defaultPassword: legacyParsed.defaultPassword || DEFAULT_COURSE_MAPPINGS.defaultPassword,
           jenjangShortnames: {
             'Jenjang 1': legacyNames['Jenjang 1'] || legacyNames['Kelas 1'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 1'],
             'Jenjang 2': legacyNames['Jenjang 2'] || legacyNames['Kelas 2'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 2'],
@@ -60,14 +84,15 @@ export function getCourseMappingConfig(): MoodleCourseMappingConfig {
     const parsed = JSON.parse(raw) as Partial<MoodleCourseMappingConfig>
 
     return {
+      defaultPassword: parsed.defaultPassword || DEFAULT_COURSE_MAPPINGS.defaultPassword,
       jenjangShortnames: {
-        'Jenjang 1': parsed.jenjangShortnames?.['Jenjang 1'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 1'],
-        'Jenjang 2': parsed.jenjangShortnames?.['Jenjang 2'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 2'],
-        'Jenjang 3': parsed.jenjangShortnames?.['Jenjang 3'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 3'],
-        'Jenjang 4': parsed.jenjangShortnames?.['Jenjang 4'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 4'],
-        'Jenjang 5': parsed.jenjangShortnames?.['Jenjang 5'] || DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 5'],
+        'Jenjang 1': parsed.jenjangShortnames?.['Jenjang 1'] ?? DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 1'],
+        'Jenjang 2': parsed.jenjangShortnames?.['Jenjang 2'] ?? DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 2'],
+        'Jenjang 3': parsed.jenjangShortnames?.['Jenjang 3'] ?? DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 3'],
+        'Jenjang 4': parsed.jenjangShortnames?.['Jenjang 4'] ?? DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 4'],
+        'Jenjang 5': parsed.jenjangShortnames?.['Jenjang 5'] ?? DEFAULT_COURSE_MAPPINGS.jenjangShortnames['Jenjang 5'],
       },
-      simulationShortname: parsed.simulationShortname || DEFAULT_COURSE_MAPPINGS.simulationShortname,
+      simulationShortname: parsed.simulationShortname !== undefined ? parsed.simulationShortname : DEFAULT_COURSE_MAPPINGS.simulationShortname,
       isVerified: parsed.isVerified ?? false,
       lastUpdated: parsed.lastUpdated,
     }
@@ -77,23 +102,64 @@ export function getCourseMappingConfig(): MoodleCourseMappingConfig {
 }
 
 /**
- * Persists updated course mapping configuration to localStorage.
+ * Persists updated course mapping configuration to localStorage & cloud.
  */
 export function saveCourseMappingConfig(config: MoodleCourseMappingConfig): void {
-  if (typeof window === 'undefined' || !window.localStorage) return
   const toSave: MoodleCourseMappingConfig = {
     ...config,
+    defaultPassword: config.defaultPassword?.trim() || DEFAULT_COURSE_MAPPINGS.defaultPassword,
     lastUpdated: new Date().toISOString(),
   }
-  window.localStorage.setItem(MOODLE_COURSE_MAPPING_STORAGE_KEY, JSON.stringify(toSave))
+
+  if (typeof window !== 'undefined' && window.localStorage) {
+    window.localStorage.setItem(MOODLE_COURSE_MAPPING_STORAGE_KEY, JSON.stringify(toSave))
+  }
+  cloudSyncService.saveCloudSetting('moodle_course_mappings', toSave)
+  notifyCourseMappingListeners(toSave)
 }
 
 /**
  * Resets mapping configuration to factory defaults.
  */
 export function resetCourseMappingConfig(): void {
-  if (typeof window === 'undefined' || !window.localStorage) return
-  window.localStorage.removeItem(MOODLE_COURSE_MAPPING_STORAGE_KEY)
+  if (typeof window !== 'undefined' && window.localStorage) {
+    window.localStorage.removeItem(MOODLE_COURSE_MAPPING_STORAGE_KEY)
+  }
+  cloudSyncService.saveCloudSetting('moodle_course_mappings', DEFAULT_COURSE_MAPPINGS)
+  notifyCourseMappingListeners(DEFAULT_COURSE_MAPPINGS)
+}
+
+/**
+ * Quick helper to apply a prefix or pattern to all jenjang outputs.
+ * E.g., 'JENJANG' -> 'JENJANG 1', 'JENJANG 2', etc.
+ * E.g., 'ogso_j{n}' -> 'ogso_j1', 'ogso_j2', etc.
+ */
+export function generateJenjangShortnamesFromPattern(
+  patternOrPrefix: string
+): Record<StudentJenjang, string> {
+  const clean = patternOrPrefix.trim()
+  const classes: StudentJenjang[] = ['Jenjang 1', 'Jenjang 2', 'Jenjang 3', 'Jenjang 4', 'Jenjang 5']
+  const result = {} as Record<StudentJenjang, string>
+
+  classes.forEach((c, idx) => {
+    const num = idx + 1
+    if (clean.includes('{n}')) {
+      result[c] = clean.replace(/{n}/g, String(num))
+    } else if (clean.endsWith('_') || clean.endsWith('-')) {
+      result[c] = `${clean}${num}`
+    } else if (/[a-zA-Z0-9]$/.test(clean) && !clean.includes(' ')) {
+      // E.g. 'JENJANG' -> 'JENJANG 1' (or if 'ogso_j' -> 'ogso_j1')
+      if (clean.toLowerCase().endsWith('j') || clean.toLowerCase().endsWith('k')) {
+        result[c] = `${clean}${num}`
+      } else {
+        result[c] = `${clean} ${num}`
+      }
+    } else {
+      result[c] = `${clean} ${num}`
+    }
+  })
+
+  return result
 }
 
 /**
