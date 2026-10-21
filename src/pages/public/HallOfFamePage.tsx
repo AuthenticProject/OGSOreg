@@ -94,6 +94,7 @@ export const HallOfFamePage: React.FC = () => {
         {activeTab === 'overview' && (
           <HallOfFameOverviewTab
             overviewData={overviewData}
+            periods={periods}
             onNavigateToStandings={() => handleTabChange('standings')}
             onNavigateToAllTime={() => handleTabChange('all-time')}
             onSelectCampus={handleSelectCampus}

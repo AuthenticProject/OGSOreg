@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   Trophy,
   Award,
@@ -9,13 +9,17 @@ import {
   Calendar,
   Layers,
   ChevronRight,
+  ChevronDown,
   Info,
   Crown,
 } from 'lucide-react'
 import type { HallOfFameOverviewData } from '../../types/hallOfFame'
+import type { CompetitionPeriod } from '../../services/participantPeriodService'
+import { hallOfFameService } from '../../services/hallOfFameService'
 
 interface HallOfFameOverviewTabProps {
   overviewData: HallOfFameOverviewData
+  periods?: CompetitionPeriod[]
   onNavigateToStandings: () => void
   onNavigateToAllTime: () => void
   onSelectCampus: (campusSlug: string) => void
@@ -23,6 +27,7 @@ interface HallOfFameOverviewTabProps {
 
 export const HallOfFameOverviewTab: React.FC<HallOfFameOverviewTabProps> = ({
   overviewData,
+  periods,
   onNavigateToStandings,
   onNavigateToAllTime,
   onSelectCampus,
@@ -32,19 +37,46 @@ export const HallOfFameOverviewTab: React.FC<HallOfFameOverviewTabProps> = ({
     totalPublishedPeriods,
     totalParticipatingCampuses,
     totalRecordedAwards,
-    topThreeCampuses,
     leadingGoldCampus,
   } = overviewData
 
+  const [podiumScope, setPodiumScope] = useState<string>('all-time')
+
+  const availablePeriods = useMemo(() => {
+    if (periods && periods.length > 0) return periods
+    return hallOfFameService.getEligiblePeriods()
+  }, [periods])
+
+  const { podiumCampuses, podiumTitle, podiumSubtitle, isAllTime } = useMemo(() => {
+    if (podiumScope === 'all-time') {
+      const allTime = hallOfFameService.computeAllTimeRankings()
+      return {
+        podiumCampuses: allTime.rankings.slice(0, 3),
+        podiumTitle: 'Secara Keseluruhan (Sepanjang Masa)',
+        podiumSubtitle: allTime.periodRange ? `Akumulasi Seluruh Periode Resmi (${allTime.periodRange})` : 'Akumulasi Seluruh Periode Resmi',
+        isAllTime: true,
+      }
+    }
+
+    const period = availablePeriods.find((p) => p.id === podiumScope)
+    const standings = hallOfFameService.computePeriodStandings(podiumScope, { mode: 'points' })
+    const periodName = period ? period.name : 'Periode Terpilih'
+    return {
+      podiumCampuses: standings.standings.slice(0, 3),
+      podiumTitle: periodName,
+      podiumSubtitle: period?.year ? `Hasil Resmi Tahun ${period.year}` : 'Hasil Periode Resmi',
+      isAllTime: false,
+    }
+  }, [podiumScope, availablePeriods])
+
   const hasData =
-    latestPeriod &&
-    topThreeCampuses.length > 0 &&
-    topThreeCampuses.some((c) => c.total_points > 0 || c.total_awards > 0)
+    podiumCampuses.length > 0 &&
+    podiumCampuses.some((c) => c.total_points > 0 || c.total_awards > 0)
 
   // Reorder for Olympic Podium on desktop: [2nd, 1st, 3rd]
-  const firstPlace = topThreeCampuses[0]
-  const secondPlace = topThreeCampuses[1]
-  const thirdPlace = topThreeCampuses[2]
+  const firstPlace = podiumCampuses[0]
+  const secondPlace = podiumCampuses[1]
+  const thirdPlace = podiumCampuses[2]
 
   return (
     <div className="space-y-12 animate-in fade-in duration-300">
@@ -113,41 +145,68 @@ export const HallOfFameOverviewTab: React.FC<HallOfFameOverviewTabProps> = ({
       </div>
 
       {/* 2. Top Three Podiums (True Olympic Championship Podium Layout) */}
-      {!hasData ? (
-        <div className="p-12 sm:p-16 rounded-3xl bg-white border border-dashed border-emerald-300/80 text-center space-y-4 shadow-sm">
-          <div className="w-16 h-16 mx-auto rounded-full bg-emerald-100 text-[#166534] flex items-center justify-center">
-            <Trophy className="w-8 h-8 opacity-75" />
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100/80 border border-amber-300 text-[11px] font-bold text-amber-900 uppercase tracking-wider">
+              <Crown className="w-3.5 h-3.5 text-amber-600" />
+              <span>Podium Juara — {podiumTitle}</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-[#0C241B] mt-2 tracking-tight">
+              Tiga Kontingen Pemuncak Klasemen Poin
+            </h2>
+            <p className="text-xs text-slate-500 font-medium mt-1">
+              {podiumSubtitle}
+            </p>
           </div>
-          <h3 className="text-lg font-bold text-[#0C241B]">
-            Hasil Resmi Sedang Dalam Proses Rekapitulasi
-          </h3>
-          <p className="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto leading-relaxed">
-            Klasemen Hall of Fame hanya menampilkan data juara yang telah resmi diumumkan dan diverifikasi oleh Panitia Pusat OGSO.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100/80 border border-amber-300 text-[11px] font-bold text-amber-900 uppercase tracking-wider">
-                <Crown className="w-3.5 h-3.5 text-amber-600" />
-                <span>Podium Juara — {latestPeriod?.name}</span>
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-black text-[#0C241B] mt-2 tracking-tight">
-                Tiga Kontingen Pemuncak Klasemen Poin
-              </h2>
+
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            {/* Period Selector Dropdown */}
+            <div className="relative inline-flex items-center w-full sm:w-auto">
+              <label htmlFor="podium-period-select" className="sr-only">
+                Pilih Periode Podium
+              </label>
+              <select
+                id="podium-period-select"
+                value={podiumScope}
+                onChange={(e) => setPodiumScope(e.target.value)}
+                className="w-full sm:w-auto appearance-none pl-9 pr-9 py-2.5 text-xs font-bold rounded-2xl bg-white border-2 border-emerald-600/30 hover:border-emerald-600 focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 shadow-sm text-[#0C241B] cursor-pointer transition-all"
+              >
+                <option value="all-time">🏆 Secara Keseluruhan (Sepanjang Masa)</option>
+                {availablePeriods.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    📅 {p.name} {p.year ? `(${p.year})` : ''}
+                  </option>
+                ))}
+              </select>
+              <Trophy className="w-4 h-4 text-amber-500 absolute left-3 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 pointer-events-none" />
             </div>
 
             <button
-              onClick={onNavigateToStandings}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 text-xs font-bold text-[#166534] hover:bg-emerald-100 hover:text-[#0C241B] transition-all cursor-pointer group border border-emerald-200/80 shadow-2xs"
+              onClick={isAllTime ? onNavigateToAllTime : onNavigateToStandings}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-50 text-xs font-bold text-[#166534] hover:bg-emerald-100 hover:text-[#0C241B] transition-all cursor-pointer group border border-emerald-200/80 shadow-2xs whitespace-nowrap"
             >
-              <span>Lihat Klasemen Lengkap 20 Kampus</span>
+              <span>{isAllTime ? 'Lihat Rekap Sepanjang Masa' : 'Lihat Klasemen Lengkap'}</span>
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </button>
           </div>
+        </div>
 
-          {/* Olympic 3D-Style Podium Layout */}
+        {!hasData ? (
+          <div className="p-12 sm:p-16 rounded-3xl bg-white border border-dashed border-emerald-300/80 text-center space-y-4 shadow-sm">
+            <div className="w-16 h-16 mx-auto rounded-full bg-emerald-100 text-[#166534] flex items-center justify-center">
+              <Trophy className="w-8 h-8 opacity-75" />
+            </div>
+            <h3 className="text-lg font-bold text-[#0C241B]">
+              Hasil {podiumTitle} Belum Memiliki Pemenang Terverifikasi
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto leading-relaxed">
+              Klasemen dan podium untuk periode ini belum memiliki data pemenang yang tercatat. Silakan pilih &ldquo;Secara Keseluruhan&rdquo; atau periode resmi lainnya.
+            </p>
+          </div>
+        ) : (
+          /* Olympic 3D-Style Podium Layout */
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end pt-4">
             {/* 2nd Place Podium (Left on Desktop, Silver) */}
             {secondPlace && (
@@ -235,7 +294,7 @@ export const HallOfFameOverviewTab: React.FC<HallOfFameOverviewTabProps> = ({
                 {/* Campus & Huge Points */}
                 <div className="space-y-2">
                   <div className="text-xs text-emerald-300 font-bold uppercase tracking-wider">
-                    Peringkat 1 Nasional OGSO
+                    {isAllTime ? 'Peringkat 1 Nasional Sepanjang Masa' : 'Peringkat 1 Nasional OGSO'}
                   </div>
                   <h3 className="text-2xl sm:text-3xl font-black text-white group-hover:text-amber-200 transition-colors">
                     {firstPlace.campus}
@@ -346,8 +405,8 @@ export const HallOfFameOverviewTab: React.FC<HallOfFameOverviewTabProps> = ({
               </div>
             )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* 3. Featured Spotlight & Direct Action Banners */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -356,14 +415,14 @@ export const HallOfFameOverviewTab: React.FC<HallOfFameOverviewTabProps> = ({
           <div className="space-y-3">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-xs font-bold text-amber-800">
               <Medal className="w-3.5 h-3.5 text-amber-600" />
-              <span>Raja Emas ({latestPeriod?.name})</span>
+              <span>Raja Emas (Sepanjang Masa)</span>
             </div>
             <h3 className="text-2xl font-black text-[#0C241B]">
               {leadingGoldCampus ? leadingGoldCampus.campus : 'Belum Terdata'}
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
               {leadingGoldCampus
-                ? `Kontingen peraih medali emas terbanyak pada ${latestPeriod?.name} dengan raihan ${leadingGoldCampus.goldCount} Medali Emas dan total ${leadingGoldCampus.totalPoints} poin kompetisi.`
+                ? `Kontingen peraih medali emas terbanyak secara keseluruhan dengan raihan ${leadingGoldCampus.goldCount} Medali Emas dan total ${leadingGoldCampus.totalPoints} poin kompetisi.`
                 : 'Data perolehan medali emas akan ditampilkan setelah pengumuman resmi.'}
             </p>
           </div>

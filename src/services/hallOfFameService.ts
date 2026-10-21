@@ -1091,16 +1091,15 @@ class HallOfFameService {
     })
 
     const displayPeriod = periodWithWinners || latestPeriod
-    // Standings for display period
-    const latestStandings = this.computePeriodStandings(displayPeriod.id, { mode: 'points' })
+    const allTime = this.computeAllTimeRankings()
 
-    // Top 3 campuses by points
-    const topThreeCampuses = latestStandings.standings.slice(0, 3)
+    // Default podium to All-Time rankings (Secara Keseluruhan)
+    const topThreeCampuses = allTime.rankings.slice(0, 3)
 
-    // Leading gold medal campus across display period
+    // Leading gold medal campus across all periods (Secara Keseluruhan)
     let leadingGoldCampus: { campus: string; goldCount: number; totalPoints: number } | null = null
-    const goldSorted = [...latestStandings.standings].sort((a, b) => b.gold - a.gold)
-    if (goldSorted.length > 0 && goldSorted[0].gold > 0) {
+    const goldSorted = [...allTime.rankings].sort((a, b) => b.gold - a.gold || b.total_points - a.total_points)
+    if (goldSorted.length > 0 && (goldSorted[0].gold > 0 || goldSorted[0].total_points > 0)) {
       leadingGoldCampus = {
         campus: goldSorted[0].campus,
         goldCount: goldSorted[0].gold,
@@ -1108,13 +1107,13 @@ class HallOfFameService {
       }
     }
 
-    const allTime = this.computeAllTimeRankings()
+    const totalRecordedAwards = allTime.rankings.reduce((sum, r) => sum + r.total_awards, 0)
 
     return {
       latestPeriod: displayPeriod,
       totalPublishedPeriods: eligiblePeriods.length,
       totalParticipatingCampuses: KAMPUS_OPTIONS.length,
-      totalRecordedAwards: latestStandings.totalAwards,
+      totalRecordedAwards,
       topThreeCampuses,
       leadingGoldCampus,
       rankingMode: 'points',

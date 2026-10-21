@@ -1249,11 +1249,11 @@ export const HomePage: React.FC = () => {
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-xs font-bold text-[#A7F3D0]">
                 <Trophy className="w-3.5 h-3.5 text-[#D5C49A]" />
                 <span>
-                  OGSO Hall of Fame {hofOverview.latestPeriod ? `• ${hofOverview.latestPeriod.name}` : ''}
+                  OGSO Hall of Fame • Secara Keseluruhan
                 </span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-sans">
-                Klasemen Prestasi Antar-Kampus Terkini
+                Klasemen Prestasi Antar-Kampus Sepanjang Masa
               </h2>
               <p className="text-xs sm:text-sm text-emerald-100/80 max-w-xl leading-relaxed">
                 Rekapitulasi resmi perolehan medali dan poin olimpiade sains Kulliyatu-l-Mu’allimin Al-Islamiyah seluruh pondok cabang Gontor.
