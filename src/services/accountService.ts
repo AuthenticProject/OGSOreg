@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { cloudSyncService } from './supabase/cloudSyncService'
 import {
   INITIAL_ACCOUNT_ROSTER,
   SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD,
@@ -58,8 +59,75 @@ class AccountService {
   private inMemoryProfiles: AppUserProfile[] = []
   private inMemoryPasswords: Record<string, string> = {}
 
+  private hasInitializedCloud = false
+
   constructor() {
     this.loadStore()
+    this.initCloudSync()
+  }
+
+  private initCloudSync() {
+    if (this.hasInitializedCloud || typeof window === 'undefined') return
+    this.hasInitializedCloud = true
+
+    setTimeout(() => {
+      this.syncFromCloud().catch(() => {})
+    }, 350)
+
+    window.addEventListener('focus', () => {
+      this.syncFromCloud().catch(() => {})
+    })
+    window.addEventListener('online', () => {
+      this.syncFromCloud().catch(() => {})
+    })
+
+    if (isSupabaseConfigured()) {
+      cloudSyncService.subscribeCloudSetting<{ profiles: AppUserProfile[]; passwords: Record<string, string> }>(
+        'account_credentials_v2',
+        (remote) => {
+          if (remote && remote.profiles && remote.passwords) {
+            this.mergeRemoteCredentials(remote.profiles, remote.passwords)
+          }
+        }
+      )
+    }
+  }
+
+  async syncFromCloud(): Promise<void> {
+    if (!isSupabaseConfigured()) return
+    try {
+      const remote = await cloudSyncService.getCloudSetting<{ profiles: AppUserProfile[]; passwords: Record<string, string> } | null>(
+        'account_credentials_v2',
+        null
+      )
+      if (remote && remote.profiles && remote.passwords) {
+        this.mergeRemoteCredentials(remote.profiles, remote.passwords)
+      }
+    } catch (err) {
+      console.warn('[AccountService] Cloud sync error:', err)
+    }
+  }
+
+  private mergeRemoteCredentials(remoteProfiles: AppUserProfile[], remotePasswords: Record<string, string>) {
+    // Merge passwords
+    this.inMemoryPasswords = { ...this.inMemoryPasswords, ...remotePasswords }
+
+    // Merge profiles
+    const profileMap = new Map<string, AppUserProfile>()
+    this.inMemoryProfiles.forEach((p) => profileMap.set(p.username.toLowerCase(), p))
+    remoteProfiles.forEach((rp) => {
+      const key = rp.username.toLowerCase()
+      const existing = profileMap.get(key)
+      profileMap.set(key, { ...existing, ...rp })
+    })
+
+    this.inMemoryProfiles = Array.from(profileMap.values())
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        window.localStorage.setItem(LOCAL_USERS_STORAGE_KEY, JSON.stringify(this.inMemoryProfiles))
+        window.localStorage.setItem(LOCAL_PASSWORDS_STORAGE_KEY, JSON.stringify(this.inMemoryPasswords))
+      } catch {}
+    }
   }
 
   private loadStore() {
@@ -122,6 +190,11 @@ class AccountService {
         // Ignore
       }
     }
+    // Also push to Supabase Cloud for cross-device sync
+    cloudSyncService.saveCloudSetting('account_credentials_v2', {
+      profiles: this.inMemoryProfiles,
+      passwords: this.inMemoryPasswords,
+    })
   }
 
   /**

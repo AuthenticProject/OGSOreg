@@ -1,4 +1,6 @@
 import type { StudentJenjang } from '../types/student'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { cloudSyncService } from './supabase/cloudSyncService'
 
 export const LEGACY_LOMBA_OPTIONS = [
   'IPA Shigor',
@@ -202,6 +204,41 @@ export const sortPeriodsNewestFirst = (periods: CompetitionPeriod[]): Competitio
   })
 }
 
+/**
+ * Checks whether a period belongs to legacy format (year <= 2025).
+ * The Jenjang system only applies starting from competition year 2026 onwards.
+ */
+export function isPeriodLegacyYear(periodId?: string): boolean {
+  if (!periodId) return false
+  const match = periodId.match(/\b(20\d\d)\b/)
+  if (match) {
+    return parseInt(match[1], 10) <= 2025
+  }
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem(PERIODS_STORAGE_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) {
+          const found = parsed.find(
+            (p) => p && (p.id === periodId || p.slug === periodId || p.name === periodId)
+          )
+          if (found && found.year) {
+            return Number(found.year) <= 2025
+          }
+        }
+      }
+    } catch {}
+  }
+  const init = INITIAL_PERIODS.find(
+    (p) => p && (p.id === periodId || p.slug === periodId || p.name === periodId)
+  )
+  if (init && init.year) {
+    return Number(init.year) <= 2025
+  }
+  return false
+}
+
 // Initial seed periods for OGSO (OGSO 2026 is upcoming/in-progress, so winners & certs start at 0)
 const INITIAL_PERIODS: CompetitionPeriod[] = [
   {
@@ -330,6 +367,90 @@ export const isInvalidCert = (c: PeriodCertificate | null | undefined): boolean 
 }
 
 class ParticipantPeriodService {
+  private isCloudSyncing = false
+  private hasInitializedCloud = false
+
+  constructor() {
+    this.initCloudSync()
+  }
+
+  private initCloudSync() {
+    if (this.hasInitializedCloud || typeof window === 'undefined') return
+    this.hasInitializedCloud = true
+
+    setTimeout(() => {
+      this.syncFromCloud().catch(() => {})
+    }, 200)
+
+    window.addEventListener('focus', () => {
+      this.syncFromCloud().catch(() => {})
+    })
+    window.addEventListener('online', () => {
+      this.syncFromCloud().catch(() => {})
+    })
+
+    if (isSupabaseConfigured()) {
+      try {
+        supabase
+          .channel('realtime:periods_winners')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_periods' }, () => {
+            this.syncFromCloud().catch(() => {})
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_winners' }, () => {
+            this.syncFromCloud().catch(() => {})
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_certificates' }, () => {
+            this.syncFromCloud().catch(() => {})
+          })
+          .subscribe()
+
+        cloudSyncService.subscribeCloudSetting('competition_periods', () => {
+          this.syncFromCloud().catch(() => {})
+        })
+        cloudSyncService.subscribeCloudSetting('competition_winners', () => {
+          this.syncFromCloud().catch(() => {})
+        })
+        cloudSyncService.subscribeCloudSetting('competition_certificates', () => {
+          this.syncFromCloud().catch(() => {})
+        })
+      } catch {
+        // Ignore
+      }
+    }
+  }
+
+  async syncFromCloud(): Promise<void> {
+    if (!isSupabaseConfigured() || this.isCloudSyncing) return
+    this.isCloudSyncing = true
+    try {
+      // 1. Periods Sync
+      const cloudPeriods = await cloudSyncService.getCloudSetting<CompetitionPeriod[] | null>('competition_periods', null)
+      if (cloudPeriods && Array.isArray(cloudPeriods) && cloudPeriods.length > 0) {
+        const sorted = sortPeriodsNewestFirst(cloudPeriods)
+        localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(sorted))
+        window.dispatchEvent(new CustomEvent('ogsoreg_periods_updated'))
+      }
+
+      // 2. Winners Sync
+      const cloudWinners = await cloudSyncService.getCloudSetting<PeriodWinner[] | null>('competition_winners', null)
+      if (cloudWinners && Array.isArray(cloudWinners) && cloudWinners.length > 0) {
+        localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(cloudWinners))
+        window.dispatchEvent(new CustomEvent('ogsoreg_winners_updated'))
+      }
+
+      // 3. Certificates Sync
+      const cloudCerts = await cloudSyncService.getCloudSetting<PeriodCertificate[] | null>('competition_certificates', null)
+      if (cloudCerts && Array.isArray(cloudCerts) && cloudCerts.length > 0) {
+        localStorage.setItem(CERTIFICATES_STORAGE_KEY, JSON.stringify(cloudCerts))
+        window.dispatchEvent(new CustomEvent('ogsoreg_certificates_updated'))
+      }
+    } catch (err) {
+      console.warn('[ParticipantPeriodService] Cloud sync error:', err)
+    } finally {
+      this.isCloudSyncing = false
+    }
+  }
+
   // Periods: Guaranteed to always sort newest to oldest
   getPeriods(): CompetitionPeriod[] {
     if (typeof window === 'undefined') return sortPeriodsNewestFirst(INITIAL_PERIODS)
@@ -419,7 +540,11 @@ class ParticipantPeriodService {
     const sorted = sortPeriodsNewestFirst(list)
     if (typeof window !== 'undefined') {
       localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(sorted))
+      window.dispatchEvent(new CustomEvent('ogsoreg_periods_updated'))
     }
+
+    // Persist to Cloud
+    cloudSyncService.saveCloudSetting('competition_periods', sorted)
     return saved
   }
 
@@ -428,7 +553,11 @@ class ParticipantPeriodService {
     const sorted = sortPeriodsNewestFirst(list)
     if (typeof window !== 'undefined') {
       localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(sorted))
+      window.dispatchEvent(new CustomEvent('ogsoreg_periods_updated'))
     }
+
+    // Persist to Cloud
+    cloudSyncService.saveCloudSetting('competition_periods', sorted)
     return true
   }
 
@@ -510,10 +639,14 @@ class ParticipantPeriodService {
       })
     }
 
-    const normalized = list.map((w) => ({
-      ...w,
-      category: normalizeCategoryName(w.category),
-    }))
+    const normalized = list.map((w) => {
+      const isLegacy = isPeriodLegacyYear(w.period_id)
+      return {
+        ...w,
+        jenjang: isLegacy ? undefined : w.jenjang,
+        category: normalizeCategoryName(w.category),
+      }
+    })
 
     // Always sort winners in standard order: Juara 1, Juara 2, Juara 3, Juara Harapan 1, Juara Harapan 2
     return [...normalized].sort((a, b) => {
@@ -537,6 +670,8 @@ class ParticipantPeriodService {
     const id = winner.id || `win-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
     const now = new Date().toISOString()
     const normalizedCategory = normalizeCategoryName(winner.category)
+    const isLegacy = isPeriodLegacyYear(winner.period_id)
+    const sanitizedJenjang = isLegacy ? undefined : winner.jenjang
 
     const existingIdx = list.findIndex((w) => w.id === id)
     let saved: PeriodWinner
@@ -547,6 +682,7 @@ class ParticipantPeriodService {
         ...winner,
         id,
         category: normalizedCategory,
+        jenjang: sanitizedJenjang,
       }
       list[existingIdx] = saved
     } else {
@@ -554,6 +690,7 @@ class ParticipantPeriodService {
         ...winner,
         id,
         category: normalizedCategory,
+        jenjang: sanitizedJenjang,
         created_at: now,
       }
       list.unshift(saved)
@@ -563,6 +700,10 @@ class ParticipantPeriodService {
     removeDeletedWinnerId(id)
 
     localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(list))
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ogsoreg_winners_updated'))
+    }
+    cloudSyncService.saveCloudSetting('competition_winners', list)
     return saved
   }
 
@@ -573,6 +714,8 @@ class ParticipantPeriodService {
 
     const list = this.getWinners().filter((w) => w.id !== id)
     localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(list))
+    window.dispatchEvent(new CustomEvent('ogsoreg_winners_updated'))
+    cloudSyncService.saveCloudSetting('competition_winners', list)
     return true
   }
 
@@ -584,6 +727,8 @@ class ParticipantPeriodService {
     const idSet = new Set(ids)
     const list = this.getWinners().filter((w) => !idSet.has(w.id))
     localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(list))
+    window.dispatchEvent(new CustomEvent('ogsoreg_winners_updated'))
+    cloudSyncService.saveCloudSetting('competition_winners', list)
     return true
   }
 
@@ -667,7 +812,14 @@ class ParticipantPeriodService {
     if (type) {
       list = list.filter((c) => c && c.certificate_type === type)
     }
-    return list
+
+    return list.map((c) => {
+      const isLegacy = isPeriodLegacyYear(c.period_id)
+      return {
+        ...c,
+        jenjang: isLegacy ? undefined : c.jenjang,
+      }
+    })
   }
 
   getCertificateById(id: string): PeriodCertificate | null {
@@ -679,17 +831,25 @@ class ParticipantPeriodService {
     const list = this.getCertificates()
     const id = cert.id || `cert-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
     const now = new Date().toISOString()
+    const isLegacy = isPeriodLegacyYear(cert.period_id)
+    const sanitizedJenjang = isLegacy ? undefined : cert.jenjang
 
     const existingIdx = list.findIndex((c) => c.id === id)
     let saved: PeriodCertificate
 
     if (existingIdx >= 0) {
-      saved = { ...list[existingIdx], ...cert, id }
+      saved = {
+        ...list[existingIdx],
+        ...cert,
+        id,
+        jenjang: sanitizedJenjang,
+      }
       list[existingIdx] = saved
     } else {
       saved = {
         ...cert,
         id,
+        jenjang: sanitizedJenjang,
         created_at: now,
       }
       list.unshift(saved)
@@ -697,7 +857,9 @@ class ParticipantPeriodService {
 
     if (typeof window !== 'undefined') {
       localStorage.setItem(CERTIFICATES_STORAGE_KEY, JSON.stringify(list))
+      window.dispatchEvent(new CustomEvent('ogsoreg_certificates_updated'))
     }
+    cloudSyncService.saveCloudSetting('competition_certificates', list)
     return saved
   }
 
@@ -708,6 +870,8 @@ class ParticipantPeriodService {
 
     const list = this.getCertificates().filter((c) => c.id !== id)
     localStorage.setItem(CERTIFICATES_STORAGE_KEY, JSON.stringify(list))
+    window.dispatchEvent(new CustomEvent('ogsoreg_certificates_updated'))
+    cloudSyncService.saveCloudSetting('competition_certificates', list)
     return true
   }
 }

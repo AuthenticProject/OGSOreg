@@ -65,7 +65,7 @@ export const PublicParticipantPage: React.FC = () => {
                 <span>OGSO Hall of Fame (Klasemen 20 Kampus)</span>
               </div>
               <p className="text-xs text-emerald-100/80 leading-relaxed">
-                Akses klasemen resmi antar-kampus berdasarkan sistem bobot skor (Juara 1: 5 pt s/d Harapan 2: 1 pt), tren performa historis, dan rekapitulasi medali sepanjang masa.
+                Akses klasemen resmi antar-kampus berdasarkan sistem bobot skor (Juara 1: 25 pt s/d Harapan 2: 1 pt), tren performa historis, dan rekapitulasi medali sepanjang masa.
               </p>
             </div>
             <Link

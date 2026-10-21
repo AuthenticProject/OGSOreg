@@ -74,6 +74,42 @@ class StudentRepository {
 
   constructor() {
     this.initLocalStorage()
+    this.initRealtimeAndAutoSync()
+  }
+
+  private initRealtimeAndAutoSync() {
+    if (typeof window !== 'undefined') {
+      // 1. Initial sync immediately in background
+      setTimeout(() => {
+        this.syncWithSupabase().catch(() => {})
+      }, 100)
+
+      // 2. Re-sync on focus & online
+      window.addEventListener('focus', () => {
+        this.syncWithSupabase().catch(() => {})
+      })
+      window.addEventListener('online', () => {
+        this.syncWithSupabase().catch(() => {})
+      })
+
+      // 3. Supabase Realtime channel for instant cross-device updates
+      if (isSupabaseConfigured()) {
+        try {
+          supabase
+            .channel('realtime:students')
+            .on(
+              'postgres_changes',
+              { event: '*', schema: 'public', table: 'students' },
+              () => {
+                this.syncWithSupabase().catch(() => {})
+              }
+            )
+            .subscribe()
+        } catch {
+          // Ignore realtime subscription errors
+        }
+      }
+    }
   }
 
   private initLocalStorage() {
@@ -211,6 +247,9 @@ class StudentRepository {
       if (mergedList.length > 0) {
         this.inMemoryStore.set(canonicalId, mergedList)
         this.persistLocalStorage()
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('ogsoreg_students_updated'))
+        }
       }
     } catch {
       // Ignore background sync errors
@@ -802,22 +841,27 @@ class StudentRepository {
 
     if (isSupabaseConfigured()) {
       try {
-        let { data: dbData, error } = await supabase
-          .from('students')
-          .update(updatedStudent)
-          .eq('id', id)
-          .select()
-          .single()
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+        const dbPayload = toSupabaseInsertPayload(updatedStudent)
+        let query = supabase.from('students').update(dbPayload)
+        if (isUuid) {
+          query = query.eq('id', id)
+        } else if (existing?.username) {
+          query = query.ilike('username', existing.username.trim()).eq('institution_id', CANONICAL_INSTITUTION_ID)
+        }
+
+        let { data: dbData, error } = await query.select().single()
 
         if (error && isMissingColumnError(error, 'custom_fields')) {
           isCustomFieldsSupportedInSupabase = false
-          const { custom_fields, ...safeStudent } = updatedStudent
-          const retry = await supabase
-            .from('students')
-            .update(safeStudent)
-            .eq('id', id)
-            .select()
-            .single()
+          const { custom_fields, ...safeStudent } = dbPayload
+          let retryQuery = supabase.from('students').update(safeStudent)
+          if (isUuid) {
+            retryQuery = retryQuery.eq('id', id)
+          } else if (existing?.username) {
+            retryQuery = retryQuery.ilike('username', existing.username.trim()).eq('institution_id', CANONICAL_INSTITUTION_ID)
+          }
+          const retry = await retryQuery.select().single()
           dbData = retry.data
           error = retry.error
         }
@@ -853,9 +897,18 @@ class StudentRepository {
       }
     }
 
-    if (isSupabaseConfigured()) {
+    if (isSupabaseConfigured() && target) {
       try {
-        await supabase.from('students').delete().eq('id', id)
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+        if (isUuid) {
+          await supabase.from('students').delete().eq('id', id)
+        } else if (target.username) {
+          await supabase
+            .from('students')
+            .delete()
+            .ilike('username', target.username.trim())
+            .eq('institution_id', CANONICAL_INSTITUTION_ID)
+        }
       } catch {
         // Fall back
       }
@@ -888,7 +941,24 @@ class StudentRepository {
 
     if (isSupabaseConfigured()) {
       try {
-        await supabase.from('students').delete().in('id', eligibleIds)
+        const uuidIds = eligibleIds.filter((id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
+        const nonUuidIds = eligibleIds.filter((id) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
+
+        if (uuidIds.length > 0) {
+          await supabase.from('students').delete().in('id', uuidIds)
+        }
+
+        if (nonUuidIds.length > 0) {
+          const nonUuidStudents = currentStudents.filter((s) => nonUuidIds.includes(s.id))
+          const usernames = nonUuidStudents.map((s) => s.username?.toLowerCase().trim()).filter(Boolean) as string[]
+          if (usernames.length > 0) {
+            await supabase
+              .from('students')
+              .delete()
+              .in('username', usernames)
+              .eq('institution_id', CANONICAL_INSTITUTION_ID)
+          }
+        }
       } catch {
         // Fall back
       }

@@ -1,9 +1,15 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { AppShell } from './components/layout/AppShell'
 import { PublicLayout } from './components/public/PublicLayout'
 import { ErrorBoundary } from './components/feedback/ErrorBoundary'
+
+// Cross-Device Synchronization Services
+import { cloudSyncService } from './services/supabase/cloudSyncService'
+import { studentRepository } from './services/studentRepository'
+import { websiteContentService } from './services/websiteContentService'
+import { participantPeriodService } from './services/participantPeriodService'
 
 // Public Website Pages
 import { HomePage } from './pages/public/HomePage'
@@ -46,6 +52,23 @@ const PublicContentWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
 )
 
 export function App() {
+  useEffect(() => {
+    // Initial global multi-device synchronization
+    const initSync = async () => {
+      try {
+        await cloudSyncService.checkAvailableTables()
+        await Promise.allSettled([
+          studentRepository.syncWithSupabase(),
+          websiteContentService.syncFromCloud(),
+          participantPeriodService.syncFromCloud(),
+        ])
+      } catch (err) {
+        console.warn('[OGSOreg] Initial cloud sync warning:', err)
+      }
+    }
+    initSync()
+  }, [])
+
   return (
     <AuthProvider>
       <BrowserRouter>

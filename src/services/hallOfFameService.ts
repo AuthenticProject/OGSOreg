@@ -6,6 +6,7 @@ import {
 } from './participantPeriodService'
 import {
   DEFAULT_SCORING_WEIGHTS,
+  SCORING_VERSIONS_HISTORY,
   type AwardTier,
   type CampusStandingRecord,
   type AllTimeCampusRecord,
@@ -17,6 +18,8 @@ import {
   type RankingMode,
   type ScoringWeights,
 } from '../types/hallOfFame'
+import { cloudSyncService } from './supabase/cloudSyncService'
+import { isSupabaseConfigured } from '../lib/supabase'
 
 const HOF_SETTINGS_KEY = 'ogsoreg_hall_of_fame_settings_v1'
 const HOF_HISTORICAL_AGGREGATES_KEY = 'ogsoreg_hof_historical_aggregates_v1'
@@ -128,7 +131,7 @@ export function classifyAward(awardString?: string | null): AwardTier | null {
 
 /**
  * Calculates total statistical points using configured weights.
- * Default: Gold=5, Silver=4, Bronze=3, HM1=2, HM2=1.
+ * Default: Gold=25, Silver=15, Bronze=8, HM1=3, HM2=1.
  */
 export function calculatePoints(
   awards: CampusAwardCounts,
@@ -161,7 +164,7 @@ function areStandingsEqual(
       a.honorable_2 === b.honorable_2
     )
   }
-  // Medal Mode
+  // Medal Mode: strictly based on medals & honorable mentions, not points
   return (
     a.gold === b.gold &&
     a.silver === b.silver &&
@@ -196,13 +199,12 @@ export function rankStandings(
       // Deterministic alphabetical order by campus name (not a competitive tie-breaker)
       return a.campus.localeCompare(b.campus)
     } else {
-      // Medal Ranking: Gold -> Silver -> Bronze -> HM1 -> HM2
+      // Medal Ranking: Gold -> Silver -> Bronze -> HM1 -> HM2 (strictly isolated from points)
       if (b.gold !== a.gold) return b.gold - a.gold
       if (b.silver !== a.silver) return b.silver - a.silver
       if (b.bronze !== a.bronze) return b.bronze - a.bronze
       if (b.honorable_1 !== a.honorable_1) return b.honorable_1 - a.honorable_1
       if (b.honorable_2 !== a.honorable_2) return b.honorable_2 - a.honorable_2
-      if (b.total_points !== a.total_points) return b.total_points - a.total_points
       return a.campus.localeCompare(b.campus)
     }
   })
@@ -247,29 +249,96 @@ export function rankStandings(
 }
 
 class HallOfFameService {
+  private hasInitializedCloud = false
+
+  constructor() {
+    this.initCloudSync()
+  }
+
+  private initCloudSync() {
+    if (this.hasInitializedCloud || typeof window === 'undefined') return
+    this.hasInitializedCloud = true
+
+    setTimeout(() => {
+      this.syncFromCloud().catch(() => {})
+    }, 300)
+
+    window.addEventListener('focus', () => {
+      this.syncFromCloud().catch(() => {})
+    })
+    window.addEventListener('online', () => {
+      this.syncFromCloud().catch(() => {})
+    })
+
+    if (isSupabaseConfigured()) {
+      cloudSyncService.subscribeCloudSetting('hall_of_fame_settings', (remote) => {
+        if (remote) {
+          localStorage.setItem(HOF_SETTINGS_KEY, JSON.stringify(remote))
+          window.dispatchEvent(new CustomEvent('ogsoreg_hof_settings_updated'))
+        }
+      })
+      cloudSyncService.subscribeCloudSetting('hall_of_fame_historical_aggregates', (remote) => {
+        if (remote) {
+          localStorage.setItem(HOF_HISTORICAL_AGGREGATES_KEY, JSON.stringify(remote))
+          window.dispatchEvent(new CustomEvent('ogsoreg_hof_aggregates_updated'))
+        }
+      })
+    }
+  }
+
+  async syncFromCloud(): Promise<void> {
+    if (!isSupabaseConfigured()) return
+    try {
+      const cloudSettings = await cloudSyncService.getCloudSetting('hall_of_fame_settings', null)
+      if (cloudSettings) {
+        localStorage.setItem(HOF_SETTINGS_KEY, JSON.stringify(cloudSettings))
+        window.dispatchEvent(new CustomEvent('ogsoreg_hof_settings_updated'))
+      }
+
+      const cloudAggregates = await cloudSyncService.getCloudSetting('hall_of_fame_historical_aggregates', null)
+      if (cloudAggregates && Array.isArray(cloudAggregates)) {
+        localStorage.setItem(HOF_HISTORICAL_AGGREGATES_KEY, JSON.stringify(cloudAggregates))
+        window.dispatchEvent(new CustomEvent('ogsoreg_hof_aggregates_updated'))
+      }
+    } catch (err) {
+      console.warn('[HallOfFameService] Cloud sync error:', err)
+    }
+  }
+
   // -------------------------------------------------------------
-  // Settings & Scoring Weights
+  // Settings & Scoring Weights with Version History
   // -------------------------------------------------------------
   getScoringWeights(): ScoringWeights {
-    if (typeof window === 'undefined') return DEFAULT_SCORING_WEIGHTS
-    try {
-      const raw = localStorage.getItem(HOF_SETTINGS_KEY)
-      if (raw) {
-        const parsed = JSON.parse(raw)
-        if (parsed?.scoring_weights) return parsed.scoring_weights
-      }
-    } catch {}
-    return DEFAULT_SCORING_WEIGHTS
+    return this.getSettings().scoring_weights
+  }
+
+  getScoringVersionsHistory(): ScoringWeights[] {
+    return this.getSettings().scoring_versions_history || SCORING_VERSIONS_HISTORY
   }
 
   saveScoringWeights(weights: ScoringWeights): void {
     if (typeof window === 'undefined') return
     try {
       const existing = this.getSettings()
+      const previousWeight = existing.scoring_weights
+
+      // Register previous weight in version history if different version
+      const history: ScoringWeights[] = existing.scoring_versions_history
+        ? [...existing.scoring_versions_history]
+        : [...SCORING_VERSIONS_HISTORY]
+
+      if (previousWeight && previousWeight.version !== weights.version) {
+        if (!history.some((h) => h.version === previousWeight.version)) {
+          history.push(previousWeight)
+        }
+      }
+
       existing.scoring_weights = {
         ...weights,
         updated_at: new Date().toISOString(),
       }
+      existing.scoring_versions_history = history
+
       this.logAudit({
         id: `audit-${Date.now()}`,
         timestamp: new Date().toISOString(),
@@ -279,9 +348,11 @@ class HallOfFameService {
         period_name: 'Global',
         mode: 'aggregate_campus',
         status: 'success',
-        details: `Updated weights: Gold=${weights.gold}, Silver=${weights.silver}, Bronze=${weights.bronze}, HM1=${weights.honorable_1}, HM2=${weights.honorable_2}`,
+        details: `Updated weights: Gold=${weights.gold}, Silver=${weights.silver}, Bronze=${weights.bronze}, HM1=${weights.honorable_1}, HM2=${weights.honorable_2} (${weights.version})`,
       })
       localStorage.setItem(HOF_SETTINGS_KEY, JSON.stringify(existing))
+      window.dispatchEvent(new CustomEvent('ogsoreg_hof_settings_updated'))
+      cloudSyncService.saveCloudSetting('hall_of_fame_settings', existing)
     } catch {}
   }
 
@@ -291,12 +362,14 @@ class HallOfFameService {
 
   private getSettings(): {
     scoring_weights: ScoringWeights
+    scoring_versions_history?: ScoringWeights[]
     publication_status: Record<string, boolean>
     import_history: HistoricalImportLog[]
     data_completeness_notes: Record<string, string>
   } {
     const defaultSettings = {
       scoring_weights: DEFAULT_SCORING_WEIGHTS,
+      scoring_versions_history: SCORING_VERSIONS_HISTORY,
       publication_status: {},
       import_history: [],
       data_completeness_notes: {},
@@ -306,10 +379,35 @@ class HallOfFameService {
       const raw = localStorage.getItem(HOF_SETTINGS_KEY)
       if (raw) {
         const parsed = JSON.parse(raw)
+        let activeWeights = parsed?.scoring_weights || DEFAULT_SCORING_WEIGHTS
+        const history: ScoringWeights[] = parsed?.scoring_versions_history
+          ? [...parsed.scoring_versions_history]
+          : [...SCORING_VERSIONS_HISTORY]
+
+        // Automatic migration: If stored weights are legacy v1 (gold === 5, silver === 4, etc.)
+        if (
+          activeWeights.version?.startsWith('v1') ||
+          (activeWeights.gold === 5 && activeWeights.silver === 4 && activeWeights.bronze === 3)
+        ) {
+          if (!history.some((h) => h.version === activeWeights.version || (h.gold === 5 && h.silver === 4))) {
+            history.push(activeWeights)
+          }
+          activeWeights = DEFAULT_SCORING_WEIGHTS
+          const updatedSettings = {
+            ...defaultSettings,
+            ...parsed,
+            scoring_weights: activeWeights,
+            scoring_versions_history: history,
+          }
+          localStorage.setItem(HOF_SETTINGS_KEY, JSON.stringify(updatedSettings))
+          return updatedSettings
+        }
+
         return {
           ...defaultSettings,
           ...parsed,
-          scoring_weights: parsed?.scoring_weights || DEFAULT_SCORING_WEIGHTS,
+          scoring_weights: activeWeights,
+          scoring_versions_history: history,
         }
       }
     } catch {}
@@ -360,16 +458,28 @@ class HallOfFameService {
       records.forEach((r) => newMap.set(`${r.period_id}_${r.campus}`, r))
       const combined = Array.from(newMap.values())
       localStorage.setItem(HOF_HISTORICAL_AGGREGATES_KEY, JSON.stringify(combined))
+      window.dispatchEvent(new CustomEvent('ogsoreg_hof_aggregates_updated'))
+      cloudSyncService.saveCloudSetting('hall_of_fame_historical_aggregates', combined)
     } catch {}
   }
 
   // -------------------------------------------------------------
   // Published Periods Resolution
   // -------------------------------------------------------------
-  getEligiblePeriods(): CompetitionPeriod[] {
+  getEligiblePeriods(options?: { requireWinners?: boolean }): CompetitionPeriod[] {
     const all = participantPeriodService.getPeriods()
     // A period is eligible for public Hall of Fame if is_published is true
-    return all.filter((p) => p && p.is_published)
+    const published = all.filter((p) => p && p.is_published)
+    if (options?.requireWinners) {
+      return published.filter((p) => {
+        if (typeof p.total_winners === 'number' && p.total_winners > 0) return true
+        const canonical = participantPeriodService.getWinners(p.id)
+        if (canonical.length > 0) return true
+        const aggregates = this.getHistoricalAggregates(p.id)
+        return aggregates.length > 0
+      })
+    }
+    return published
   }
 
   // -------------------------------------------------------------
@@ -417,12 +527,17 @@ class HallOfFameService {
     // Filter canonical winners by level if requested
     let filteredWinners = canonicalWinners
     if (options.level && options.level !== 'all') {
-      filteredWinners = filteredWinners.filter((w) => {
-        const lvl = (w.jenjang || '').toLowerCase()
-        const cat = (w.category || '').toLowerCase()
-        const target = options.level!.toLowerCase()
-        return lvl.includes(target) || cat.includes(target)
-      })
+      if (period.year <= 2025) {
+        // Sistem jenjang belum ada pada periode 2025 dan sebelumnya (baru mulai 2026)
+        filteredWinners = []
+      } else {
+        filteredWinners = filteredWinners.filter((w) => {
+          const lvl = (w.jenjang || '').toLowerCase()
+          const cat = (w.category || '').toLowerCase()
+          const target = options.level!.toLowerCase()
+          return lvl.includes(target) || cat.includes(target)
+        })
+      }
     }
 
     // Check if period has recorded results
@@ -710,7 +825,30 @@ class HallOfFameService {
     }>
   } {
     // Sort periods chronologically (oldest to newest) for trends
-    const periods = [...this.getEligiblePeriods()].sort((a, b) => a.year - b.year)
+    // CRITICAL: Filter out any periods where winner data is 0 (as explicitly requested by user)
+    const allEligible = [...this.getEligiblePeriods()].sort((a, b) => a.year - b.year)
+
+    const periods = allEligible.filter((p) => {
+      const canonical = participantPeriodService.getWinners(p.id)
+      const aggregates = this.getHistoricalAggregates(p.id)
+      const totalAggAwards = aggregates.reduce(
+        (sum, a) => sum + a.gold + a.silver + a.bronze + a.honorable_1 + a.honorable_2,
+        0
+      )
+      const totalWinners =
+        typeof p.total_winners === 'number' && p.total_winners > 0
+          ? p.total_winners
+          : canonical.length + totalAggAwards
+
+      if (totalWinners === 0) return false
+
+      if (levelFilter && levelFilter !== 'all') {
+        const result = this.computePeriodStandings(p.id, { level: levelFilter, mode: 'points' })
+        return result.totalAwards > 0
+      }
+
+      return true
+    })
 
     const series = selectedCampuses.map((campus) => {
       const data = periods.map((p) => {
@@ -825,19 +963,22 @@ class HallOfFameService {
           const tier = classifyAward(w.award)
           if (!tier) continue
 
-          const levelKey = w.jenjang || 'Umum'
-          if (!achievementsByLevel[levelKey]) {
-            achievementsByLevel[levelKey] = {
-              gold: 0,
-              silver: 0,
-              bronze: 0,
-              honorable_1: 0,
-              honorable_2: 0,
-              points: 0,
+          // Jenjang breakdown only exists starting from 2026 onwards (periods <= 2025 do not have Jenjang)
+          if (p.year >= 2026 && w.jenjang) {
+            const levelKey = w.jenjang
+            if (!achievementsByLevel[levelKey]) {
+              achievementsByLevel[levelKey] = {
+                gold: 0,
+                silver: 0,
+                bronze: 0,
+                honorable_1: 0,
+                honorable_2: 0,
+                points: 0,
+              }
             }
+            achievementsByLevel[levelKey][tier]++
+            achievementsByLevel[levelKey].points += weights[tier]
           }
-          achievementsByLevel[levelKey][tier]++
-          achievementsByLevel[levelKey].points += weights[tier]
 
           const catKey = w.category || 'Bidang Lainnya'
           if (!achievementsByCategory[catKey]) {
@@ -858,7 +999,7 @@ class HallOfFameService {
             student_name: w.student_name,
             award: w.award,
             category: w.category,
-            jenjang: w.jenjang,
+            jenjang: p.year >= 2026 ? w.jenjang : undefined,
             period_id: p.id,
             period_name: p.name,
             period_year: p.year,
@@ -920,13 +1061,29 @@ class HallOfFameService {
       }
     }
 
-    // Standings for latest period
-    const latestStandings = this.computePeriodStandings(latestPeriod.id, { mode: 'points' })
+    // Prefer the latest period that has verified winners for the podium & spotlight
+    // If none has winners yet, fallback to the latest published period
+    const periodWithWinners = eligiblePeriods.find((p) => {
+      const canonical = participantPeriodService.getWinners(p.id)
+      const aggregates = this.getHistoricalAggregates(p.id)
+      const totalAggAwards = aggregates.reduce(
+        (sum, a) => sum + a.gold + a.silver + a.bronze + a.honorable_1 + a.honorable_2,
+        0
+      )
+      const tw = typeof p.total_winners === 'number' && p.total_winners > 0
+        ? p.total_winners
+        : canonical.length + totalAggAwards
+      return tw > 0
+    })
+
+    const displayPeriod = periodWithWinners || latestPeriod
+    // Standings for display period
+    const latestStandings = this.computePeriodStandings(displayPeriod.id, { mode: 'points' })
 
     // Top 3 campuses by points
     const topThreeCampuses = latestStandings.standings.slice(0, 3)
 
-    // Leading gold medal campus across latest period (or all-time)
+    // Leading gold medal campus across display period
     let leadingGoldCampus: { campus: string; goldCount: number; totalPoints: number } | null = null
     const goldSorted = [...latestStandings.standings].sort((a, b) => b.gold - a.gold)
     if (goldSorted.length > 0 && goldSorted[0].gold > 0) {
@@ -940,7 +1097,7 @@ class HallOfFameService {
     const allTime = this.computeAllTimeRankings()
 
     return {
-      latestPeriod,
+      latestPeriod: displayPeriod,
       totalPublishedPeriods: eligiblePeriods.length,
       totalParticipatingCampuses: KAMPUS_OPTIONS.length,
       totalRecordedAwards: latestStandings.totalAwards,

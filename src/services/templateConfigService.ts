@@ -1,4 +1,5 @@
 import { customFieldService } from './customFieldService'
+import { cloudSyncService } from './supabase/cloudSyncService'
 import type { CustomFieldType } from '../types/customField'
 
 export interface ExcelTemplateColumnConfig {
@@ -219,6 +220,7 @@ class TemplateConfigService {
         // Quota
       }
     }
+    cloudSyncService.saveCloudSetting('template_columns_config', this.cache)
     this.notify()
   }
 

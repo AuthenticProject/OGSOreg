@@ -1,4 +1,6 @@
 import type { StudentJenjang } from '../types/student'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { cloudSyncService } from './supabase/cloudSyncService'
 
 export interface SyllabusTopic {
   title: string
@@ -664,6 +666,76 @@ const INITIAL_BANK_SOAL: BankSoalCollection[] = [
 ]
 
 class MateriService {
+  private isCloudSyncing = false
+  private hasInitializedCloud = false
+
+  constructor() {
+    this.initCloudSync()
+  }
+
+  private initCloudSync() {
+    if (this.hasInitializedCloud || typeof window === 'undefined') return
+    this.hasInitializedCloud = true
+
+    setTimeout(() => {
+      this.syncFromCloud().catch(() => {})
+    }, 250)
+
+    window.addEventListener('focus', () => {
+      this.syncFromCloud().catch(() => {})
+    })
+    window.addEventListener('online', () => {
+      this.syncFromCloud().catch(() => {})
+    })
+
+    if (isSupabaseConfigured()) {
+      try {
+        supabase
+          .channel('realtime:materi')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'syllabuses' }, () => {
+            this.syncFromCloud().catch(() => {})
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'bank_soal' }, () => {
+            this.syncFromCloud().catch(() => {})
+          })
+          .subscribe()
+
+        cloudSyncService.subscribeCloudSetting('materi_silabus', () => {
+          this.syncFromCloud().catch(() => {})
+        })
+        cloudSyncService.subscribeCloudSetting('materi_bank_soal', () => {
+          this.syncFromCloud().catch(() => {})
+        })
+      } catch {
+        // Ignore
+      }
+    }
+  }
+
+  async syncFromCloud(): Promise<void> {
+    if (!isSupabaseConfigured() || this.isCloudSyncing) return
+    this.isCloudSyncing = true
+    try {
+      // 1. Silabus
+      const cloudSilabus = await cloudSyncService.getCloudSetting<SyllabusItem[] | null>('materi_silabus', null)
+      if (cloudSilabus && Array.isArray(cloudSilabus) && cloudSilabus.length > 0) {
+        localStorage.setItem(SILABUS_STORAGE_KEY, JSON.stringify(cloudSilabus))
+        window.dispatchEvent(new CustomEvent('ogsoreg_silabus_updated'))
+      }
+
+      // 2. Bank Soal
+      const cloudBankSoal = await cloudSyncService.getCloudSetting<BankSoalCollection[] | null>('materi_bank_soal', null)
+      if (cloudBankSoal && Array.isArray(cloudBankSoal) && cloudBankSoal.length > 0) {
+        localStorage.setItem(BANK_SOAL_STORAGE_KEY, JSON.stringify(cloudBankSoal))
+        window.dispatchEvent(new CustomEvent('ogsoreg_bank_soal_updated'))
+      }
+    } catch (err) {
+      console.warn('[MateriService] Cloud sync error:', err)
+    } finally {
+      this.isCloudSyncing = false
+    }
+  }
+
   // ==========================================
   // SILABUS
   // ==========================================
@@ -726,7 +798,9 @@ class MateriService {
 
     if (typeof window !== 'undefined') {
       localStorage.setItem(SILABUS_STORAGE_KEY, JSON.stringify(list))
+      window.dispatchEvent(new CustomEvent('ogsoreg_silabus_updated'))
     }
+    cloudSyncService.saveCloudSetting('materi_silabus', list)
     return saved
   }
 
@@ -734,7 +808,9 @@ class MateriService {
     const list = this.getSyllabuses().filter((s) => s.id !== id)
     if (typeof window !== 'undefined') {
       localStorage.setItem(SILABUS_STORAGE_KEY, JSON.stringify(list))
+      window.dispatchEvent(new CustomEvent('ogsoreg_silabus_updated'))
     }
+    cloudSyncService.saveCloudSetting('materi_silabus', list)
     return true
   }
 
@@ -746,7 +822,9 @@ class MateriService {
       item.updated_at = new Date().toISOString()
       if (typeof window !== 'undefined') {
         localStorage.setItem(SILABUS_STORAGE_KEY, JSON.stringify(list))
+        window.dispatchEvent(new CustomEvent('ogsoreg_silabus_updated'))
       }
+      cloudSyncService.saveCloudSetting('materi_silabus', list)
       return true
     }
     return false
@@ -821,7 +899,9 @@ class MateriService {
 
     if (typeof window !== 'undefined') {
       localStorage.setItem(BANK_SOAL_STORAGE_KEY, JSON.stringify(list))
+      window.dispatchEvent(new CustomEvent('ogsoreg_bank_soal_updated'))
     }
+    cloudSyncService.saveCloudSetting('materi_bank_soal', list)
     return saved
   }
 
@@ -844,7 +924,9 @@ class MateriService {
 
     if (typeof window !== 'undefined') {
       localStorage.setItem(BANK_SOAL_STORAGE_KEY, JSON.stringify(list))
+      window.dispatchEvent(new CustomEvent('ogsoreg_bank_soal_updated'))
     }
+    cloudSyncService.saveCloudSetting('materi_bank_soal', list)
     return newDoc
   }
 
@@ -857,7 +939,9 @@ class MateriService {
 
     if (typeof window !== 'undefined') {
       localStorage.setItem(BANK_SOAL_STORAGE_KEY, JSON.stringify(list))
+      window.dispatchEvent(new CustomEvent('ogsoreg_bank_soal_updated'))
     }
+    cloudSyncService.saveCloudSetting('materi_bank_soal', list)
     return true
   }
 
@@ -865,7 +949,9 @@ class MateriService {
     const list = this.getBankSoalCollections().filter((c) => c.id !== collectionId)
     if (typeof window !== 'undefined') {
       localStorage.setItem(BANK_SOAL_STORAGE_KEY, JSON.stringify(list))
+      window.dispatchEvent(new CustomEvent('ogsoreg_bank_soal_updated'))
     }
+    cloudSyncService.saveCloudSetting('materi_bank_soal', list)
     return true
   }
 }

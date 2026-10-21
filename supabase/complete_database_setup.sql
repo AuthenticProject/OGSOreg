@@ -390,7 +390,229 @@ CREATE POLICY "Custom fields modifiable only by Super Admin" ON public.custom_fi
   USING (public.is_current_user_super_admin())
   WITH CHECK (public.is_current_user_super_admin());
 
--- 10. VERIFICATION
+-- 10. UNIVERSAL APP SETTINGS & CROSS-DEVICE CLOUD SYNC TABLE
+CREATE TABLE IF NOT EXISTS public.app_settings (
+    key TEXT PRIMARY KEY,
+    value JSONB NOT NULL DEFAULT '{}'::jsonb,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public select app_settings" ON public.app_settings;
+DROP POLICY IF EXISTS "Public insert app_settings" ON public.app_settings;
+DROP POLICY IF EXISTS "Public update app_settings" ON public.app_settings;
+DROP POLICY IF EXISTS "Public delete app_settings" ON public.app_settings;
+
+CREATE POLICY "Public select app_settings" ON public.app_settings
+  FOR SELECT TO anon, authenticated USING (true);
+
+CREATE POLICY "Public insert app_settings" ON public.app_settings
+  FOR INSERT TO anon, authenticated WITH CHECK (true);
+
+CREATE POLICY "Public update app_settings" ON public.app_settings
+  FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
+
+CREATE POLICY "Public delete app_settings" ON public.app_settings
+  FOR DELETE TO anon, authenticated USING (true);
+
+-- 11. COMPETITION PERIODS TABLE (OGSO 2026, 2025, etc.)
+CREATE TABLE IF NOT EXISTS public.competition_periods (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    year INTEGER NOT NULL,
+    description TEXT DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'completed', 'archived')),
+    start_date TIMESTAMPTZ,
+    end_date TIMESTAMPTZ,
+    is_published BOOLEAN DEFAULT true,
+    total_winners INTEGER DEFAULT 0,
+    total_participants INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+ALTER TABLE public.competition_periods ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public select competition_periods" ON public.competition_periods;
+DROP POLICY IF EXISTS "Public insert competition_periods" ON public.competition_periods;
+DROP POLICY IF EXISTS "Public update competition_periods" ON public.competition_periods;
+DROP POLICY IF EXISTS "Public delete competition_periods" ON public.competition_periods;
+
+CREATE POLICY "Public select competition_periods" ON public.competition_periods
+  FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public insert competition_periods" ON public.competition_periods
+  FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY "Public update competition_periods" ON public.competition_periods
+  FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Public delete competition_periods" ON public.competition_periods
+  FOR DELETE TO anon, authenticated USING (true);
+
+-- 12. COMPETITION WINNERS TABLE
+CREATE TABLE IF NOT EXISTS public.competition_winners (
+    id TEXT PRIMARY KEY,
+    period_id TEXT NOT NULL,
+    student_id TEXT,
+    student_name TEXT NOT NULL,
+    campus TEXT NOT NULL,
+    category TEXT NOT NULL,
+    award TEXT NOT NULL,
+    rank INTEGER NOT NULL DEFAULT 999,
+    score NUMERIC(5,2),
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_winners_period_id ON public.competition_winners(period_id);
+CREATE INDEX IF NOT EXISTS idx_winners_campus ON public.competition_winners(campus);
+CREATE INDEX IF NOT EXISTS idx_winners_category ON public.competition_winners(category);
+
+ALTER TABLE public.competition_winners ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public select competition_winners" ON public.competition_winners;
+DROP POLICY IF EXISTS "Public insert competition_winners" ON public.competition_winners;
+DROP POLICY IF EXISTS "Public update competition_winners" ON public.competition_winners;
+DROP POLICY IF EXISTS "Public delete competition_winners" ON public.competition_winners;
+
+CREATE POLICY "Public select competition_winners" ON public.competition_winners
+  FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public insert competition_winners" ON public.competition_winners
+  FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY "Public update competition_winners" ON public.competition_winners
+  FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Public delete competition_winners" ON public.competition_winners
+  FOR DELETE TO anon, authenticated USING (true);
+
+-- 13. COMPETITION CERTIFICATES TABLE
+CREATE TABLE IF NOT EXISTS public.competition_certificates (
+    id TEXT PRIMARY KEY,
+    certificate_number TEXT UNIQUE NOT NULL,
+    period_id TEXT NOT NULL,
+    student_name TEXT NOT NULL,
+    campus TEXT NOT NULL,
+    category TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('participant', 'winner', 'appreciation')),
+    award TEXT,
+    issued_date TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    download_count INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_certificates_cert_no ON public.competition_certificates(certificate_number);
+CREATE INDEX IF NOT EXISTS idx_certificates_period ON public.competition_certificates(period_id);
+
+ALTER TABLE public.competition_certificates ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public select competition_certificates" ON public.competition_certificates;
+DROP POLICY IF EXISTS "Public insert competition_certificates" ON public.competition_certificates;
+DROP POLICY IF EXISTS "Public update competition_certificates" ON public.competition_certificates;
+DROP POLICY IF EXISTS "Public delete competition_certificates" ON public.competition_certificates;
+
+CREATE POLICY "Public select competition_certificates" ON public.competition_certificates
+  FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public insert competition_certificates" ON public.competition_certificates
+  FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY "Public update competition_certificates" ON public.competition_certificates
+  FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Public delete competition_certificates" ON public.competition_certificates
+  FOR DELETE TO anon, authenticated USING (true);
+
+-- 14. WEBSITE PUBLIC CONTENT TABLE
+CREATE TABLE IF NOT EXISTS public.website_content (
+    id TEXT PRIMARY KEY DEFAULT 'current',
+    hero JSONB NOT NULL DEFAULT '{}'::jsonb,
+    competition_info JSONB NOT NULL DEFAULT '{}'::jsonb,
+    timeline JSONB NOT NULL DEFAULT '[]'::jsonb,
+    faq JSONB NOT NULL DEFAULT '[]'::jsonb,
+    officials JSONB NOT NULL DEFAULT '[]'::jsonb,
+    contacts JSONB NOT NULL DEFAULT '[]'::jsonb,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+ALTER TABLE public.website_content ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public select website_content" ON public.website_content;
+DROP POLICY IF EXISTS "Public insert website_content" ON public.website_content;
+DROP POLICY IF EXISTS "Public update website_content" ON public.website_content;
+
+CREATE POLICY "Public select website_content" ON public.website_content
+  FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public insert website_content" ON public.website_content
+  FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY "Public update website_content" ON public.website_content
+  FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
+
+-- 15. SYLLABUSES TABLE
+CREATE TABLE IF NOT EXISTS public.syllabuses (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    jenjang TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    description TEXT,
+    topics JSONB DEFAULT '[]'::jsonb,
+    file_url TEXT,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+ALTER TABLE public.syllabuses ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public select syllabuses" ON public.syllabuses;
+DROP POLICY IF EXISTS "Public insert syllabuses" ON public.syllabuses;
+DROP POLICY IF EXISTS "Public update syllabuses" ON public.syllabuses;
+DROP POLICY IF EXISTS "Public delete syllabuses" ON public.syllabuses;
+
+CREATE POLICY "Public select syllabuses" ON public.syllabuses
+  FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public insert syllabuses" ON public.syllabuses
+  FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY "Public update syllabuses" ON public.syllabuses
+  FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Public delete syllabuses" ON public.syllabuses
+  FOR DELETE TO anon, authenticated USING (true);
+
+-- 16. BANK SOAL TABLE
+CREATE TABLE IF NOT EXISTS public.bank_soal (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    jenjang TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    year INTEGER NOT NULL DEFAULT 2026,
+    difficulty TEXT DEFAULT 'Menengah',
+    total_questions INTEGER DEFAULT 40,
+    file_url TEXT,
+    solution_url TEXT,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+ALTER TABLE public.bank_soal ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public select bank_soal" ON public.bank_soal;
+DROP POLICY IF EXISTS "Public insert bank_soal" ON public.bank_soal;
+DROP POLICY IF EXISTS "Public update bank_soal" ON public.bank_soal;
+DROP POLICY IF EXISTS "Public delete bank_soal" ON public.bank_soal;
+
+CREATE POLICY "Public select bank_soal" ON public.bank_soal
+  FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public insert bank_soal" ON public.bank_soal
+  FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY "Public update bank_soal" ON public.bank_soal
+  FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Public delete bank_soal" ON public.bank_soal
+  FOR DELETE TO anon, authenticated USING (true);
+
+-- 17. ENABLE REALTIME PUBLICATION FOR INSTANT MULTI-DEVICE UPDATES
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+END $$;
+
+ALTER PUBLICATION supabase_realtime ADD TABLE 
+  public.students,
+  public.app_settings,
+  public.competition_periods,
+  public.competition_winners,
+  public.competition_certificates,
+  public.website_content;
+
+-- 18. VERIFICATION
 SELECT 
   up.username,
   up.role,

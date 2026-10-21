@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../../lib/supabase'
 import type { RegistrationBatchEntity } from '../../types/database'
 import { studentRepository, CANONICAL_INSTITUTION_ID } from '../studentRepository'
+import { cloudSyncService } from './cloudSyncService'
 
 export interface CreateBatchInput {
   competition_id: string
@@ -61,10 +62,19 @@ export const batchRepository = {
         const { data, error } = await query
         if (!error && data && data.length > 0) {
           data.forEach((b) => localMap.set(b.id, b as RegistrationBatchEntity))
+        } else if (error) {
+          // Fall back to cloudSyncService key-value store
+          const remoteBatches = await cloudSyncService.getCloudSetting<RegistrationBatchEntity[]>('registration_batches', [])
+          if (remoteBatches && remoteBatches.length > 0) {
+            remoteBatches.forEach((b) => localMap.set(b.id, b))
+          }
         }
       } catch (err) {
-        // Table may not exist yet or connection issue: silently fallback to local persistence
-        console.warn('Supabase registration_batches query failed, using local persistence:', err)
+        // Table may not exist yet: fall back to cloudSyncService key-value store
+        const remoteBatches = await cloudSyncService.getCloudSetting<RegistrationBatchEntity[]>('registration_batches', [])
+        if (remoteBatches && remoteBatches.length > 0) {
+          remoteBatches.forEach((b) => localMap.set(b.id, b))
+        }
       }
     }
 
@@ -175,6 +185,7 @@ export const batchRepository = {
         if (!error && data) {
           localMap.set(data.id, data as RegistrationBatchEntity)
           saveLocalBatchesMap(Array.from(localMap.values()))
+          cloudSyncService.saveCloudSetting('registration_batches', Array.from(localMap.values()))
           return data as RegistrationBatchEntity
         }
       } catch {
@@ -182,6 +193,7 @@ export const batchRepository = {
       }
     }
 
+    cloudSyncService.saveCloudSetting('registration_batches', Array.from(localMap.values()))
     return newBatch
   },
 

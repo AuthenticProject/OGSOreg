@@ -73,7 +73,7 @@ export const HallOfFameManagementPage: React.FC = () => {
   // Handle Reset Scoring Weights
   const handleResetWeights = () => {
     if (!isSuperAdmin) return
-    if (confirm('Kembalikan bobot skor ke standar resmi OGSO (5, 4, 3, 2, 1)?')) {
+    if (confirm('Kembalikan bobot skor ke standar resmi OGSO (25, 15, 8, 3, 1)?')) {
       hallOfFameService.resetScoringWeights()
       loadData()
     }
@@ -208,10 +208,10 @@ export const HallOfFameManagementPage: React.FC = () => {
                 type="button"
                 onClick={handleResetWeights}
                 className="text-xs font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
-                title="Reset bobot ke standar resmi 5, 4, 3, 2, 1"
+                title="Reset bobot ke standar resmi 25, 15, 8, 3, 1"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset Standar</span>
+                <span>Reset Standar (25-15-8-3-1)</span>
               </button>
             )}
           </div>
@@ -317,7 +317,7 @@ export const HallOfFameManagementPage: React.FC = () => {
                   </span>
                 ) : (
                   <span className="text-[11px] text-slate-400">
-                    Standar default resmi: 5, 4, 3, 2, 1
+                    Standar default resmi: 25, 15, 8, 3, 1
                   </span>
                 )}
 

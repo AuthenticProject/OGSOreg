@@ -16,16 +16,32 @@ export interface ScoringWeights {
   notes?: string
 }
 
-export const DEFAULT_SCORING_WEIGHTS: ScoringWeights = {
-  version: 'v1.0 (Official OGSO Standard)',
+export const LEGACY_SCORING_WEIGHTS_V1: ScoringWeights = {
+  version: 'v1.0 (Legacy OGSO Standard)',
   gold: 5,
   silver: 4,
   bronze: 3,
   honorable_1: 2,
   honorable_2: 1,
-  updated_at: '2026-01-01T00:00:00Z',
-  notes: 'Standar resmi pembobotan prestasi olimpiade sains Gontor (SK Panitia Pusat OGSO).',
+  updated_at: '2025-01-01T00:00:00Z',
+  notes: 'Sistem pembobotan historis OGSO (5-4-3-2-1).',
 }
+
+export const DEFAULT_SCORING_WEIGHTS: ScoringWeights = {
+  version: 'v2.0 (Official OGSO Standard 2026)',
+  gold: 25,
+  silver: 15,
+  bronze: 8,
+  honorable_1: 3,
+  honorable_2: 1,
+  updated_at: '2026-01-01T00:00:00Z',
+  notes: 'Standar resmi pembobotan prestasi olimpiade sains Gontor (SK Panitia Pusat OGSO: 25-15-8-3-1).',
+}
+
+export const SCORING_VERSIONS_HISTORY: ScoringWeights[] = [
+  DEFAULT_SCORING_WEIGHTS,
+  LEGACY_SCORING_WEIGHTS_V1,
+]
 
 export interface CampusAwardCounts {
   gold: number

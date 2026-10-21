@@ -68,8 +68,12 @@ export const CampusProfileView: React.FC<CampusProfileViewProps> = ({
   // Filter published winners
   const filteredWinners = publishedWinners.filter((w) => {
     if (winnerLevelFilter !== 'all') {
-      const lvl = (w.jenjang || '').toLowerCase()
-      if (!lvl.includes(winnerLevelFilter.toLowerCase())) return false
+      if (winnerLevelFilter === 'legacy') {
+        if (w.jenjang) return false
+      } else {
+        const lvl = (w.jenjang || '').toLowerCase()
+        if (!lvl.includes(winnerLevelFilter.toLowerCase())) return false
+      }
     }
     if (winnerSearch.trim()) {
       const q = winnerSearch.toLowerCase()
@@ -232,15 +236,20 @@ export const CampusProfileView: React.FC<CampusProfileViewProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* By Competition Level */}
         <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-4">
-          <h3 className="text-sm font-extrabold text-[#0C241B] uppercase tracking-wider flex items-center gap-2">
-            <Layers className="w-4 h-4 text-[#166534]" />
-            <span>Raihan Prestasi Berdasarkan Jenjang</span>
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-extrabold text-[#0C241B] uppercase tracking-wider flex items-center gap-2">
+              <Layers className="w-4 h-4 text-[#166534]" />
+              <span>Raihan Prestasi Berdasarkan Jenjang</span>
+            </h3>
+            <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+              Sistem Jenjang Mulai 2026
+            </span>
+          </div>
 
           <div className="space-y-2.5">
             {Object.keys(achievementsByLevel).length === 0 ? (
               <div className="text-xs text-slate-400 py-4 text-center">
-                Belum ada data prestasi per jenjang yang dipublikasikan.
+                Belum ada data prestasi per jenjang (sistem jenjang baru diterapkan mulai OGSO 2026).
               </div>
             ) : (
               Object.entries(achievementsByLevel).map(([lvl, data]) => (
@@ -385,6 +394,7 @@ export const CampusProfileView: React.FC<CampusProfileViewProps> = ({
               <option value="Jenjang 3">Jenjang 3</option>
               <option value="Jenjang 4">Jenjang 4</option>
               <option value="Jenjang 5">Jenjang 5</option>
+              <option value="legacy">Tanpa Jenjang (Arsip ≤ 2025)</option>
             </select>
           </div>
         </div>

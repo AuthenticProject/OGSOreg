@@ -255,13 +255,13 @@ export const HallOfFameAllTimeTab: React.FC<HallOfFameAllTimeTabProps> = ({
                     <td className="py-3.5 px-4 font-mono font-bold text-slate-700">
                       <span
                         className={cn(
-                          'inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold',
+                          'inline-flex items-center justify-center w-7 h-7 rounded-xl text-xs font-black shadow-2xs',
                           row.rank === 1 && !isZeroAwards
-                            ? 'bg-[#D5C49A] text-[#0C241B] shadow-2xs font-extrabold'
+                            ? 'bg-gradient-to-r from-amber-300 to-amber-500 text-[#0C241B] ring-2 ring-amber-400/40'
                             : row.rank === 2 && !isZeroAwards
-                            ? 'bg-slate-200 text-slate-800'
+                            ? 'bg-gradient-to-r from-slate-200 to-slate-300 text-slate-800 ring-2 ring-slate-300'
                             : row.rank === 3 && !isZeroAwards
-                            ? 'bg-amber-100 text-amber-900'
+                            ? 'bg-gradient-to-r from-amber-100 to-amber-200 text-amber-900 ring-2 ring-amber-300'
                             : 'bg-slate-100 text-slate-600'
                         )}
                       >
@@ -281,7 +281,7 @@ export const HallOfFameAllTimeTab: React.FC<HallOfFameAllTimeTabProps> = ({
 
                     <td className="py-3.5 px-3 text-center text-slate-600 font-semibold font-mono">
                       {row.periods_participated > 0 ? (
-                        <span className="px-2 py-0.5 rounded bg-slate-100">
+                        <span className="px-2.5 py-0.5 rounded-lg bg-emerald-50 text-[#166534] font-bold border border-emerald-100">
                           {row.periods_participated} Periode
                         </span>
                       ) : (
@@ -291,7 +291,9 @@ export const HallOfFameAllTimeTab: React.FC<HallOfFameAllTimeTabProps> = ({
 
                     <td className="py-3.5 px-3 text-center font-bold text-slate-800">
                       {row.gold > 0 ? (
-                        <span className="font-extrabold text-amber-600">{row.gold}</span>
+                        <span className="inline-flex items-center justify-center min-w-[24px] px-2 py-0.5 rounded-lg bg-amber-50 text-amber-700 font-black border border-amber-200/80">
+                          {row.gold}
+                        </span>
                       ) : (
                         <span className="text-slate-300">0</span>
                       )}
@@ -299,7 +301,9 @@ export const HallOfFameAllTimeTab: React.FC<HallOfFameAllTimeTabProps> = ({
 
                     <td className="py-3.5 px-3 text-center font-bold text-slate-800">
                       {row.silver > 0 ? (
-                        <span className="font-extrabold text-slate-700">{row.silver}</span>
+                        <span className="inline-flex items-center justify-center min-w-[24px] px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-black border border-slate-200">
+                          {row.silver}
+                        </span>
                       ) : (
                         <span className="text-slate-300">0</span>
                       )}
@@ -307,23 +311,37 @@ export const HallOfFameAllTimeTab: React.FC<HallOfFameAllTimeTabProps> = ({
 
                     <td className="py-3.5 px-3 text-center font-bold text-slate-800">
                       {row.bronze > 0 ? (
-                        <span className="font-extrabold text-amber-700">{row.bronze}</span>
+                        <span className="inline-flex items-center justify-center min-w-[24px] px-2 py-0.5 rounded-lg bg-amber-50 text-amber-800 font-black border border-amber-200/60">
+                          {row.bronze}
+                        </span>
                       ) : (
                         <span className="text-slate-300">0</span>
                       )}
                     </td>
 
                     <td className="py-3.5 px-3 text-center font-semibold text-slate-700">
-                      {row.honorable_1 > 0 ? row.honorable_1 : <span className="text-slate-300">0</span>}
+                      {row.honorable_1 > 0 ? (
+                        <span className="inline-flex items-center justify-center min-w-[24px] px-1.5 py-0.5 rounded bg-emerald-50 text-[#166534] font-bold">
+                          {row.honorable_1}
+                        </span>
+                      ) : (
+                        <span className="text-slate-300">0</span>
+                      )}
                     </td>
 
                     <td className="py-3.5 px-3 text-center font-semibold text-slate-700">
-                      {row.honorable_2 > 0 ? row.honorable_2 : <span className="text-slate-300">0</span>}
+                      {row.honorable_2 > 0 ? (
+                        <span className="inline-flex items-center justify-center min-w-[24px] px-1.5 py-0.5 rounded bg-emerald-50 text-[#166534] font-bold">
+                          {row.honorable_2}
+                        </span>
+                      ) : (
+                        <span className="text-slate-300">0</span>
+                      )}
                     </td>
 
                     <td className="py-3.5 px-3 text-center font-bold text-slate-800">
                       {row.total_awards > 0 ? (
-                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800">
+                        <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 font-extrabold border border-slate-200">
                           {row.total_awards}
                         </span>
                       ) : (
@@ -334,8 +352,8 @@ export const HallOfFameAllTimeTab: React.FC<HallOfFameAllTimeTabProps> = ({
                     <td className="py-3.5 px-4 text-right">
                       <span
                         className={cn(
-                          'text-sm font-extrabold font-mono',
-                          row.total_points > 0 ? 'text-[#166534]' : 'text-slate-400'
+                          'text-base font-black font-mono',
+                          row.total_points > 0 ? 'text-[#166534]' : 'text-slate-300'
                         )}
                       >
                         {row.total_points}

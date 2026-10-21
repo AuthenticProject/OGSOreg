@@ -116,10 +116,10 @@ export async function buildHistoricalImportWorkbook(): Promise<ExcelJS.Workbook>
     cell.alignment = { vertical: 'middle', horizontal: 'center' }
   })
 
-  // Sample Rows
-  wsIndiv.addRow([2025, 'Ahmad Fauzi', '0082123451', 'Gontor 1', 'Jenjang 1', 'IPA Shigor', 'Juara 1', 96.5])
-  wsIndiv.addRow([2025, 'Budi Santoso', '0082123452', 'Gontor 2', 'Jenjang 2', 'MTK Shigor', 'Juara 2', 92.0])
-  wsIndiv.addRow([2024, 'Fatimah Az-Zahra', '0082123453', 'Gontor Putri 1', 'Jenjang 3', 'IPA Kibar', 'Juara 1', 98.0])
+  // Sample Rows (Sistem Jenjang baru dimulai pada 2026; untuk 2025 dan sebelumnya dikosongkan)
+  wsIndiv.addRow([2026, 'Ahmad Fauzi', '0082123451', 'Gontor 1', 'Jenjang 1', 'IPA Shigor', 'Juara 1', 96.5])
+  wsIndiv.addRow([2025, 'Budi Santoso', '0082123452', 'Gontor 2', '', 'MTK Shigor', 'Juara 2', 92.0])
+  wsIndiv.addRow([2024, 'Fatimah Az-Zahra', '0082123453', 'Gontor Putri 1', '', 'IPA Kibar', 'Juara 1', 98.0])
 
   // -------------------------------------------------------------
   // Sheet 2: Rekapitulasi Kampus (Aggregate)
@@ -280,7 +280,7 @@ export async function parseHistoricalExcelFile(file: File): Promise<HistoricalSt
           student_name: nameVal,
           nisn_username: nisnVal,
           campus: normalizeCampusInput(campusVal),
-          jenjang: normalizeJenjangInput(jenjangVal),
+          jenjang: year >= 2026 ? normalizeJenjangInput(jenjangVal) : undefined,
           category: normalizeCategoryName(catVal),
           award: normalizeAwardInput(awardVal),
           score: scoreVal !== undefined && scoreVal !== '' ? Number(scoreVal) : undefined,
@@ -435,7 +435,7 @@ export async function commitHistoricalImport(
         student_name: row.student_name!,
         nisn_username: row.nisn_username || `STB-${Math.floor(100000 + Math.random() * 900000)}`,
         campus: row.campus,
-        jenjang: row.jenjang,
+        jenjang: period.year >= 2026 ? row.jenjang : undefined,
         award: row.award!,
         category: row.category || 'Bidang Terpadu',
         score: typeof row.score === 'number' ? row.score : undefined,

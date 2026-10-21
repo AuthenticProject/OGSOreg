@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { cloudSyncService } from './supabase/cloudSyncService'
 import {
   type CustomFieldDefinition,
   validateMoodleDestinationHeader,
@@ -128,6 +129,7 @@ class CustomFieldService {
         // Ignore quota
       }
     }
+    cloudSyncService.saveCloudSetting('custom_field_definitions', this.cache)
   }
 
   /**
