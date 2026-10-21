@@ -218,6 +218,13 @@ class CustomFieldService {
   }
 
   /**
+   * Synchronous accessor for all cached fields
+   */
+  public getAllFieldsSync(): CustomFieldDefinition[] {
+    return [...this.cache]
+  }
+
+  /**
    * Creates or updates a custom field definition
    */
   public async saveCustomField(

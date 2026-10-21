@@ -84,21 +84,18 @@ export async function generateMoodleUsersExcelBuffer(
 }
 
 /**
- * Triggers browser download of the Moodle Excel file.
+ * Triggers browser download of Moodle Excel file directly from edited rows.
  */
-export async function downloadMoodleUsersExcel(
-  students: any[],
-  options?: string | (MoodleExportOptions & { customFilename?: string })
+export async function downloadMoodleUsersExcelFromRows(
+  rows: MoodleUserExportRow[],
+  customFilename?: string
 ): Promise<{
   filename: string
   totalExported: number
   byteSize: number
 }> {
-  const opts: MoodleExportOptions & { customFilename?: string } =
-    typeof options === 'string' ? { customFilename: options } : options || {}
-  const mappingResult = mapStudentsToMoodleExport(students, opts)
-  const buffer = await generateMoodleUsersExcelBuffer(mappingResult.mappedRows)
-  const filename = opts.customFilename || 'OGSOreg_Moodle_Users.xlsx'
+  const buffer = await generateMoodleUsersExcelBuffer(rows)
+  const filename = customFilename || `OGSOreg_Moodle_Users_${new Date().toISOString().slice(0, 10)}.xlsx`
 
   const blob = new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -117,9 +114,27 @@ export async function downloadMoodleUsersExcel(
 
   return {
     filename,
-    totalExported: mappingResult.mappedRows.length,
+    totalExported: rows.length,
     byteSize: blob.size,
   }
 }
 
+/**
+ * Triggers browser download of the Moodle Excel file.
+ */
+export async function downloadMoodleUsersExcel(
+  students: any[],
+  options?: string | (MoodleExportOptions & { customFilename?: string })
+): Promise<{
+  filename: string
+  totalExported: number
+  byteSize: number
+}> {
+  const opts: MoodleExportOptions & { customFilename?: string } =
+    typeof options === 'string' ? { customFilename: options } : options || {}
+  const mappingResult = mapStudentsToMoodleExport(students, opts)
+  return downloadMoodleUsersExcelFromRows(mappingResult.mappedRows, opts.customFilename)
+}
+
 export const exportStudentsToMoodleExcel = downloadMoodleUsersExcel
+

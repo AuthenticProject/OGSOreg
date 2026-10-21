@@ -1,10 +1,12 @@
 import {
-  MOODLE_EXPORT_COLUMNS,
   mapStudentsToMoodleExport,
   type MoodleUserExportRow,
   type MoodleExportOptions,
 } from './moodleExportMapper'
-import { customFieldService } from '../customFieldService'
+import {
+  moodleColumnConfigService,
+  type MoodleColumnConfig,
+} from './moodleColumnConfigService'
 
 /**
  * Escapes a single value according to RFC 4180 CSV specification.
@@ -19,36 +21,28 @@ export function escapeMoodleCsvField(val: unknown): string {
 }
 
 /**
- * Generates an RFC 4180 CSV string for Moodle Upload Users feature with 7 core columns
- * plus any dynamic custom fields mapped to Moodle by Super Admin.
+ * Generates an RFC 4180 CSV string for Moodle Upload Users feature using configured
+ * column definitions (supports custom headers, ordering, and included fields).
  */
-export function generateMoodleUsersCsv(rows: MoodleUserExportRow[]): string {
-  const activeMoodleFields = customFieldService
-    .getActiveFieldsSync()
-    .filter((f) => f.include_in_moodle && f.moodle_destination && f.moodle_destination.trim() !== '')
-
-  const headerColumns = [
-    ...MOODLE_EXPORT_COLUMNS,
-    ...activeMoodleFields.map((f) => f.moodle_destination!.trim()),
-  ]
-  const headerLine = headerColumns.join(',')
+export function generateMoodleUsersCsv(
+  rows: MoodleUserExportRow[],
+  customColumnsConfig?: MoodleColumnConfig[]
+): string {
+  const activeCols = customColumnsConfig || moodleColumnConfigService.getActiveColumns()
+  const headerLine = activeCols.map((c) => c.header).join(',')
 
   const dataLines = rows.map((r) => {
-    const rowValues = [
-      escapeMoodleCsvField(r.username),
-      escapeMoodleCsvField(r.firstname),
-      escapeMoodleCsvField(r.lastname),
-      escapeMoodleCsvField(r.email),
-      escapeMoodleCsvField(r.course1),
-      escapeMoodleCsvField(r.course2),
-      escapeMoodleCsvField(r.password),
-    ]
-
-    activeMoodleFields.forEach((f) => {
-      const val = r.custom_fields?.[f.key] ?? ''
-      rowValues.push(escapeMoodleCsvField(val))
+    const rowValues = activeCols.map((col) => {
+      // Check standard row properties
+      if (col.key in r) {
+        return escapeMoodleCsvField((r as any)[col.key])
+      }
+      // Check custom fields object
+      if (r.custom_fields && col.key in r.custom_fields) {
+        return escapeMoodleCsvField(r.custom_fields[col.key])
+      }
+      return ''
     })
-
     return rowValues.join(',')
   })
 
@@ -59,8 +53,11 @@ export function generateMoodleUsersCsv(rows: MoodleUserExportRow[]): string {
  * Generates CSV string prepended with UTF-8 Byte Order Mark (\uFEFF)
  * for perfect international/Indonesian character handling in Excel and Moodle.
  */
-export function generateMoodleUsersCsvWithBom(rows: MoodleUserExportRow[]): string {
-  const rawCsv = generateMoodleUsersCsv(rows)
+export function generateMoodleUsersCsvWithBom(
+  rows: MoodleUserExportRow[],
+  customColumnsConfig?: MoodleColumnConfig[]
+): string {
+  const rawCsv = generateMoodleUsersCsv(rows, customColumnsConfig)
   return `\uFEFF${rawCsv}`
 }
 
@@ -73,6 +70,48 @@ export function generateMoodleUsersCsvContent(
 ): string {
   const mappingResult = mapStudentsToMoodleExport(students, options)
   return generateMoodleUsersCsvWithBom(mappingResult.mappedRows)
+}
+
+/**
+ * Downloads Moodle CSV directly from edited rows or edited raw CSV content.
+ */
+export function downloadMoodleUsersCsvFromRows(
+  rows: MoodleUserExportRow[],
+  options?: {
+    customFilename?: string
+    rawCsvContent?: string
+    customColumnsConfig?: MoodleColumnConfig[]
+  }
+): {
+  filename: string
+  totalExported: number
+  byteSize: number
+  content: string
+} {
+  const filename = options?.customFilename || `OGSOreg_Moodle_Users_${new Date().toISOString().slice(0, 10)}.csv`
+  const content = options?.rawCsvContent
+    ? (options.rawCsvContent.startsWith('\uFEFF') ? options.rawCsvContent : `\uFEFF${options.rawCsvContent}`)
+    : generateMoodleUsersCsvWithBom(rows, options?.customColumnsConfig)
+
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
+
+  if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  return {
+    filename,
+    totalExported: rows.length,
+    byteSize: blob.size,
+    content,
+  }
 }
 
 /**
@@ -90,28 +129,10 @@ export function downloadMoodleUsersCsv(
   const opts: MoodleExportOptions & { customFilename?: string } =
     typeof options === 'string' ? { customFilename: options } : options || {}
   const mappingResult = mapStudentsToMoodleExport(students, opts)
-  const content = generateMoodleUsersCsvWithBom(mappingResult.mappedRows)
-  const filename = opts.customFilename || 'OGSOreg_Moodle_Users.csv'
-
-  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
-
-  if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }
-
-  return {
-    filename,
-    totalExported: mappingResult.mappedRows.length,
-    byteSize: blob.size,
-    content,
-  }
+  return downloadMoodleUsersCsvFromRows(mappingResult.mappedRows, {
+    customFilename: opts.customFilename,
+  })
 }
 
 export const exportStudentsToMoodleCsv = downloadMoodleUsersCsv
+

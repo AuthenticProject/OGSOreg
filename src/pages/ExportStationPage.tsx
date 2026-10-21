@@ -19,8 +19,10 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
 import { StatCard } from '../components/ui/StatCard'
 import { studentRepository } from '../services/studentRepository'
-import { customFieldService } from '../services/customFieldService'
-import type { CustomFieldDefinition } from '../types/customField'
+import {
+  moodleColumnConfigService,
+  type MoodleColumnConfig,
+} from '../services/moodle/moodleColumnConfigService'
 import {
   getCourseMappingConfig,
   type MoodleCourseMappingConfig,
@@ -47,7 +49,9 @@ export const ExportStationPage: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([])
   const [stats, setStats] = useState<StudentStats | null>(null)
   const [courseConfig, setCourseConfig] = useState<MoodleCourseMappingConfig>(getCourseMappingConfig())
-  const [activeMoodleFields, setActiveMoodleFields] = useState<CustomFieldDefinition[]>([])
+  const [moodleColumns, setMoodleColumns] = useState<MoodleColumnConfig[]>(
+    moodleColumnConfigService.getActiveColumns()
+  )
   const [isExportModalOpen, setIsExportModalOpen] = useState(false)
   const [isMappingModalOpen, setIsMappingModalOpen] = useState(false)
   const [showInstructions, setShowInstructions] = useState(false)
@@ -55,13 +59,14 @@ export const ExportStationPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const unsub = customFieldService.subscribe((fields) => {
-      setActiveMoodleFields(fields.filter((f) => f.is_active && f.include_in_moodle && f.moodle_destination))
+    setMoodleColumns(moodleColumnConfigService.getActiveColumns())
+    const unsubCols = moodleColumnConfigService.subscribe((cols: MoodleColumnConfig[]) => {
+      setMoodleColumns(cols.filter((c) => c.include_in_moodle))
     })
-    customFieldService.getCustomFields().then((fields) => {
-      setActiveMoodleFields(fields.filter((f) => f.is_active && f.include_in_moodle && f.moodle_destination))
-    })
-    return () => unsub()
+
+    return () => {
+      unsubCols()
+    }
   }, [])
 
   const loadData = async () => {
@@ -126,7 +131,7 @@ export const ExportStationPage: React.FC = () => {
               title="Atur kolom apa saja yang diekspor ke berkas CSV Moodle"
             >
               <Sliders className="w-3.5 h-3.5 mr-1.5 text-emerald-700" />
-              <span>Atur Kolom CSV Moodle ({7 + activeMoodleFields.length})</span>
+              <span>Atur Kolom CSV Moodle ({moodleColumns.length})</span>
             </Link>
             <Button
               variant="outline"
@@ -143,7 +148,7 @@ export const ExportStationPage: React.FC = () => {
               disabled={students.length === 0}
               leftIcon={<Eye className="w-4 h-4 mr-1.5" />}
             >
-              Pratinjau & Ekspor Massal
+              Pratinjau & Edit Isi CSV
             </Button>
           </div>
         }
@@ -182,7 +187,7 @@ export const ExportStationPage: React.FC = () => {
               >
                 https://ogso.gontor.ac.id/ <ExternalLink className="w-3 h-3" />
               </a>{' '}
-              &bull; Format: <strong>7 Kolom Terstandarisasi</strong>
+              &bull; Format: <strong>Kolom & Isi Dapat Disesuaikan Penuh</strong>
             </p>
           </div>
         </div>
@@ -214,7 +219,7 @@ export const ExportStationPage: React.FC = () => {
         <StatCard
           title="Siap Ekspor ke Moodle"
           value={isLoading ? '...' : students.length.toLocaleString('id-ID')}
-          description="7 kolom lengkap & password dinamis"
+          description={`${moodleColumns.length} kolom aktif & isi dapat diedit`}
           icon={<CheckCircle2 className="w-5 h-5 text-emerald-600" />}
           variant="accent"
         />
@@ -241,10 +246,10 @@ export const ExportStationPage: React.FC = () => {
             <Sliders className="w-5 h-5 text-emerald-700" />
             <div>
               <h3 className="text-sm font-bold text-foreground">
-                Susunan Kolom Berkas Ekspor Moodle CSV ({7 + activeMoodleFields.length} Kolom Aktif)
+                Susunan Kolom Berkas Ekspor Moodle CSV ({moodleColumns.length} Kolom Aktif)
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                7 Kolom Wajib terstandarisasi + {activeMoodleFields.length} kolom profil kustom aktif.
+                Kolom, urutan, dan penamaan header dapat diubah di Superadmin. Isi data setiap sel juga dapat diedit sebelum diunduh.
               </p>
             </div>
           </div>
@@ -258,31 +263,26 @@ export const ExportStationPage: React.FC = () => {
         </div>
 
         <div className="p-3 bg-slate-900 rounded-xl text-emerald-400 font-mono text-xs overflow-x-auto select-all">
-          {[
-            'username',
-            'firstname',
-            'lastname',
-            'email',
-            'course1',
-            'course2',
-            'password',
-            ...activeMoodleFields.map((f) => f.moodle_destination),
-          ].join(',')}
+          {moodleColumns.map((col) => col.header).join(',')}
         </div>
 
-        {activeMoodleFields.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-slate-600">
-            <span className="font-semibold text-slate-700">Kolom Kustom yang Aktif:</span>
-            {activeMoodleFields.map((f) => (
-              <span
-                key={f.id}
-                className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono text-[11px]"
-              >
-                {f.label} &rarr; {f.moodle_destination}
-              </span>
-            ))}
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-slate-600">
+          <span className="font-semibold text-slate-700">Urutan Kolom Aktif:</span>
+          {moodleColumns.map((col, idx) => (
+            <span
+              key={col.id}
+              className={`px-2 py-0.5 rounded-md border font-mono text-[11px] ${
+                col.is_standard
+                  ? 'bg-slate-100 text-slate-800 border-slate-300'
+                  : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              }`}
+              title={`${col.sourceLabel} (${col.key})`}
+            >
+              <span className="text-[10px] text-slate-400 mr-1 font-sans">#{idx + 1}</span>
+              {col.header}
+            </span>
+          ))}
+        </div>
       </div>
 
       {/* Course Mapping Quick View Card */}
@@ -338,18 +338,22 @@ export const ExportStationPage: React.FC = () => {
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Berkas CSV 7-kolom standar RFC 4180 dengan UTF-8 BOM, khusus untuk fitur <strong>Upload users</strong> di LMS Moodle.
+                Berkas CSV Moodle standar RFC 4180 dengan UTF-8 BOM. Kolom dan isi data (username, nama, email, course, password, kolom kustom) dapat diedit bebas sebelum diunduh.
               </p>
             </div>
 
             <div className="space-y-1.5 text-xs text-slate-600 font-mono text-[11px]">
               <div className="flex items-center gap-2 font-sans text-xs">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Header: username,firstname,lastname,email,course1,course2,password</span>
+                <span>Kolom aktif: {moodleColumns.map((c) => c.header).slice(0, 4).join(', ')}{moodleColumns.length > 4 ? ` +${moodleColumns.length - 4} kolom` : ''}</span>
               </div>
               <div className="flex items-center gap-2 font-sans text-xs">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Password default <code>ogso_2026!</code> dibangkitkan dinamis</span>
+                <span>Isi data dapat diedit per sel &amp; via raw editor CSV</span>
+              </div>
+              <div className="flex items-center gap-2 font-sans text-xs">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Password default <code>ogso_2026!</code> dapat disesuaikan</span>
               </div>
             </div>
           </div>
@@ -358,20 +362,20 @@ export const ExportStationPage: React.FC = () => {
             <Button
               variant="primary"
               className="w-full text-xs"
-              onClick={handleDownloadCsv}
-              disabled={students.length === 0}
-              leftIcon={<Download className="w-4 h-4 mr-1.5" />}
-            >
-              Download Moodle CSV ({students.length})
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full text-xs"
               onClick={() => setIsExportModalOpen(true)}
               disabled={students.length === 0}
               leftIcon={<Eye className="w-4 h-4 mr-1.5" />}
             >
-              Lihat Pratinjau 7 Kolom
+              Pratinjau &amp; Edit Isi CSV ({students.length})
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full text-xs"
+              onClick={handleDownloadCsv}
+              disabled={students.length === 0}
+              leftIcon={<Download className="w-4 h-4 mr-1.5" />}
+            >
+              Unduh CSV Langsung
             </Button>
           </div>
         </div>

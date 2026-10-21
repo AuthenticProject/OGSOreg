@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import {
   FileSpreadsheet,
   Download,
@@ -15,20 +15,35 @@ import {
   ChevronUp,
   KeyRound,
   ShieldAlert,
+  Edit3,
+  Plus,
+  Trash2,
+  RotateCcw,
+  Search,
+  FileCode,
+  Table as TableIcon,
+  Check,
 } from 'lucide-react'
 import { Button } from '../ui/Button'
 import {
   mapStudentsToMoodleExport,
   DEFAULT_INITIAL_PASSWORD,
-  MOODLE_EXPORT_COLUMNS,
   type MoodleExportValidationSummary,
+  type MoodleUserExportRow,
 } from '../../services/moodle/moodleExportMapper'
-import { downloadMoodleUsersCsv } from '../../services/moodle/moodleCsvExporter'
-import { downloadMoodleUsersExcel } from '../../services/moodle/moodleExcelExporter'
+import {
+  downloadMoodleUsersCsvFromRows,
+  generateMoodleUsersCsv,
+} from '../../services/moodle/moodleCsvExporter'
+import { downloadMoodleUsersExcelFromRows } from '../../services/moodle/moodleExcelExporter'
 import {
   getCourseMappingConfig,
   type MoodleCourseMappingConfig,
 } from '../../services/moodle/moodleCourseMapping'
+import {
+  moodleColumnConfigService,
+  type MoodleColumnConfig,
+} from '../../services/moodle/moodleColumnConfigService'
 import { MoodleCourseMappingModal } from './MoodleCourseMappingModal'
 import { studentRepository } from '../../services/studentRepository'
 import { useAuth } from '../../context/AuthContext'
@@ -67,13 +82,38 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
   const [exportFeedback, setExportFeedback] = useState<string | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
 
-  // Map & Validate data
-  const summary: MoodleExportValidationSummary = useMemo(() => {
+  // Super Admin Full Content Editing States
+  const [editableRows, setEditableRows] = useState<MoodleUserExportRow[]>([])
+  const [hasManualEdits, setHasManualEdits] = useState(false)
+  const [previewTab, setPreviewTab] = useState<'table' | 'raw'>('table')
+  const [rawCsvText, setRawCsvText] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [page, setPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState<number | 'all'>(25)
+  const [activeColumns, setActiveColumns] = useState<MoodleColumnConfig[]>([])
+
+  useEffect(() => {
+    const unsub = moodleColumnConfigService.subscribe((cols) => {
+      setActiveColumns(cols.filter((c) => c.include_in_moodle))
+    })
+    return () => unsub()
+  }, [])
+
+  // Map base summary from raw students
+  const baseSummary: MoodleExportValidationSummary = useMemo(() => {
     return mapStudentsToMoodleExport(students, {
       customPassword: password,
       courseMappingConfig: courseConfig,
     })
   }, [students, password, courseConfig])
+
+  // Sync initial rows when modal opens or base students changes
+  useEffect(() => {
+    if (!hasManualEdits) {
+      setEditableRows(baseSummary.mappedRows)
+      setRawCsvText(generateMoodleUsersCsv(baseSummary.mappedRows))
+    }
+  }, [baseSummary.mappedRows, hasManualEdits])
 
   // Campus Isolation Validation
   const unauthorizedCrossCampusCount = useMemo(() => {
@@ -84,10 +124,143 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
   if (!isOpen) return null
 
   const hasBlockingErrors =
-    summary.invalidStudents > 0 ||
-    summary.duplicateUsernames > 0 ||
-    summary.unmappedClasses > 0 ||
+    baseSummary.invalidStudents > 0 ||
+    baseSummary.duplicateUsernames > 0 ||
+    baseSummary.unmappedClasses > 0 ||
     unauthorizedCrossCampusCount > 0
+
+  // Cell editing handler
+  const handleCellChange = (rowIndex: number, field: string, value: string) => {
+    setHasManualEdits(true)
+    setEditableRows((prev) => {
+      const next = [...prev]
+      const row = { ...next[rowIndex] }
+      if (['username', 'firstname', 'lastname', 'email', 'course1', 'course2', 'password'].includes(field)) {
+        ;(row as any)[field] = value
+      } else {
+        row.custom_fields = {
+          ...row.custom_fields,
+          [field]: value,
+        }
+      }
+      next[rowIndex] = row
+      setRawCsvText(generateMoodleUsersCsv(next))
+      return next
+    })
+  }
+
+  // Add new row manually
+  const handleAddRow = () => {
+    setHasManualEdits(true)
+    const newRow: MoodleUserExportRow = {
+      username: `user_${Date.now().toString().slice(-4)}`,
+      firstname: 'Santri',
+      lastname: '',
+      email: `santri${Date.now().toString().slice(-4)}@gontor.ac.id`,
+      course1: courseConfig.jenjangShortnames['Jenjang 1'] || 'ogso_k1',
+      course2: courseConfig.simulationShortname || 'simulation',
+      password: password,
+      custom_fields: {},
+    }
+    setEditableRows((prev) => {
+      const next = [newRow, ...prev]
+      setRawCsvText(generateMoodleUsersCsv(next))
+      return next
+    })
+    setExportFeedback('Baris pengguna baru berhasil ditambahkan di posisi paling atas.')
+  }
+
+  // Delete row
+  const handleDeleteRow = (index: number) => {
+    setHasManualEdits(true)
+    setEditableRows((prev) => {
+      const next = prev.filter((_, i) => i !== index)
+      setRawCsvText(generateMoodleUsersCsv(next))
+      return next
+    })
+  }
+
+  // Reset to default mapped rows
+  const handleResetToDefault = () => {
+    setEditableRows(baseSummary.mappedRows)
+    setRawCsvText(generateMoodleUsersCsv(baseSummary.mappedRows))
+    setHasManualEdits(false)
+    setExportFeedback('Seluruh isi baris data dikembalikan ke hasil pemetaan bawaan sistem.')
+  }
+
+  // Batch apply password to all rows
+  const handleApplyPasswordToAll = () => {
+    setHasManualEdits(true)
+    setEditableRows((prev) => {
+      const next = prev.map((r) => ({ ...r, password }))
+      setRawCsvText(generateMoodleUsersCsv(next))
+      return next
+    })
+    setExportFeedback(`Password "${password}" berhasil diterapkan ke seluruh ${editableRows.length} baris.`)
+  }
+
+  // Raw CSV sync back to table
+  const handleApplyRawCsvToTable = () => {
+    try {
+      const lines = rawCsvText.split(/\r?\n/).filter((l) => l.trim() !== '')
+      if (lines.length < 2) {
+        alert('Teks CSV harus memiliki baris header dan minimal satu baris data.')
+        return
+      }
+      const headers = lines[0].split(',').map((h) => h.trim().replace(/^["']|["']$/g, ''))
+      const parsedRows: MoodleUserExportRow[] = []
+
+      for (let i = 1; i < lines.length; i++) {
+        const parts = lines[i].split(',').map((p) => p.trim().replace(/^["']|["']$/g, ''))
+        const r: MoodleUserExportRow = {
+          username: parts[headers.indexOf('username')] ?? parts[0] ?? '',
+          firstname: parts[headers.indexOf('firstname')] ?? parts[1] ?? '',
+          lastname: parts[headers.indexOf('lastname')] ?? parts[2] ?? '',
+          email: parts[headers.indexOf('email')] ?? parts[3] ?? '',
+          course1: parts[headers.indexOf('course1')] ?? parts[4] ?? '',
+          course2: parts[headers.indexOf('course2')] ?? parts[5] ?? '',
+          password: parts[headers.indexOf('password')] ?? parts[6] ?? password,
+          custom_fields: {},
+        }
+        headers.forEach((h, hIdx) => {
+          if (!['username', 'firstname', 'lastname', 'email', 'course1', 'course2', 'password'].includes(h)) {
+            r.custom_fields![h] = parts[hIdx] ?? ''
+          }
+        })
+        parsedRows.push(r)
+      }
+
+      setEditableRows(parsedRows)
+      setHasManualEdits(true)
+      setPreviewTab('table')
+      setExportFeedback(`Berhasil menyinkronkan ${parsedRows.length} baris dari editor teks CSV ke tabel data.`)
+    } catch (err: any) {
+      alert(`Gagal mem-parsing teks CSV: ${err.message}`)
+    }
+  }
+
+  // Filtered rows for search
+  const filteredRows = useMemo(() => {
+    if (!searchQuery.trim()) return editableRows
+    const q = searchQuery.toLowerCase().trim()
+    return editableRows.filter(
+      (r) =>
+        r.username.toLowerCase().includes(q) ||
+        r.firstname.toLowerCase().includes(q) ||
+        r.lastname.toLowerCase().includes(q) ||
+        r.email.toLowerCase().includes(q) ||
+        r.course1.toLowerCase().includes(q)
+    )
+  }, [editableRows, searchQuery])
+
+  // Displayed rows with pagination
+  const displayedRows = useMemo(() => {
+    if (rowsPerPage === 'all') return filteredRows
+    const start = (page - 1) * rowsPerPage
+    return filteredRows.slice(start, start + rowsPerPage)
+  }, [filteredRows, page, rowsPerPage])
+
+  const totalPages = rowsPerPage === 'all' ? 1 : Math.ceil(filteredRows.length / rowsPerPage)
 
   const handleDownloadCsv = () => {
     if (unauthorizedCrossCampusCount > 0) {
@@ -97,18 +270,19 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
     setIsDownloading(true)
     try {
       const filename = `OGSOreg_Moodle_Users_${new Date().toISOString().slice(0, 10)}.csv`
-      downloadMoodleUsersCsv(students, {
-        customPassword: password,
-        courseMappingConfig: courseConfig,
+      downloadMoodleUsersCsvFromRows(editableRows, {
         customFilename: filename,
+        rawCsvContent: previewTab === 'raw' ? rawCsvText : undefined,
       })
 
       // Mark exported in studentRepository (status: exported, NOT synced)
-      const usernames = summary.mappedRows.map((r) => r.username)
+      const usernames = editableRows.map((r) => r.username)
       studentRepository.markAsExported(usernames, institutionId)
 
-      setExportFeedback(`Berkas Moodle CSV '${filename}' berhasil diunduh! (${summary.mappedRows.length} santri)`)
-      if (onExportSuccess) onExportSuccess(summary.mappedRows.length)
+      setExportFeedback(
+        `Berkas Moodle CSV '${filename}' berhasil diunduh! (${editableRows.length} pengguna siap unggah ke Moodle)`
+      )
+      if (onExportSuccess) onExportSuccess(editableRows.length)
       if (onExportComplete) onExportComplete(usernames)
       setShowInstructions(true)
     } finally {
@@ -124,13 +298,11 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
     setIsDownloading(true)
     try {
       const filename = `OGSOreg_Moodle_Users_${new Date().toISOString().slice(0, 10)}.xlsx`
-      await downloadMoodleUsersExcel(students, {
-        customPassword: password,
-        courseMappingConfig: courseConfig,
-        customFilename: filename,
-      })
+      await downloadMoodleUsersExcelFromRows(editableRows, filename)
 
-      setExportFeedback(`Berkas Moodle Excel '${filename}' berhasil diunduh untuk arsip/administrasi!`)
+      setExportFeedback(
+        `Berkas Moodle Excel '${filename}' berhasil diunduh untuk arsip/administrasi! (${editableRows.length} pengguna)`
+      )
     } finally {
       setIsDownloading(false)
     }
@@ -138,10 +310,24 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
 
   const displaySource = sourceTitle || sourceDescription || 'Siswa Terpilih'
 
+  // Columns to show in table
+  const columnsToShow =
+    activeColumns.length > 0
+      ? activeColumns
+      : [
+          { id: '1', key: 'username', header: 'username', sourceLabel: 'Username' },
+          { id: '2', key: 'firstname', header: 'firstname', sourceLabel: 'Nama Depan' },
+          { id: '3', key: 'lastname', header: 'lastname', sourceLabel: 'Nama Belakang' },
+          { id: '4', key: 'email', header: 'email', sourceLabel: 'Email' },
+          { id: '5', key: 'course1', header: 'course1', sourceLabel: 'Course 1' },
+          { id: '6', key: 'course2', header: 'course2', sourceLabel: 'Course 2' },
+          { id: '7', key: 'password', header: 'password', sourceLabel: 'Password' },
+        ]
+
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-        <div className="bg-white rounded-2xl max-w-4xl w-full border border-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[92vh]">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+        <div className="bg-white rounded-2xl max-w-5xl w-full border border-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[94vh]">
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-slate-50/80">
             <div className="flex items-center gap-3">
@@ -149,11 +335,16 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
                 <FileSpreadsheet className="w-5 h-5 text-brand-gold" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-foreground">
-                  {title || 'Moodle Bulk User Export & Course Assignment'}
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Sumber: <strong>{displaySource}</strong> ({students.length} santri) &bull; Target:{' '}
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-bold text-foreground">
+                    {title || 'Moodle Bulk User Export & Course Assignment'}
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    Editable Content
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Sumber: <strong>{displaySource}</strong> ({editableRows.length} santri) &bull; Target:{' '}
                   <a
                     href="https://ogso.gontor.ac.id/"
                     target="_blank"
@@ -167,7 +358,7 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -184,7 +375,7 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
                 </div>
                 <button
                   onClick={() => setExportFeedback(null)}
-                  className="text-emerald-700 hover:text-emerald-950"
+                  className="text-emerald-700 hover:text-emerald-950 cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -194,28 +385,36 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
             {/* Metric Summary Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <div className="p-3 rounded-xl border border-border bg-slate-50/70">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground">Total Santri</span>
-                <p className="text-lg font-bold text-slate-900 mt-0.5">{summary.totalStudents}</p>
+                <span className="text-[10px] font-bold uppercase text-muted-foreground">Total Pengguna</span>
+                <p className="text-lg font-bold text-slate-900 mt-0.5">{editableRows.length}</p>
               </div>
               <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50/60">
-                <span className="text-[10px] font-bold uppercase text-emerald-800">Siap Ekspor (Valid)</span>
-                <p className="text-lg font-bold text-emerald-700 mt-0.5">{summary.validStudents}</p>
+                <span className="text-[10px] font-bold uppercase text-emerald-800">Status Edit</span>
+                <p className="text-xs font-bold text-emerald-800 mt-1 flex items-center gap-1">
+                  {hasManualEdits ? (
+                    <span className="text-amber-800">✏️ Ada Perubahan Manual</span>
+                  ) : (
+                    <span>✓ Sesuai Database</span>
+                  )}
+                </p>
               </div>
-              <div className="p-3 rounded-xl border border-rose-200 bg-rose-50/60">
-                <span className="text-[10px] font-bold uppercase text-rose-800">Data Invalid</span>
-                <p className="text-lg font-bold text-rose-700 mt-0.5">{summary.invalidStudents}</p>
+              <div className="p-3 rounded-xl border border-blue-200 bg-blue-50/60">
+                <span className="text-[10px] font-bold uppercase text-blue-800">Kolom CSV Aktif</span>
+                <p className="text-lg font-bold text-blue-700 mt-0.5">{columnsToShow.length} Kolom</p>
               </div>
               <div className="p-3 rounded-xl border border-amber-200 bg-amber-50/60">
-                <span className="text-[10px] font-bold uppercase text-amber-800">Duplikat Username</span>
-                <p className="text-lg font-bold text-amber-700 mt-0.5">{summary.duplicateUsernames}</p>
+                <span className="text-[10px] font-bold uppercase text-amber-800">Password Awal</span>
+                <p className="text-xs font-mono font-bold text-slate-800 mt-1 truncate">{password}</p>
               </div>
               <div className="p-3 rounded-xl border border-purple-200 bg-purple-50/60">
-                <span className="text-[10px] font-bold uppercase text-purple-800">Kelas Belum Terpetakan</span>
-                <p className="text-lg font-bold text-purple-700 mt-0.5">{summary.unmappedClasses}</p>
+                <span className="text-[10px] font-bold uppercase text-purple-800">Course Simulasi</span>
+                <p className="text-xs font-mono font-bold text-purple-800 mt-1 truncate">
+                  {courseConfig.simulationShortname}
+                </p>
               </div>
             </div>
 
-            {/* Course Mapping Warning / Status Banner */}
+            {/* Course Mapping Quick Status Banner */}
             <div
               className={`p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                 courseConfig.isVerified
@@ -237,7 +436,7 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
                   </h4>
                   <p className="text-[11px] opacity-90 leading-relaxed">
                     Course 1: <code>ogso_k1</code> s/d <code>ogso_k5</code> &bull; Course 2:{' '}
-                    <code>{courseConfig.simulationShortname}</code>. Pastikan shortname kursus ini benar-benar ada di Moodle LMS OGSO.
+                    <code>{courseConfig.simulationShortname}</code>. Anda dapat mengedit shortname langsung pada setiap baris di bawah ini.
                   </p>
                 </div>
               </div>
@@ -247,64 +446,72 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
                 size="sm"
                 onClick={() => setIsMappingModalOpen(true)}
                 leftIcon={<Settings className="w-3.5 h-3.5 mr-1" />}
-                className="bg-white text-xs shrink-0 self-start sm:self-center border-current hover:bg-slate-50"
+                className="bg-white text-xs shrink-0 self-start sm:self-center border-current hover:bg-slate-50 cursor-pointer"
               >
                 Konfigurasi Shortname
               </Button>
             </div>
 
-            {/* Password Configuration & Security Policy Warning */}
+            {/* Password Configuration Strip */}
             <div className="p-4 rounded-xl border border-border bg-slate-50/50 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-1.5 font-bold text-slate-800 text-xs">
                     <KeyRound className="w-3.5 h-3.5 text-[#166534]" />
-                    <span>Password Awal Santri (Default Initial Password)</span>
+                    <span>Password Awal Masal (Default Initial Password)</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    Password dibangkitkan <strong>hanya saat ekspor</strong> dan tidak disimpan ke basis data manapun demi keamanan.
+                    Ketik password baru lalu klik &ldquo;Terapkan ke Semua Baris&rdquo; untuk mengubah isi kolom password seluruh santri.
                   </p>
                 </div>
 
-                <div className="relative flex items-center max-w-xs w-full sm:w-60">
-                  <input
-                    type={showPasswordText ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3 py-1.5 pr-8 text-xs font-mono rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-[#22C55E] bg-white"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPasswordText(!showPasswordText)}
-                    className="absolute right-2 text-slate-400 hover:text-slate-600"
-                    title={showPasswordText ? 'Sembunyikan' : 'Tampilkan'}
+                <div className="flex items-center gap-2">
+                  <div className="relative flex items-center w-48">
+                    <input
+                      type={showPasswordText ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full px-3 py-1.5 pr-8 text-xs font-mono rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-[#22C55E] bg-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswordText(!showPasswordText)}
+                      className="absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      title={showPasswordText ? 'Sembunyikan' : 'Tampilkan'}
+                    >
+                      {showPasswordText ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleApplyPasswordToAll}
+                    className="text-xs bg-white whitespace-nowrap cursor-pointer"
                   >
-                    {showPasswordText ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
+                    Terapkan ke Semua Baris
+                  </Button>
                 </div>
               </div>
 
-              {/* Password Policy Alert if missing uppercase */}
-              {summary.passwordPolicyWarning && (
+              {baseSummary.passwordPolicyWarning && (
                 <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-[11px] flex items-start gap-2">
                   <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
                   <p className="leading-relaxed">
-                    <strong>Peringatan Kebijakan Password:</strong> {summary.passwordPolicyWarning} Rekomendasi: Aktifkan opsi{' '}
-                    <em>"Force password change: All"</em> pada pengaturan Upload users Moodle agar santri langsung membuat password baru saat login pertama.
+                    <strong>Peringatan Kebijakan Password:</strong> {baseSummary.passwordPolicyWarning}
                   </p>
                 </div>
               )}
             </div>
 
-            {/* Validation Issues Alert (Blocking error gates) */}
+            {/* Validation Issues Alert */}
             {hasBlockingErrors && (
               <div className="p-4 rounded-xl bg-rose-50 border border-rose-300 text-rose-950 space-y-2">
                 <div className="flex items-center gap-2 font-bold text-xs text-rose-900">
                   <AlertCircle className="w-4 h-4 text-rose-600" />
-                  <span>Ditemukan {summary.issues.length} Masalah Data yang Menghambat Ekspor Resmi</span>
+                  <span>Ditemukan {baseSummary.issues.length} Catatan Validasi pada Data Sumber</span>
                 </div>
-                <div className="max-h-28 overflow-y-auto divide-y divide-rose-200/60 text-[11px] font-mono pr-2">
-                  {summary.issues.map((iss, i) => (
+                <div className="max-h-24 overflow-y-auto divide-y divide-rose-200/60 text-[11px] font-mono pr-2">
+                  {baseSummary.issues.slice(0, 5).map((iss, i) => (
                     <div key={i} className="py-1 flex items-center justify-between gap-2">
                       <span>
                         [Baris {iss.row}] @{iss.username}: {iss.message}
@@ -314,62 +521,352 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
                       </span>
                     </div>
                   ))}
+                  {baseSummary.issues.length > 5 && (
+                    <p className="py-1 text-slate-600 italic">...dan {baseSummary.issues.length - 5} isu lainnya.</p>
+                  )}
                 </div>
-                <p className="text-[11px] text-rose-800 font-sans mt-1">
-                  Mohon perbaiki data yang bermasalah pada tabel Siswa Saya sebelum melakukan ekspor produksi.
+                <p className="text-[11px] text-rose-800 font-sans mt-0.5">
+                  Tips: Anda dapat memperbaiki nilai yang salah secara langsung pada tabel editor di bawah sebelum mengunduh berkas CSV.
                 </p>
               </div>
             )}
 
-            {/* Data Preview Table (Exactly 7 Columns) */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-700 uppercase tracking-wider text-[11px]">
-                  Pratinjau Format 7 Kolom Moodle (Menampilkan {Math.min(10, summary.mappedRows.length)} dari {summary.mappedRows.length} santri)
-                </span>
-                <span className="text-[11px] font-mono text-muted-foreground">
-                  username,firstname,lastname,email,course1,course2,password
-                </span>
+            {/* SUPERADMIN FULL CONTENT EDITING INTERFACE */}
+            <div className="border border-slate-200 rounded-2xl bg-white shadow-sm overflow-hidden space-y-3 p-4">
+              {/* Top View Selector & Action Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewTab('table')}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                      previewTab === 'table'
+                        ? 'bg-emerald-700 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <TableIcon className="w-3.5 h-3.5" />
+                    <span>Tabel Editor Data ({editableRows.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRawCsvText(generateMoodleUsersCsv(editableRows))
+                      setPreviewTab('raw')
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                      previewTab === 'raw'
+                        ? 'bg-emerald-700 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <FileCode className="w-3.5 h-3.5" />
+                    <span>Editor Teks CSV Langsung</span>
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {previewTab === 'table' && (
+                    <>
+                      {/* Search bar */}
+                      <div className="relative">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => {
+                            setSearchQuery(e.target.value)
+                            setPage(1)
+                          }}
+                          placeholder="Cari santri..."
+                          className="pl-8 pr-3 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 w-36 sm:w-44"
+                        />
+                      </div>
+
+                      {/* Add row button */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleAddRow}
+                        leftIcon={<Plus className="w-3.5 h-3.5 mr-1" />}
+                        className="text-xs bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100 cursor-pointer"
+                      >
+                        + Tambah Baris
+                      </Button>
+                    </>
+                  )}
+
+                  {hasManualEdits && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleResetToDefault}
+                      leftIcon={<RotateCcw className="w-3.5 h-3.5 mr-1 text-amber-600" />}
+                      className="text-xs text-amber-800 border-amber-300 bg-amber-50 hover:bg-amber-100 cursor-pointer"
+                      title="Kembalikan semua baris ke pemetaan asli"
+                    >
+                      Reset Bawaan
+                    </Button>
+                  )}
+                </div>
               </div>
 
-              <div className="border border-border rounded-xl overflow-x-auto bg-white shadow-subtle">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-border bg-slate-900 text-white font-mono text-[11px]">
-                      {MOODLE_EXPORT_COLUMNS.map((col) => (
-                        <th key={col} className="py-2.5 px-3 font-semibold whitespace-nowrap">
-                          {col}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border font-mono text-[11px]">
-                    {summary.mappedRows.slice(0, 10).map((row, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50">
-                        <td className="py-2 px-3 text-brand-maroon font-bold whitespace-nowrap">
-                          {row.username}
-                        </td>
-                        <td className="py-2 px-3 whitespace-nowrap">{row.firstname}</td>
-                        <td className="py-2 px-3 whitespace-nowrap">{row.lastname || '-'}</td>
-                        <td className="py-2 px-3 whitespace-nowrap text-slate-600">{row.email}</td>
-                        <td className="py-2 px-3 whitespace-nowrap">
-                          <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
-                            {row.course1 || '(unmapped)'}
-                          </span>
-                        </td>
-                        <td className="py-2 px-3 whitespace-nowrap">
-                          <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
-                            {row.course2}
-                          </span>
-                        </td>
-                        <td className="py-2 px-3 whitespace-nowrap text-slate-400">
-                          {showPasswordText ? row.password : '••••••••'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {/* TAB 1: INTERACTIVE TABLE EDITOR */}
+              {previewTab === 'table' && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-[11px] text-slate-500">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Edit3 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>
+                        Ketik langsung pada kolom mana pun untuk mengubah isi data sebelum diekspor ke CSV/Excel.
+                      </span>
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span>Tampilkan:</span>
+                      <select
+                        value={rowsPerPage}
+                        onChange={(e) => {
+                          const val = e.target.value === 'all' ? 'all' : Number(e.target.value)
+                          setRowsPerPage(val)
+                          setPage(1)
+                        }}
+                        className="border border-slate-200 rounded px-1.5 py-0.5 text-xs bg-white font-medium"
+                      >
+                        <option value={10}>10 baris</option>
+                        <option value={25}>25 baris</option>
+                        <option value={50}>50 baris</option>
+                        <option value="all">Semua ({filteredRows.length})</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="border border-slate-200 rounded-xl overflow-x-auto bg-white shadow-xs max-h-96 overflow-y-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="sticky top-0 z-10">
+                        <tr className="border-b border-slate-800 bg-slate-900 text-white font-mono text-[11px]">
+                          <th className="py-2.5 px-2 text-center w-10">#</th>
+                          {columnsToShow.map((col) => (
+                            <th key={col.id} className="py-2.5 px-3 font-semibold whitespace-nowrap">
+                              <div>
+                                <span className="text-emerald-400">{col.header}</span>
+                                <span className="block text-[9px] text-slate-400 font-sans font-normal">
+                                  {col.sourceLabel}
+                                </span>
+                              </div>
+                            </th>
+                          ))}
+                          <th className="py-2.5 px-2 text-center w-12">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
+                        {displayedRows.length === 0 ? (
+                          <tr>
+                            <td colSpan={columnsToShow.length + 2} className="py-8 text-center text-slate-400 font-sans">
+                              Tidak ada data santri yang cocok dengan pencarian.
+                            </td>
+                          </tr>
+                        ) : (
+                          displayedRows.map((row, idx) => {
+                            const realIndex =
+                              rowsPerPage === 'all'
+                                ? idx
+                                : (page - 1) * (typeof rowsPerPage === 'number' ? rowsPerPage : 25) + idx
+
+                            return (
+                              <tr key={realIndex} className="hover:bg-emerald-50/30 transition-colors group">
+                                <td className="py-1.5 px-2 text-center text-slate-400 font-sans text-[10px]">
+                                  {realIndex + 1}
+                                </td>
+
+                                {/* Username */}
+                                <td className="py-1.5 px-2 whitespace-nowrap">
+                                  <input
+                                    type="text"
+                                    value={row.username}
+                                    onChange={(e) => handleCellChange(realIndex, 'username', e.target.value)}
+                                    className="px-2 py-1 border border-slate-200 rounded font-bold text-brand-maroon bg-white focus:bg-emerald-50 focus:border-emerald-500 focus:outline-none w-32 sm:w-36"
+                                  />
+                                </td>
+
+                                {/* Firstname */}
+                                <td className="py-1.5 px-2 whitespace-nowrap">
+                                  <input
+                                    type="text"
+                                    value={row.firstname}
+                                    onChange={(e) => handleCellChange(realIndex, 'firstname', e.target.value)}
+                                    className="px-2 py-1 border border-slate-200 rounded text-slate-800 bg-white focus:bg-emerald-50 focus:border-emerald-500 focus:outline-none w-32 sm:w-36"
+                                  />
+                                </td>
+
+                                {/* Lastname */}
+                                <td className="py-1.5 px-2 whitespace-nowrap">
+                                  <input
+                                    type="text"
+                                    value={row.lastname || ''}
+                                    onChange={(e) => handleCellChange(realIndex, 'lastname', e.target.value)}
+                                    placeholder="-"
+                                    className="px-2 py-1 border border-slate-200 rounded text-slate-800 bg-white focus:bg-emerald-50 focus:border-emerald-500 focus:outline-none w-28 sm:w-32"
+                                  />
+                                </td>
+
+                                {/* Email */}
+                                <td className="py-1.5 px-2 whitespace-nowrap">
+                                  <input
+                                    type="text"
+                                    value={row.email}
+                                    onChange={(e) => handleCellChange(realIndex, 'email', e.target.value)}
+                                    className="px-2 py-1 border border-slate-200 rounded text-slate-700 bg-white focus:bg-emerald-50 focus:border-emerald-500 focus:outline-none w-44 sm:w-52"
+                                  />
+                                </td>
+
+                                {/* Course 1 */}
+                                <td className="py-1.5 px-2 whitespace-nowrap">
+                                  <input
+                                    type="text"
+                                    value={row.course1}
+                                    onChange={(e) => handleCellChange(realIndex, 'course1', e.target.value)}
+                                    list="moodle-course1-suggestions"
+                                    placeholder="ogso_k1"
+                                    className="px-2 py-1 border border-blue-300 rounded font-bold text-blue-700 bg-blue-50/50 focus:bg-white focus:border-emerald-500 focus:outline-none w-24 sm:w-28"
+                                  />
+                                </td>
+
+                                {/* Course 2 */}
+                                <td className="py-1.5 px-2 whitespace-nowrap">
+                                  <input
+                                    type="text"
+                                    value={row.course2}
+                                    onChange={(e) => handleCellChange(realIndex, 'course2', e.target.value)}
+                                    list="moodle-course2-suggestions"
+                                    placeholder="simulation"
+                                    className="px-2 py-1 border border-slate-200 rounded text-slate-700 bg-white focus:bg-emerald-50 focus:border-emerald-500 focus:outline-none w-24 sm:w-28"
+                                  />
+                                </td>
+
+                                {/* Password */}
+                                <td className="py-1.5 px-2 whitespace-nowrap">
+                                  <input
+                                    type={showPasswordText ? 'text' : 'password'}
+                                    value={row.password}
+                                    onChange={(e) => handleCellChange(realIndex, 'password', e.target.value)}
+                                    className="px-2 py-1 border border-slate-200 rounded font-mono text-slate-700 bg-white focus:bg-emerald-50 focus:border-emerald-500 focus:outline-none w-24 sm:w-28"
+                                  />
+                                </td>
+
+                                {/* Custom Columns */}
+                                {columnsToShow.slice(7).map((customCol) => (
+                                  <td key={customCol.id} className="py-1.5 px-2 whitespace-nowrap">
+                                    <input
+                                      type="text"
+                                      value={row.custom_fields?.[customCol.key] ?? ''}
+                                      onChange={(e) => handleCellChange(realIndex, customCol.key, e.target.value)}
+                                      className="px-2 py-1 border border-purple-200 rounded text-purple-900 bg-purple-50/30 focus:bg-white focus:border-purple-500 focus:outline-none w-28 sm:w-32"
+                                    />
+                                  </td>
+                                ))}
+
+                                {/* Actions */}
+                                <td className="py-1.5 px-2 text-center whitespace-nowrap">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteRow(realIndex)}
+                                    className="p-1 rounded hover:bg-rose-100 text-rose-500 hover:text-rose-700 transition-colors cursor-pointer"
+                                    title="Hapus baris ini dari ekspor"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            )
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Course Datalist suggestions */}
+                  <datalist id="moodle-course1-suggestions">
+                    <option value="ogso_k1">Jenjang 1 (ogso_k1)</option>
+                    <option value="ogso_k2">Jenjang 2 (ogso_k2)</option>
+                    <option value="ogso_k3">Jenjang 3 (ogso_k3)</option>
+                    <option value="ogso_k4">Jenjang 4 (ogso_k4)</option>
+                    <option value="ogso_k5">Jenjang 5 (ogso_k5)</option>
+                  </datalist>
+                  <datalist id="moodle-course2-suggestions">
+                    <option value="simulation">Sesi Simulasi (simulation)</option>
+                    <option value="sesi_1">Sesi 1 (sesi_1)</option>
+                    <option value="sesi_2">Sesi 2 (sesi_2)</option>
+                  </datalist>
+
+                  {/* Pagination footer */}
+                  {rowsPerPage !== 'all' && totalPages > 1 && (
+                    <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
+                      <span>
+                        Menampilkan {(page - 1) * rowsPerPage + 1} -{' '}
+                        {Math.min(page * rowsPerPage, filteredRows.length)} dari {filteredRows.length} pengguna
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          disabled={page === 1}
+                          onClick={() => setPage(page - 1)}
+                          className="px-2.5 py-1 rounded border border-slate-200 bg-white disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50"
+                        >
+                          Sebelumnya
+                        </button>
+                        <span className="px-2 font-bold text-slate-700">
+                          {page} / {totalPages}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={page === totalPages}
+                          onClick={() => setPage(page + 1)}
+                          className="px-2.5 py-1 rounded border border-slate-200 bg-white disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50"
+                        >
+                          Selanjutnya
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 2: RAW CSV TEXT EDITOR */}
+              {previewTab === 'raw' && (
+                <div className="space-y-3 animate-in fade-in duration-150">
+                  <div className="flex items-center justify-between text-[11px] text-slate-600">
+                    <span>
+                      Anda dapat mengedit baris CSV langsung dalam format teks mentah. Perubahan akan diterapkan saat mengunduh berkas.
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      onClick={handleApplyRawCsvToTable}
+                      leftIcon={<Check className="w-3.5 h-3.5 mr-1" />}
+                      className="text-xs cursor-pointer"
+                    >
+                      Terapkan Perubahan CSV ke Tabel
+                    </Button>
+                  </div>
+
+                  <div className="relative border border-slate-700 rounded-xl overflow-hidden shadow-inner">
+                    <textarea
+                      value={rawCsvText}
+                      onChange={(e) => {
+                        setRawCsvText(e.target.value)
+                        setHasManualEdits(true)
+                      }}
+                      rows={14}
+                      className="w-full p-4 font-mono text-xs bg-slate-900 text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 leading-relaxed resize-y select-text"
+                      spellCheck={false}
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-500">
+                    Karakter total: {rawCsvText.length.toLocaleString('id-ID')} &bull; Baris: {rawCsvText.split('\n').length} baris
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Moodle Import Instructions Accordion */}
@@ -377,7 +874,7 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
               <button
                 type="button"
                 onClick={() => setShowInstructions(!showInstructions)}
-                className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-100/70 transition-colors"
+                className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-100/70 transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-2">
                   <HelpCircle className="w-4 h-4 text-brand-maroon" />
@@ -429,7 +926,7 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
                         </li>
                         <li>
                           <strong>Force password change:</strong> Disarankan pilih <em>Users with weak password</em> atau{' '}
-                          <em>All</em> agar santri mengganti password mereka sendiri.
+                          <em>All</em> agar santri langsung membuat password baru saat login pertama.
                         </li>
                       </ul>
                     </li>
@@ -437,10 +934,6 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
                       Klik <strong>Upload users</strong> pada akhir halaman untuk memproses pembuatan akun dan pendaftaran otomatis ke kursus (enrolment).
                     </li>
                   </ol>
-
-                  <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-[11px] leading-normal mt-2">
-                    <strong>Pemberitahuan Status Sinkronisasi:</strong> Mengunduh berkas CSV ini <u>TIDAK</u> langsung membuat akun di Moodle secara otomatis. Sistem menandai status santri sebagai <em>"Terekspor CSV"</em>. Status <em>"Terverifikasi Moodle"</em> hanya akan disematkan setelah Moodle memverifikasi ID pengguna.
-                  </div>
                 </div>
               )}
             </div>
@@ -448,12 +941,18 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
 
           {/* Footer */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4 border-t border-border bg-slate-50">
-            <div className="text-xs text-muted-foreground">
-              Total <strong>{summary.validStudents}</strong> santri siap diekspor.
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Siap ekspor:</span>
+              <strong className="text-slate-900 font-mono">{editableRows.length} akun</strong>
+              {hasManualEdits && (
+                <span className="text-amber-800 font-bold bg-amber-100 px-2 py-0.5 rounded text-[10px]">
+                  (Telah Diedit Manual)
+                </span>
+              )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" size="sm" onClick={onClose}>
+            <div className="flex items-center gap-2.5">
+              <Button variant="outline" size="sm" onClick={onClose} className="cursor-pointer">
                 Tutup
               </Button>
 
@@ -461,31 +960,40 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={handleDownloadExcel}
-                disabled={isDownloading || students.length === 0}
+                disabled={isDownloading || editableRows.length === 0}
                 leftIcon={<FileSpreadsheet className="w-4 h-4 mr-1 text-emerald-700" />}
+                className="bg-white border-slate-300 text-slate-800 hover:bg-slate-50 cursor-pointer"
+                title="Unduh format tabel Excel untuk arsip verifikasi"
               >
-                Download Moodle Excel (.xlsx)
+                Unduh Excel (.xlsx)
               </Button>
 
               <Button
                 variant="primary"
                 size="sm"
                 onClick={handleDownloadCsv}
-                disabled={isDownloading || students.length === 0 || hasBlockingErrors}
-                leftIcon={<Download className="w-4 h-4 mr-1" />}
+                disabled={isDownloading || editableRows.length === 0}
+                leftIcon={<Download className="w-4 h-4 mr-1 text-brand-gold" />}
+                className="bg-gradient-to-r from-emerald-700 to-emerald-800 text-white shadow-md hover:brightness-105 cursor-pointer font-bold"
               >
-                {hasBlockingErrors ? 'Download Moodle CSV (Ada Error)' : 'Download Moodle CSV (.csv)'}
+                {isDownloading ? 'Memproses Ekspor...' : `Unduh CSV Moodle (${editableRows.length})`}
               </Button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Course Mapping Modal */}
+      {/* Course Mapping Configuration Sub-modal */}
       <MoodleCourseMappingModal
         isOpen={isMappingModalOpen}
-        onClose={() => setIsMappingModalOpen(false)}
-        onSaved={(newCfg) => setCourseConfig(newCfg)}
+        onClose={() => {
+          setIsMappingModalOpen(false)
+          setCourseConfig(getCourseMappingConfig())
+        }}
+        onSaved={(newCfg: MoodleCourseMappingConfig) => {
+          setCourseConfig(newCfg)
+          setExportFeedback('Konfigurasi shortname course berhasil disimpan dan diterapkan.')
+        }}
       />
     </>
   )

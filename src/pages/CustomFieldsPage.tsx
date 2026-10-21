@@ -41,16 +41,10 @@ import {
 } from '../types/customField'
 import { STANDARD_FIELD_KEYS } from '../services/validationEngine'
 
-// Standard mandatory columns in Moodle CSV Bulk User Upload (7 Columns)
-const MANDATORY_MOODLE_COLUMNS = [
-  { header: 'username', source: 'Username Santri', description: 'ID login peserta di Moodle LMS', required: true },
-  { header: 'firstname', source: 'Nama Depan', description: 'Nama depan santri', required: true },
-  { header: 'lastname', source: 'Nama Belakang', description: 'Nama belakang santri', required: true },
-  { header: 'email', source: 'Email Santri', description: 'Alamat email akun Moodle', required: true },
-  { header: 'course1', source: 'Kursus Utama (Kategori Lomba)', description: 'Moodle shortname kursus utama', required: true },
-  { header: 'course2', source: 'Kursus Sesi (Waktu Ujian)', description: 'Moodle shortname sesi ujian santri', required: true },
-  { header: 'password', source: 'Password Default (OGSO2026)', description: 'Kata sandi awal santri di Moodle', required: true },
-]
+import {
+  moodleColumnConfigService,
+  type MoodleColumnConfig,
+} from '../services/moodle/moodleColumnConfigService'
 
 export const CustomFieldsPage: React.FC = () => {
   const { isSuperAdmin } = useAuth()
@@ -90,47 +84,83 @@ export const CustomFieldsPage: React.FC = () => {
   const [modalErrors, setModalErrors] = useState<Record<string, string>>({})
   const [isKeyManuallyEdited, setIsKeyManuallyEdited] = useState(false)
 
-  // Quick edit moodle header inline
-  const [editingMoodleFieldId, setEditingMoodleFieldId] = useState<string | null>(null)
-  const [inlineMoodleHeader, setInlineMoodleHeader] = useState('')
-  const [inlineMoodleError, setInlineMoodleError] = useState<string | null>(null)
+  // Moodle CSV Column Configuration (Fully editable by Super Admin)
+  const [moodleColumns, setMoodleColumns] = useState<MoodleColumnConfig[]>([])
+  const [editingMoodleColId, setEditingMoodleColId] = useState<string | null>(null)
+  const [inlineMoodleColHeader, setInlineMoodleColHeader] = useState('')
+  const [inlineMoodleColError, setInlineMoodleColError] = useState<string | null>(null)
 
-  // Quick inline edit field label (used in Tab 1 Excel and Tab 2 Moodle)
-  const [editingLabelFieldId, setEditingLabelFieldId] = useState<string | null>(null)
-  const [inlineLabelValue, setInlineLabelValue] = useState('')
-  const [inlineLabelError, setInlineLabelError] = useState<string | null>(null)
+  // Drag & drop state for Moodle columns
+  const [draggedMoodleIndex, setDraggedMoodleIndex] = useState<number | null>(null)
+  const [dragOverMoodleIndex, setDragOverMoodleIndex] = useState<number | null>(null)
 
-  const handleStartEditingLabel = (field: CustomFieldDefinition) => {
-    setEditingLabelFieldId(field.id)
-    setInlineLabelValue(field.label)
-    setInlineLabelError(null)
+  useEffect(() => {
+    const unsub = moodleColumnConfigService.subscribe((cols) => {
+      setMoodleColumns(cols)
+    })
+    return () => unsub()
+  }, [])
+
+  const handleStartEditMoodleHeader = (col: MoodleColumnConfig) => {
+    setEditingMoodleColId(col.id)
+    setInlineMoodleColHeader(col.header)
+    setInlineMoodleColError(null)
   }
 
-  const handleCancelEditingLabel = () => {
-    setEditingLabelFieldId(null)
-    setInlineLabelValue('')
-    setInlineLabelError(null)
-  }
-
-  const handleSaveInlineLabel = async (field: CustomFieldDefinition) => {
-    const trimmed = inlineLabelValue.trim()
-    if (!trimmed) {
-      setInlineLabelError('Nama label kolom tidak boleh kosong.')
+  const handleSaveInlineMoodleHeader = (col: MoodleColumnConfig) => {
+    const res = moodleColumnConfigService.updateHeader(col.id, inlineMoodleColHeader)
+    if (!res.success) {
+      setInlineMoodleColError(res.error || 'Gagal mengubah header.')
       return
     }
+    setEditingMoodleColId(null)
+    setInlineMoodleColError(null)
+    showFeedback('success', `Header kolom Moodle diperbarui menjadi "${inlineMoodleColHeader.trim()}".`)
+  }
 
-    const res = await customFieldService.saveCustomField({
-      ...field,
-      label: trimmed,
-    })
+  const handleToggleIncludeMoodle = (col: MoodleColumnConfig) => {
+    moodleColumnConfigService.toggleInclude(col.id)
+    showFeedback('success', `Status ekspor kolom '${col.header}' diperbarui.`)
+  }
 
-    if (res.success) {
-      setEditingLabelFieldId(null)
-      setInlineLabelError(null)
-      showFeedback('success', `Nama kolom diperbarui menjadi "${trimmed}".`)
-    } else {
-      setInlineLabelError(res.error || 'Gagal menyimpan perubahan nama.')
+  const handleMoveMoodleOrder = (index: number, direction: 'up' | 'down') => {
+    const target = direction === 'up' ? index - 1 : index + 1
+    moodleColumnConfigService.reorderColumns(index, target)
+  }
+
+  const handleResetMoodleToDefault = () => {
+    moodleColumnConfigService.resetToDefault()
+    showFeedback('success', 'Susunan dan nama header kolom Moodle CSV dikembalikan ke bawaan resmi.')
+  }
+
+  const handleMoodleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedMoodleIndex(index)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', String(index))
+  }
+
+  const handleMoodleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (dragOverMoodleIndex !== index) {
+      setDragOverMoodleIndex(index)
     }
+  }
+
+  const handleMoodleDragEnd = () => {
+    setDraggedMoodleIndex(null)
+    setDragOverMoodleIndex(null)
+  }
+
+  const handleMoodleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault()
+    if (draggedMoodleIndex === null || draggedMoodleIndex === targetIndex) {
+      handleMoodleDragEnd()
+      return
+    }
+    moodleColumnConfigService.reorderColumns(draggedMoodleIndex, targetIndex)
+    handleMoodleDragEnd()
+    showFeedback('success', 'Urutan kolom Moodle CSV berhasil diperbarui.')
   }
 
   // Unified Excel Template Columns (Standard + Custom)
@@ -380,48 +410,6 @@ export const CustomFieldsPage: React.FC = () => {
     }
   }
 
-  // 1-Click Toggle for Include in Moodle CSV Export
-  const handleToggleIncludeMoodle = async (field: CustomFieldDefinition) => {
-    const nextVal = !field.include_in_moodle
-    const defaultDest = field.moodle_destination || `profile_field_${field.key}`
-    const res = await customFieldService.saveCustomField({
-      ...field,
-      include_in_moodle: nextVal,
-      moodle_destination: defaultDest,
-    })
-    if (res.success) {
-      showFeedback(
-        'success',
-        `Kolom '${field.label}' ${nextVal ? 'sekarang diekspor ke' : 'dikeluarkan dari'} berkas CSV Moodle (${defaultDest}).`
-      )
-    } else {
-      showFeedback('error', res.error || 'Gagal memperbarui kolom Moodle CSV.')
-    }
-  }
-
-  // Save Inline Moodle Destination Header
-  const handleSaveInlineMoodleHeader = async (field: CustomFieldDefinition) => {
-    const validation = validateMoodleDestinationHeader(inlineMoodleHeader)
-    if (!validation.valid) {
-      setInlineMoodleError(validation.error || 'Format header tidak valid.')
-      return
-    }
-
-    const res = await customFieldService.saveCustomField({
-      ...field,
-      include_in_moodle: true,
-      moodle_destination: inlineMoodleHeader.trim().toLowerCase(),
-    })
-
-    if (res.success) {
-      setEditingMoodleFieldId(null)
-      setInlineMoodleError(null)
-      showFeedback('success', `Header tujuan Moodle untuk '${field.label}' berhasil diperbarui.`)
-    } else {
-      setInlineMoodleError(res.error || 'Gagal menyimpan header.')
-    }
-  }
-
   // Move Order Up/Down
   const handleMoveOrder = async (index: number, direction: 'up' | 'down') => {
     const targetIndex = direction === 'up' ? index - 1 : index + 1
@@ -545,8 +533,8 @@ export const CustomFieldsPage: React.FC = () => {
 
   // Active template columns in Excel (both standard and custom fields)
   const activeTemplateColumns = templateColumns.filter((col) => col.include_in_excel)
-  // Active custom fields in Moodle
-  const activeMoodleCustomFields = fields.filter((f) => f.is_active && f.include_in_moodle && f.moodle_destination)
+  // Active columns in Moodle CSV (both standard and custom fields, fully editable)
+  const activeMoodleColumns = moodleColumns.filter((col) => col.include_in_moodle)
 
   // Security Gate
   if (!isSuperAdmin) {
@@ -647,7 +635,7 @@ export const CustomFieldsPage: React.FC = () => {
               activeTab === 'moodle' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
             }`}
           >
-            {MANDATORY_MOODLE_COLUMNS.length + activeMoodleCustomFields.length} Kolom
+            {activeMoodleColumns.length} Kolom
           </span>
         </button>
 
@@ -952,88 +940,68 @@ export const CustomFieldsPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
                 <Download className="w-4 h-4" />
-                <span>Pratinjau Format Baris Header Berkas CSV Moodle LMS</span>
+                <span>Pratinjau Format Baris Header Berkas CSV Moodle LMS (Editable)</span>
               </div>
               <span className="text-[11px] font-mono text-emerald-200 bg-white/10 px-2.5 py-0.5 rounded-full">
-                Total {MANDATORY_MOODLE_COLUMNS.length + activeMoodleCustomFields.length} Kolom CSV
+                Total {activeMoodleColumns.length} Kolom Aktif
               </span>
             </div>
 
             <div className="p-3 bg-black/40 rounded-xl border border-white/10 font-mono text-xs text-emerald-300 overflow-x-auto select-all">
-              {[
-                ...MANDATORY_MOODLE_COLUMNS.map((m) => m.header),
-                ...activeMoodleCustomFields.map((cf) => cf.moodle_destination),
-              ].join(',')}
+              {activeMoodleColumns.map((c) => c.header).join(',')}
             </div>
 
             <p className="text-[11px] text-slate-300">
-              Format di atas adalah baris pertama berkas CSV resmi yang akan diunggah ke Moodle LMS OGSO (Bulk User Upload).
+              Format di atas adalah baris header berkas CSV resmi yang akan diunggah ke Moodle LMS OGSO (Bulk User Upload). Seluruh header kolom, urutan, dan keaktifannya dapat Anda sesuaikan secara bebas di bawah ini.
             </p>
           </div>
 
           {/* Matrix of Columns in Moodle CSV */}
           <SectionCard
             title="Daftar Kolom Ekspor Berkas CSV Moodle"
-            subtitle="Seret baris dengan mouse (drag & drop) atau gunakan panah untuk atur urutan ekspor, ubah header Moodle langsung, edit nama bidang, atau tentukan kolom yang disertakan."
+            subtitle="Atur seluruh kolom Moodle (kolom standar & bidang kustom): ubah nama header CSV secara langsung, seret baris dengan mouse (drag & drop) atau gunakan panah untuk atur urutan ekspor, atau aktifkan/nonaktifkan kolom."
             action={
-              <Button
-                size="sm"
-                variant="primary"
-                onClick={() => handleOpenAddModal({ include_in_excel: true, include_in_moodle: true })}
-                leftIcon={<Plus className="w-3.5 h-3.5 mr-1" />}
-              >
-                Tambah Kolom Moodle
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleResetMoodleToDefault}
+                  leftIcon={<RotateCcw className="w-3.5 h-3.5 mr-1" />}
+                  title="Kembalikan nama header dan urutan kolom standar Moodle ke bawaan resmi"
+                >
+                  Reset ke Bawaan
+                </Button>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => handleOpenAddModal({ include_in_excel: true, include_in_moodle: true })}
+                  leftIcon={<Plus className="w-3.5 h-3.5 mr-1" />}
+                >
+                  Tambah Kolom Moodle
+                </Button>
+              </div>
             }
           >
             <div className="divide-y divide-slate-100 text-xs">
-              {/* Mandatory Moodle Columns */}
-              {MANDATORY_MOODLE_COLUMNS.map((col) => (
-                <div key={col.header} className="py-3 px-3 flex items-center justify-between bg-slate-50/50">
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-lg bg-slate-200/80 text-slate-600 flex items-center justify-center shrink-0">
-                      <Lock className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <code className="font-bold text-slate-900 text-xs font-mono">{col.header}</code>
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200 font-semibold text-slate-700">
-                          Wajib Moodle (7 Kolom)
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        Sumber data: <strong>{col.source}</strong> — {col.description}
-                      </p>
-                    </div>
-                  </div>
+              {moodleColumns.map((col, index) => {
+                const isEditingHeader = editingMoodleColId === col.id
+                const isDragging = draggedMoodleIndex === index
+                const isOver = dragOverMoodleIndex === index && draggedMoodleIndex !== index
 
-                  <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Terkunci</span>
-                  </div>
-                </div>
-              ))}
-
-              {/* Custom Columns mapped to Moodle */}
-              {fields.map((field, index) => {
-                const isEditingMoodle = editingMoodleFieldId === field.id
-                const isEditingLabel = editingLabelFieldId === field.id
-                const isDragging = draggedFieldIndex === index
-                const isOver = dragOverFieldIndex === index && draggedFieldIndex !== index
                 return (
                   <div
-                    key={field.id}
-                    draggable={!isEditingMoodle && !isEditingLabel}
-                    onDragStart={(e) => handleFieldDragStart(e, index)}
-                    onDragOver={(e) => handleFieldDragOver(e, index)}
-                    onDragEnd={handleFieldDragEnd}
-                    onDrop={(e) => handleFieldDrop(e, index)}
+                    key={col.id}
+                    draggable={!isEditingHeader}
+                    onDragStart={(e) => handleMoodleDragStart(e, index)}
+                    onDragOver={(e) => handleMoodleDragOver(e, index)}
+                    onDragEnd={handleMoodleDragEnd}
+                    onDrop={(e) => handleMoodleDrop(e, index)}
                     className={`py-3 px-3 flex flex-col md:flex-row md:items-center justify-between gap-3 transition-all duration-150 ${
                       isDragging
                         ? 'opacity-40 scale-[0.99] border-2 border-dashed border-emerald-400 bg-emerald-50/40 rounded-lg'
                         : isOver
                         ? 'border-t-2 border-emerald-600 bg-emerald-50/70'
-                        : field.include_in_moodle
+                        : col.include_in_moodle
                         ? 'bg-white'
                         : 'bg-slate-50/70 opacity-60'
                     }`}
@@ -1051,7 +1019,7 @@ export const CustomFieldsPage: React.FC = () => {
                           <button
                             type="button"
                             disabled={index === 0}
-                            onClick={() => handleMoveOrder(index, 'up')}
+                            onClick={() => handleMoveMoodleOrder(index, 'up')}
                             className="p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
                             title="Pindah ke Atas"
                           >
@@ -1059,8 +1027,8 @@ export const CustomFieldsPage: React.FC = () => {
                           </button>
                           <button
                             type="button"
-                            disabled={index === fields.length - 1}
-                            onClick={() => handleMoveOrder(index, 'down')}
+                            disabled={index === moodleColumns.length - 1}
+                            onClick={() => handleMoveMoodleOrder(index, 'down')}
                             className="p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
                             title="Pindah ke Bawah"
                           >
@@ -1071,188 +1039,118 @@ export const CustomFieldsPage: React.FC = () => {
 
                       <div
                         className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                          field.include_in_moodle
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-slate-200 text-slate-500'
+                          col.is_standard
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'bg-emerald-100 text-emerald-700'
                         }`}
                       >
-                        <Download className="w-3.5 h-3.5" />
+                        {col.is_standard ? (
+                          <Download className="w-3.5 h-3.5" />
+                        ) : (
+                          <Sparkles className="w-3.5 h-3.5" />
+                        )}
                       </div>
 
                       <div className="flex-1">
-                        {/* Inline Editable Label or Display */}
-                        {isEditingLabel ? (
+                        {isEditingHeader ? (
                           <div className="space-y-1">
                             <div className="flex items-center gap-1.5">
                               <input
                                 type="text"
-                                value={inlineLabelValue}
-                                onChange={(e) => setInlineLabelValue(e.target.value)}
+                                value={inlineMoodleColHeader}
+                                onChange={(e) => setInlineMoodleColHeader(e.target.value.toLowerCase().trim())}
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleSaveInlineLabel(field)
-                                  if (e.key === 'Escape') handleCancelEditingLabel()
+                                  if (e.key === 'Enter') handleSaveInlineMoodleHeader(col)
+                                  if (e.key === 'Escape') {
+                                    setEditingMoodleColId(null)
+                                    setInlineMoodleColError(null)
+                                  }
                                 }}
                                 autoFocus
-                                placeholder="Nama label bidang"
-                                className="px-2.5 py-1 text-xs font-bold border-2 border-emerald-500 rounded bg-white text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-52"
+                                placeholder="Nama header CSV Moodle"
+                                className="px-2.5 py-1 text-xs font-mono font-bold border-2 border-emerald-500 rounded bg-white text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-52"
                               />
                               <button
                                 type="button"
-                                onClick={() => handleSaveInlineLabel(field)}
+                                onClick={() => handleSaveInlineMoodleHeader(col)}
                                 className="p-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs cursor-pointer"
-                                title="Simpan Nama"
+                                title="Simpan Header"
                               >
                                 <Check className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 type="button"
-                                onClick={handleCancelEditingLabel}
+                                onClick={() => {
+                                  setEditingMoodleColId(null)
+                                  setInlineMoodleColError(null)
+                                }}
                                 className="p-1.5 rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer"
                                 title="Batal"
                               >
                                 <X className="w-3.5 h-3.5" />
                               </button>
                             </div>
-                            {inlineLabelError && (
-                              <p className="text-rose-600 text-[11px] font-semibold">{inlineLabelError}</p>
+                            {inlineMoodleColError && (
+                              <p className="text-rose-600 text-[11px] font-semibold">{inlineMoodleColError}</p>
                             )}
                           </div>
                         ) : (
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-bold text-slate-900 text-xs">{field.label}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleStartEditingLabel(field)}
-                              className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-emerald-700 transition-colors cursor-pointer"
-                              title="Klik untuk ubah nama label"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                            </button>
-                            <code className="text-[10px] font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-600">
-                              key: {field.key}
-                            </code>
-                            {field.include_in_moodle && (
-                              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
-                                Header CSV: {field.moodle_destination || `profile_field_${field.key}`}
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Inline Destination Editor */}
-                        {isEditingMoodle ? (
-                          <div className="mt-2 p-3 rounded-lg bg-slate-100 border border-slate-300 space-y-2">
-                            <label className="block text-[11px] font-bold text-slate-800">
-                              Ubah Header Kolom CSV Moodle:
-                            </label>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="text"
-                                value={inlineMoodleHeader}
-                                onChange={(e) => setInlineMoodleHeader(e.target.value.toLowerCase().trim())}
-                                placeholder="profile_field_daerah"
-                                className="px-3 py-1.5 font-mono text-xs border border-slate-300 rounded bg-white w-64 focus:outline-none focus:ring-2 focus:ring-emerald-600"
-                              />
-                              <Button
-                                size="sm"
-                                variant="primary"
-                                onClick={() => handleSaveInlineMoodleHeader(field)}
-                              >
-                                Simpan Header
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setEditingMoodleFieldId(null)
-                                  setInlineMoodleError(null)
-                                }}
-                              >
-                                Batal
-                              </Button>
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-bold text-slate-900 text-xs">{col.sourceLabel}</span>
+                              <code className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                Header CSV: {col.header}
+                              </code>
+                              <code className="text-[10px] font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-500">
+                                key: {col.key}
+                              </code>
+                              {col.is_standard ? (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold border border-blue-200">
+                                  Standar Moodle (Editable)
+                                </span>
+                              ) : (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-purple-50 text-purple-700 font-semibold border border-purple-200">
+                                  Bidang Kustom
+                                </span>
+                              )}
+                              {!col.include_in_moodle && (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-500 font-medium">
+                                  Dinonaktifkan
+                                </span>
+                              )}
                             </div>
-                            {inlineMoodleError && (
-                              <p className="text-rose-600 text-[11px] font-semibold">{inlineMoodleError}</p>
-                            )}
-                            <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-500">
-                              <span>Pilihan Cepat:</span>
-                              <button
-                                type="button"
-                                onClick={() => setInlineMoodleHeader(`profile_field_${field.key}`)}
-                                className="px-1.5 py-0.5 bg-white border rounded font-mono hover:bg-slate-50 cursor-pointer"
-                              >
-                                profile_field_{field.key}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setInlineMoodleHeader('idnumber')}
-                                className="px-1.5 py-0.5 bg-white border rounded font-mono hover:bg-slate-50 cursor-pointer"
-                              >
-                                idnumber
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setInlineMoodleHeader('department')}
-                                className="px-1.5 py-0.5 bg-white border rounded font-mono hover:bg-slate-50 cursor-pointer"
-                              >
-                                department
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setInlineMoodleHeader('institution')}
-                                className="px-1.5 py-0.5 bg-white border rounded font-mono hover:bg-slate-50 cursor-pointer"
-                              >
-                                institution
-                              </button>
-                            </div>
+                            <p className="text-[11px] text-slate-500 mt-0.5">
+                              {col.description}
+                            </p>
                           </div>
-                        ) : (
-                          <p className="text-[11px] text-slate-500 mt-0.5">
-                            {field.include_in_moodle
-                              ? `Diekspor ke Moodle dengan nama kolom '${field.moodle_destination}'`
-                              : 'Tidak diekspor ke Moodle CSV'}
-                          </p>
                         )}
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 self-end md:self-center">
-                      {field.include_in_moodle && !isEditingMoodle && (
+                      {!isEditingHeader && (
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => {
-                            setEditingMoodleFieldId(field.id)
-                            setInlineMoodleHeader(field.moodle_destination || `profile_field_${field.key}`)
-                            setInlineMoodleError(null)
-                          }}
+                          onClick={() => handleStartEditMoodleHeader(col)}
                           leftIcon={<Edit2 className="w-3 h-3 mr-1" />}
+                          title="Ubah nama header CSV Moodle"
                         >
                           Ubah Header
                         </Button>
                       )}
 
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleOpenEditModal(field)}
-                        leftIcon={<Edit2 className="w-3 h-3 mr-1" />}
-                        title="Buka modal konfigurasi bidang lengkap"
-                      >
-                        Edit Bidang
-                      </Button>
-
                       <button
                         type="button"
-                        onClick={() => handleToggleIncludeMoodle(field)}
+                        onClick={() => handleToggleIncludeMoodle(col)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          field.include_in_moodle
+                          col.include_in_moodle
                             ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300'
                             : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
                         }`}
-                        title="Klik untuk mengaktifkan / menonaktifkan ekspor ke Moodle CSV"
+                        title="Klik untuk mengaktifkan / menonaktifkan ekspor kolom ini ke Moodle CSV"
                       >
-                        {field.include_in_moodle ? (
+                        {col.include_in_moodle ? (
                           <>
                             <ToggleRight className="w-4 h-4 text-emerald-600" />
                             <span>Ekspor Moodle (ON)</span>
