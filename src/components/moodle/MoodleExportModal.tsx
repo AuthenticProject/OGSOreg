@@ -114,13 +114,16 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
     }
   }, [])
 
+  // Safe array fallback
+  const safeStudents = useMemo(() => (Array.isArray(students) ? students : []), [students])
+
   // Map base summary from raw students
   const baseSummary: MoodleExportValidationSummary = useMemo(() => {
-    return mapStudentsToMoodleExport(students, {
+    return mapStudentsToMoodleExport(safeStudents, {
       customPassword: password,
       courseMappingConfig: courseConfig,
     })
-  }, [students, password, courseConfig])
+  }, [safeStudents, password, courseConfig])
 
   // Sync initial rows when modal opens or base students changes
   useEffect(() => {
@@ -133,10 +136,8 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
   // Campus Isolation Validation
   const unauthorizedCrossCampusCount = useMemo(() => {
     if (isSuperAdmin || !assignedCampus) return 0
-    return students.filter((s) => s.kampus && s.kampus !== assignedCampus).length
-  }, [students, isSuperAdmin, assignedCampus])
-
-  if (!isOpen) return null
+    return safeStudents.filter((s) => s.kampus && s.kampus !== assignedCampus).length
+  }, [safeStudents, isSuperAdmin, assignedCampus])
 
   const hasBlockingErrors =
     baseSummary.invalidStudents > 0 ||
@@ -172,8 +173,8 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
       firstname: 'Santri',
       lastname: '',
       email: `santri${Date.now().toString().slice(-4)}@gontor.ac.id`,
-      course1: courseConfig.jenjangShortnames['Jenjang 1'] || 'ogso_k1',
-      course2: courseConfig.simulationShortname || 'simulation',
+      course1: courseConfig?.jenjangShortnames?.['Jenjang 1'] || 'ogso_k1',
+      course2: simulationCourse || courseConfig?.simulationShortname || 'simulation',
       password: password,
       custom_fields: {},
     }
@@ -376,6 +377,8 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
           { id: '7', key: 'password', header: 'password', sourceLabel: 'Password' },
         ]
 
+  if (!isOpen) return null
+
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
@@ -565,8 +568,8 @@ export const MoodleExportModal: React.FC<MoodleExportModalProps> = ({
                     <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
                       <span>Format Jenjang (Course 1)</span>
                     </label>
-                    <span className="text-[10px] font-mono text-muted-foreground truncate max-w-[110px]" title={courseConfig.jenjangShortnames['Jenjang 1']}>
-                      J1: {courseConfig.jenjangShortnames['Jenjang 1']}
+                    <span className="text-[10px] font-mono text-muted-foreground truncate max-w-[110px]" title={courseConfig?.jenjangShortnames?.['Jenjang 1'] || 'JENJANG 1'}>
+                      J1: {courseConfig?.jenjangShortnames?.['Jenjang 1'] || 'JENJANG 1'}
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-1">

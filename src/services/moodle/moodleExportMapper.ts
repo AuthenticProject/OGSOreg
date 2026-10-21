@@ -139,7 +139,9 @@ export function mapStudentsToMoodleExport(
   let duplicateCount = 0
   let unmappedClassCount = 0
 
-  rawStudents.forEach((raw, idx) => {
+  const safeStudents = Array.isArray(rawStudents) ? rawStudents : []
+
+  safeStudents.forEach((raw, idx) => {
     const rowNum = idx + 1
 
     // Extract core fields

@@ -82,6 +82,9 @@ export function getCourseMappingConfig(): MoodleCourseMappingConfig {
       return { ...DEFAULT_COURSE_MAPPINGS }
     }
     const parsed = JSON.parse(raw) as Partial<MoodleCourseMappingConfig>
+    if (!parsed || typeof parsed !== 'object') {
+      return { ...DEFAULT_COURSE_MAPPINGS }
+    }
 
     return {
       defaultPassword: parsed.defaultPassword || DEFAULT_COURSE_MAPPINGS.defaultPassword,
