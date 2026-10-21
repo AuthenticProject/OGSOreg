@@ -208,12 +208,23 @@ export const sortPeriodsNewestFirst = (periods: CompetitionPeriod[]): Competitio
  * Checks whether a period belongs to legacy format (year <= 2025).
  * The Jenjang system only applies starting from competition year 2026 onwards.
  */
-export function isPeriodLegacyYear(periodId?: string): boolean {
-  if (!periodId) return false
-  const match = periodId.match(/\b(20\d\d)\b/)
-  if (match) {
-    return parseInt(match[1], 10) <= 2025
+export function isPeriodLegacyYear(periodId?: string, periodName?: string): boolean {
+  if (periodName) {
+    const match = periodName.match(/\b(20\d\d)\b/)
+    if (match) return parseInt(match[1], 10) <= 2025
+    if (periodName.includes('2025') || periodName.includes('2024') || periodName.includes('2023')) return true
   }
+
+  if (!periodId) return false
+
+  const idMatch = periodId.match(/\b(20\d\d)\b/)
+  if (idMatch) {
+    return parseInt(idMatch[1], 10) <= 2025
+  }
+  if (periodId.includes('2025') || periodId.includes('2024') || periodId.includes('2023')) return true
+
+  const cleanId = periodId.startsWith('period-') ? periodId.replace('period-', '') : periodId
+
   if (typeof window !== 'undefined') {
     try {
       const raw = localStorage.getItem(PERIODS_STORAGE_KEY)
@@ -221,21 +232,45 @@ export function isPeriodLegacyYear(periodId?: string): boolean {
         const parsed = JSON.parse(raw)
         if (Array.isArray(parsed)) {
           const found = parsed.find(
-            (p) => p && (p.id === periodId || p.slug === periodId || p.name === periodId)
+            (p) =>
+              p &&
+              (p.id === periodId ||
+                p.id === cleanId ||
+                p.id === `period-${cleanId}` ||
+                p.slug === periodId ||
+                p.slug === cleanId ||
+                p.name === periodId)
           )
-          if (found && found.year) {
-            return Number(found.year) <= 2025
+          if (found) {
+            if (found.name) {
+              const nameMatch = found.name.match(/\b(20\d\d)\b/)
+              if (nameMatch) return parseInt(nameMatch[1], 10) <= 2025
+              if (found.name.includes('2025') || found.name.includes('2024') || found.name.includes('2023')) return true
+            }
+            if (found.slug && (found.slug.includes('2025') || found.slug.includes('2024'))) return true
+            if (found.year) {
+              return Number(found.year) <= 2025
+            }
           }
         }
       }
     } catch {}
   }
+
   const init = INITIAL_PERIODS.find(
-    (p) => p && (p.id === periodId || p.slug === periodId || p.name === periodId)
+    (p) =>
+      p &&
+      (p.id === periodId ||
+        p.id === cleanId ||
+        p.id === `period-${cleanId}` ||
+        p.slug === periodId ||
+        p.name === periodId)
   )
-  if (init && init.year) {
-    return Number(init.year) <= 2025
+  if (init) {
+    if (init.name && (init.name.includes('2025') || init.name.includes('2024'))) return true
+    if (init.year) return Number(init.year) <= 2025
   }
+
   return false
 }
 
@@ -475,6 +510,8 @@ class ParticipantPeriodService {
       // Always dynamically calculate and sync total_winners from actual winners in storage
       const allWinners = this.getWinners()
       const synced = list.map((p) => {
+        const nameMatch = p.name ? p.name.match(/\b(20\d\d)\b/) : null
+        const correctYear = nameMatch ? parseInt(nameMatch[1], 10) : Number(p.year)
         const pWinners = allWinners.filter((w) => {
           if (!w || !w.period_id) return false
           if (w.period_id === p.id || (p.slug && w.period_id === p.slug)) return true
@@ -483,6 +520,7 @@ class ParticipantPeriodService {
         })
         return {
           ...p,
+          year: correctYear,
           total_winners: pWinners.length,
         }
       })
@@ -502,8 +540,10 @@ class ParticipantPeriodService {
 
   savePeriod(period: Partial<CompetitionPeriod> & { name: string; year: number }): CompetitionPeriod {
     const list = this.getPeriods()
-    const id = period.id || `period-ogso-${period.year}-${Date.now().toString(36)}`
-    const slug = period.slug || `ogso-${period.year}`
+    const nameMatch = period.name ? period.name.match(/\b(20\d\d)\b/) : null
+    const effectiveYear = nameMatch ? parseInt(nameMatch[1], 10) : Number(period.year)
+    const id = period.id || `period-ogso-${effectiveYear}-${Date.now().toString(36)}`
+    const slug = period.slug || `ogso-${effectiveYear}`
     const now = new Date().toISOString()
 
     const existingIdx = list.findIndex((p) => p && p.id === id)
@@ -515,7 +555,7 @@ class ParticipantPeriodService {
         ...period,
         id,
         slug,
-        year: Number(period.year),
+        year: effectiveYear,
         updated_at: now,
       }
       list[existingIdx] = saved
@@ -524,11 +564,11 @@ class ParticipantPeriodService {
         id,
         name: period.name,
         slug,
-        year: Number(period.year),
-        description: period.description || `Olimpiade Gontor Sains & Matematika ${period.year}`,
+        year: effectiveYear,
+        description: period.description || `Olimpiade Gontor Sains & Matematika ${effectiveYear}`,
         status: period.status || 'active',
-        start_date: period.start_date || `${period.year}-01-01`,
-        end_date: period.end_date || `${period.year}-12-31`,
+        start_date: period.start_date || `${effectiveYear}-01-01`,
+        end_date: period.end_date || `${effectiveYear}-12-31`,
         is_published: period.is_published !== undefined ? period.is_published : true,
         created_at: now,
         updated_at: now,
@@ -639,14 +679,26 @@ class ParticipantPeriodService {
       })
     }
 
+    let hasDirtyLegacyJenjang = false
     const normalized = list.map((w) => {
       const isLegacy = isPeriodLegacyYear(w.period_id)
+      if (isLegacy && w.jenjang) {
+        hasDirtyLegacyJenjang = true
+      }
       return {
         ...w,
         jenjang: isLegacy ? undefined : w.jenjang,
         category: normalizeCategoryName(w.category),
       }
     })
+
+    // If storage contains winners from <= 2025 that erroneously had a jenjang, permanently sanitize them
+    if (hasDirtyLegacyJenjang && typeof window !== 'undefined' && !periodId) {
+      try {
+        localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(normalized))
+        cloudSyncService.saveCloudSetting('competition_winners', normalized)
+      } catch {}
+    }
 
     // Always sort winners in standard order: Juara 1, Juara 2, Juara 3, Juara Harapan 1, Juara Harapan 2
     return [...normalized].sort((a, b) => {

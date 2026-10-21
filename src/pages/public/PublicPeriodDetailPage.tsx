@@ -74,15 +74,19 @@ export const PublicPeriodDetailPage: React.FC = () => {
       .sort((a, b) => getAwardRank(a.award) - getAwardRank(b.award))
   }, [winners, selectedJenjang, searchQuery])
 
+  const isLegacyPeriod = period
+    ? Number(period.year) <= 2025 || (period.name && (period.name.includes('2025') || period.name.includes('2024') || period.name.includes('2023')))
+    : false
+
   // Unique categories / jenjangs present
   const availableCategories = useMemo(() => {
     const set = new Set<string>()
     winners.forEach((w) => {
-      if (w.jenjang) set.add(w.jenjang)
+      if (!isLegacyPeriod && w.jenjang) set.add(w.jenjang)
       if (w.category) set.add(w.category)
     })
     return Array.from(set)
-  }, [winners])
+  }, [winners, isLegacyPeriod])
 
   if (!period) {
     return (
@@ -237,7 +241,9 @@ export const PublicPeriodDetailPage: React.FC = () => {
                       </span>
 
                       <span className="text-[11px] font-semibold text-slate-400">
-                        {w.jenjang || w.category || 'OGSO'}
+                        {isLegacyPeriod
+                          ? (w.category || 'OGSO')
+                          : (w.jenjang ? `${w.jenjang} • ${w.category}` : (w.category || 'OGSO'))}
                       </span>
                     </div>
 

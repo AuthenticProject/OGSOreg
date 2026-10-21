@@ -67,11 +67,17 @@ export const CampusProfileView: React.FC<CampusProfileViewProps> = ({
 
   // Filter published winners
   const filteredWinners = publishedWinners.filter((w) => {
+    const isLegacy =
+      (w.period_year && w.period_year <= 2025) ||
+      (w.period_name && (w.period_name.includes('2025') || w.period_name.includes('2024') || w.period_name.includes('2023')))
+    const effectiveJenjang = isLegacy ? undefined : w.jenjang
+
     if (winnerLevelFilter !== 'all') {
       if (winnerLevelFilter === 'legacy') {
-        if (w.jenjang) return false
+        if (!isLegacy) return false
       } else {
-        const lvl = (w.jenjang || '').toLowerCase()
+        if (isLegacy) return false
+        const lvl = (effectiveJenjang || '').toLowerCase()
         if (!lvl.includes(winnerLevelFilter.toLowerCase())) return false
       }
     }
@@ -419,20 +425,26 @@ export const CampusProfileView: React.FC<CampusProfileViewProps> = ({
                   </td>
                 </tr>
               ) : (
-                filteredWinners.map((w) => (
-                  <tr key={w.id} className="hover:bg-emerald-50/30 transition-colors">
-                    <td className="py-3 px-4 font-bold text-[#0C241B]">{w.student_name}</td>
-                    <td className="py-3 px-4 text-slate-600">{w.period_name}</td>
-                    <td className="py-3 px-4 text-slate-600">{w.jenjang || '—'}</td>
-                    <td className="py-3 px-4 font-medium text-slate-800">{w.category}</td>
-                    <td className="py-3 px-4">
-                      <span className="inline-flex items-center gap-1 font-bold text-[#166534]">
-                        <Award className="w-3.5 h-3.5 text-[#D5C49A]" />
-                        <span>{w.award}</span>
-                      </span>
-                    </td>
-                  </tr>
-                ))
+                filteredWinners.map((w) => {
+                  const isLegacy =
+                    (w.period_year && w.period_year <= 2025) ||
+                    (w.period_name && (w.period_name.includes('2025') || w.period_name.includes('2024') || w.period_name.includes('2023')))
+                  const displayJenjang = isLegacy ? '—' : (w.jenjang || '—')
+                  return (
+                    <tr key={w.id} className="hover:bg-emerald-50/30 transition-colors">
+                      <td className="py-3 px-4 font-bold text-[#0C241B]">{w.student_name}</td>
+                      <td className="py-3 px-4 text-slate-600">{w.period_name}</td>
+                      <td className="py-3 px-4 text-slate-600">{displayJenjang}</td>
+                      <td className="py-3 px-4 font-medium text-slate-800">{w.category}</td>
+                      <td className="py-3 px-4">
+                        <span className="inline-flex items-center gap-1 font-bold text-[#166534]">
+                          <Award className="w-3.5 h-3.5 text-[#D5C49A]" />
+                          <span>{w.award}</span>
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })
               )}
             </tbody>
           </table>

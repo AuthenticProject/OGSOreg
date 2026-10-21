@@ -67,7 +67,9 @@ export const PeriodDetailPage: React.FC = () => {
   const [winnerViewMode, setWinnerViewMode] = useState<'by_lomba' | 'flat'>('by_lomba')
 
   // Determine if period is legacy (<= 2025: belum ada jenjang, kategori dropdown)
-  const isLegacyPeriod = period ? period.year <= 2025 : false
+  const isLegacyPeriod = period
+    ? Number(period.year) <= 2025 || (period.name && (period.name.includes('2025') || period.name.includes('2024') || period.name.includes('2023')))
+    : false
 
   // Filters
   const [search, setSearch] = useState('')

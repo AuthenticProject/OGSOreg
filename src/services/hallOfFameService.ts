@@ -524,10 +524,17 @@ class HallOfFameService {
     // 2. Fetch aggregate historical records if any
     const historicalAggregates = this.getHistoricalAggregates(period.id)
 
+    const nameMatch = period.name ? period.name.match(/\b(20\d\d)\b/) : null
+    const effectivePeriodYear = nameMatch ? parseInt(nameMatch[1], 10) : Number(period.year)
+    const isPeriodLegacy =
+      effectivePeriodYear <= 2025 ||
+      (period.name && (period.name.includes('2025') || period.name.includes('2024') || period.name.includes('2023'))) ||
+      (period.id && (period.id.includes('2025') || period.id.includes('2024') || period.id.includes('2023')))
+
     // Filter canonical winners by level if requested
     let filteredWinners = canonicalWinners
     if (options.level && options.level !== 'all') {
-      if (period.year <= 2025) {
+      if (isPeriodLegacy) {
         // Sistem jenjang belum ada pada periode 2025 dan sebelumnya (baru mulai 2026)
         filteredWinners = []
       } else {
@@ -912,6 +919,13 @@ class HallOfFameService {
 
     // Iterate through all periods to collect history and published winners
     for (const p of allPeriods) {
+      const pYearMatch = p.name ? p.name.match(/\b(20\d\d)\b/) : null
+      const effectiveYear = pYearMatch ? parseInt(pYearMatch[1], 10) : Number(p.year)
+      const isLegacyPeriod =
+        effectiveYear <= 2025 ||
+        (p.name && (p.name.includes('2025') || p.name.includes('2024') || p.name.includes('2023'))) ||
+        (p.id && (p.id.includes('2025') || p.id.includes('2024') || p.id.includes('2023')))
+
       const standingsResult = this.computePeriodStandings(p.id, { mode: 'points' })
       const rec = standingsResult.standings.find(
         (s) => s.campus.toLowerCase() === campusName.toLowerCase()
@@ -921,7 +935,7 @@ class HallOfFameService {
         periodHistory.push({
           period_id: p.id,
           period_name: p.name,
-          period_year: p.year,
+          period_year: effectiveYear,
           rank: rec.rank,
           is_tied: rec.is_tied,
           display_rank: rec.display_rank,
@@ -948,7 +962,7 @@ class HallOfFameService {
         ) {
           bestPerformance = {
             period_name: p.name,
-            year: p.year,
+            year: effectiveYear,
             rank: rec.rank,
             points: rec.total_points,
             medals: rec.total_medals,
@@ -964,7 +978,7 @@ class HallOfFameService {
           if (!tier) continue
 
           // Jenjang breakdown only exists starting from 2026 onwards (periods <= 2025 do not have Jenjang)
-          if (p.year >= 2026 && w.jenjang) {
+          if (!isLegacyPeriod && effectiveYear >= 2026 && w.jenjang) {
             const levelKey = w.jenjang
             if (!achievementsByLevel[levelKey]) {
               achievementsByLevel[levelKey] = {
@@ -999,10 +1013,10 @@ class HallOfFameService {
             student_name: w.student_name,
             award: w.award,
             category: w.category,
-            jenjang: p.year >= 2026 ? w.jenjang : undefined,
+            jenjang: isLegacyPeriod ? undefined : w.jenjang,
             period_id: p.id,
             period_name: p.name,
-            period_year: p.year,
+            period_year: effectiveYear,
           })
         }
       }
