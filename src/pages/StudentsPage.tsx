@@ -570,6 +570,70 @@ export const StudentsPage: React.FC = () => {
     setTimeout(() => setActionFeedback(null), 4000)
   }
 
+  // Toggle individual student Moodle uploaded status (Super Admin checklist)
+  const handleToggleMoodleUploaded = async (student: Student, isUploaded: boolean) => {
+    try {
+      await studentRepository.setMoodleUploadedStatus(
+        [student.id || student.username],
+        isUploaded,
+        institutionId
+      )
+      // Optimistically update local students list
+      setStudents((prev) =>
+        prev.map((s) =>
+          s.id === student.id
+            ? {
+                ...s,
+                sync_status: (isUploaded ? 'synced' : 'local_only') as StudentSyncStatus,
+                last_synced_at: isUploaded ? new Date().toISOString() : null,
+                moodle_user_id: isUploaded ? (s.moodle_user_id || `moodle_${s.username}`) : null,
+              }
+            : s
+        )
+      )
+      if (detailStudent && detailStudent.id === student.id) {
+        setDetailStudent({
+          ...detailStudent,
+          sync_status: (isUploaded ? 'synced' : 'local_only') as StudentSyncStatus,
+          last_synced_at: isUploaded ? new Date().toISOString() : null,
+          moodle_user_id: isUploaded ? (detailStudent.moodle_user_id || `moodle_${student.username}`) : null,
+        })
+      }
+      setActionFeedback(
+        isUploaded
+          ? `Santri '${student.full_name}' berhasil ditandai SUDAH DIUPLOAD ke Moodle LMS.`
+          : `Status upload Moodle untuk santri '${student.full_name}' dikembalikan menjadi BELUM DIUPLOAD.`
+      )
+      setTimeout(() => setActionFeedback(null), 4000)
+      loadStudents()
+    } catch {
+      setActionFeedback('Gagal memperbarui status upload Moodle.')
+      setTimeout(() => setActionFeedback(null), 4000)
+    }
+  }
+
+  // Bulk set Moodle uploaded status for selected students
+  const handleBulkSetMoodleUploaded = async (isUploaded: boolean) => {
+    if (selectedIds.length === 0) return
+    try {
+      const count = await studentRepository.setMoodleUploadedStatus(
+        selectedIds,
+        isUploaded,
+        institutionId
+      )
+      setActionFeedback(
+        isUploaded
+          ? `${count} santri terpilih berhasil ditandai SUDAH DIUPLOAD ke Moodle LMS.`
+          : `${count} santri terpilih ditandai BELUM DIUPLOAD ke Moodle.`
+      )
+      setTimeout(() => setActionFeedback(null), 5000)
+      loadStudents()
+    } catch {
+      setActionFeedback('Gagal memperbarui status upload massal.')
+      setTimeout(() => setActionFeedback(null), 4000)
+    }
+  }
+
   // TanStack Table Column Definitions
   const columns = useMemo<ColumnDef<Student>[]>(
     () => [
@@ -630,6 +694,57 @@ export const StudentsPage: React.FC = () => {
                 </button>
                 <p className="text-[11px] text-muted-foreground">{s.email}</p>
               </div>
+            </div>
+          )
+        },
+      },
+      {
+        id: 'moodle_checklist',
+        header: () => (
+          <div
+            className="flex items-center gap-1.5"
+            title="Checklist penanda santri yang sudah diupload ke portal Moodle LMS"
+          >
+            <CheckSquare className="w-3.5 h-3.5 text-emerald-700" />
+            <span>Upload Moodle</span>
+          </div>
+        ),
+        cell: ({ row }) => {
+          const s = row.original
+          const isUploaded = s.sync_status === 'synced' || s.sync_status === 'enrolled'
+          return (
+            <div className="flex items-center">
+              <button
+                type="button"
+                disabled={!isSuperAdmin}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleToggleMoodleUploaded(s, !isUploaded)
+                }}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                  isUploaded
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100 shadow-xs'
+                    : 'bg-white text-slate-500 border-slate-300 hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50/50'
+                } ${!isSuperAdmin ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
+                title={
+                  isSuperAdmin
+                    ? isUploaded
+                      ? `Sudah diupload ke Moodle LMS${s.last_synced_at ? ` (${new Date(s.last_synced_at).toLocaleDateString('id-ID')})` : ''}. Klik untuk membatalkan checklist.`
+                      : 'Klik untuk checklist: tandai santri ini sudah diupload ke portal Moodle LMS'
+                    : isUploaded
+                    ? 'Sudah diupload ke Moodle'
+                    : 'Belum diupload ke Moodle'
+                }
+              >
+                {isUploaded ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 fill-emerald-100 shrink-0" />
+                ) : (
+                  <Square className="w-4 h-4 text-slate-400 hover:text-emerald-600 shrink-0" />
+                )}
+                <span className="text-[11px] whitespace-nowrap">
+                  {isUploaded ? 'Sudah Upload' : 'Belum Upload'}
+                </span>
+              </button>
             </div>
           )
         },
@@ -776,7 +891,15 @@ export const StudentsPage: React.FC = () => {
             return (
               <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                 <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                Terverifikasi Moodle
+                Sudah Diupload ke Moodle
+              </span>
+            )
+          }
+          if (status === 'enrolled') {
+            return (
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                Enrolment Terverifikasi
               </span>
             )
           }
@@ -799,7 +922,7 @@ export const StudentsPage: React.FC = () => {
           return (
             <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
               <Clock className="w-3 h-3 text-amber-600" />
-              Lokal (Belum Sinkron)
+              Belum Diupload
             </span>
           )
         },
@@ -1138,9 +1261,9 @@ export const StudentsPage: React.FC = () => {
               className="text-xs px-2.5 py-2 rounded-lg border border-border bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-maroon"
             >
               <option value="all">Semua Status Moodle</option>
-              <option value="local_only">Belum Sinkron (Lokal)</option>
+              <option value="synced">✓ Sudah Diupload ke Moodle</option>
+              <option value="local_only">○ Belum Diupload (Lokal)</option>
               <option value="exported">Terekspor CSV</option>
-              <option value="synced">Terverifikasi Moodle</option>
               <option value="failed">Gagal</option>
             </select>
 
@@ -1197,16 +1320,38 @@ export const StudentsPage: React.FC = () => {
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {isSuperAdmin && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExportSelectedMoodle}
-                  leftIcon={<Download className="w-3.5 h-3.5 mr-1" />}
-                >
-                  Ekspor CSV Moodle ({selectedIds.length})
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBulkSetMoodleUploaded(true)}
+                    className="border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-xs font-semibold shadow-2xs"
+                    leftIcon={<CheckSquare className="w-3.5 h-3.5 mr-1 text-emerald-700" />}
+                    title="Tandai seluruh santri terpilih sudah diupload ke portal Moodle LMS"
+                  >
+                    Tandai Sudah Diupload ({selectedIds.length})
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBulkSetMoodleUploaded(false)}
+                    className="border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold"
+                    leftIcon={<Square className="w-3.5 h-3.5 mr-1 text-slate-500" />}
+                    title="Tandai seluruh santri terpilih belum diupload ke portal Moodle LMS"
+                  >
+                    Tandai Belum Diupload
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportSelectedMoodle}
+                    leftIcon={<Download className="w-3.5 h-3.5 mr-1" />}
+                  >
+                    Ekspor CSV Moodle ({selectedIds.length})
+                  </Button>
+                </>
               )}
               <Button
                 variant="danger"
@@ -1414,15 +1559,44 @@ export const StudentsPage: React.FC = () => {
                 </div>
 
                 <div className="p-3 rounded-lg bg-slate-50 border border-border">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground">
-                    Status Sinkronisasi
-                  </span>
-                  <p className="font-semibold text-slate-900 mt-0.5">
-                    {detailStudent.sync_status === 'synced'
-                      ? '✓ Terverifikasi Moodle'
-                      : detailStudent.sync_status === 'exported'
-                      ? 'Terekspor CSV'
-                      : 'Lokal (Belum Sinkron)'}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                      Status Upload Moodle
+                    </span>
+                    {isSuperAdmin && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleToggleMoodleUploaded(
+                            detailStudent,
+                            detailStudent.sync_status !== 'synced' && detailStudent.sync_status !== 'enrolled'
+                          )
+                        }
+                        className="text-[10px] font-bold text-emerald-700 hover:underline cursor-pointer"
+                      >
+                        {detailStudent.sync_status === 'synced' || detailStudent.sync_status === 'enrolled'
+                          ? 'Batalkan Checklist'
+                          : 'Tandai Sudah Upload'}
+                      </button>
+                    )}
+                  </div>
+                  <p className="font-semibold text-slate-900 mt-1 flex items-center gap-1.5">
+                    {detailStudent.sync_status === 'synced' || detailStudent.sync_status === 'enrolled' ? (
+                      <span className="inline-flex items-center gap-1 text-emerald-700">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        Sudah Diupload ke Moodle
+                      </span>
+                    ) : detailStudent.sync_status === 'exported' ? (
+                      <span className="inline-flex items-center gap-1 text-blue-700">
+                        <Download className="w-3.5 h-3.5 text-blue-600" />
+                        Terekspor CSV
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-amber-700">
+                        <Clock className="w-3.5 h-3.5 text-amber-600" />
+                        Belum Diupload (Lokal)
+                      </span>
+                    )}
                   </p>
                 </div>
 

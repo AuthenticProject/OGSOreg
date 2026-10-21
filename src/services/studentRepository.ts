@@ -1229,6 +1229,74 @@ class StudentRepository {
     return count
   }
 
+  /**
+   * Sets or toggles whether one or more students have been uploaded to Moodle LMS.
+   * If isUploaded is true, sets sync_status to 'synced' and records the sync timestamp.
+   * If isUploaded is false, sets sync_status back to 'local_only' (or resets last_synced_at).
+   */
+  async setMoodleUploadedStatus(
+    idsOrUsernames: string[],
+    isUploaded: boolean,
+    institutionId: string
+  ): Promise<number> {
+    const current = this.getRawStore(institutionId)
+    const validTargets = (idsOrUsernames || [])
+      .filter((u) => u !== null && u !== undefined)
+      .map((u) => String(u).toLowerCase())
+    const targets = new Set(validTargets)
+    let count = 0
+    const now = new Date().toISOString()
+    const affectedUuids: string[] = []
+    const affectedUsernames: string[] = []
+
+    const updated = current.map((s) => {
+      const sId = (s.id || '').toLowerCase()
+      const sUsername = (s.username || '').toLowerCase()
+      if (targets.has(sId) || targets.has(sUsername)) {
+        count++
+        if (s.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s.id)) {
+          affectedUuids.push(s.id)
+        } else if (s.username) {
+          affectedUsernames.push(s.username)
+        }
+        return {
+          ...s,
+          sync_status: (isUploaded ? 'synced' : 'local_only') as StudentSyncStatus,
+          last_synced_at: isUploaded ? (s.last_synced_at || now) : null,
+          moodle_user_id: isUploaded ? (s.moodle_user_id || `moodle_${s.username}`) : null,
+          updated_at: now,
+        }
+      }
+      return s
+    })
+
+    this.setRawStore(institutionId, updated)
+
+    if (isSupabaseConfigured() && count > 0) {
+      try {
+        const payload: Record<string, any> = {
+          sync_status: isUploaded ? 'synced' : 'local_only',
+          last_synced_at: isUploaded ? now : null,
+          updated_at: now,
+        }
+        if (affectedUuids.length > 0) {
+          await supabase.from('students').update(payload).in('id', affectedUuids)
+        }
+        if (affectedUsernames.length > 0) {
+          await supabase.from('students').update(payload).in('username', affectedUsernames)
+        }
+      } catch {
+        // Fallback to local
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ogsoreg_students_updated'))
+    }
+
+    return count
+  }
+
   clearStore(institutionId: string): void {
     this.inMemoryStore.delete(institutionId)
     if (typeof window !== 'undefined' && window.localStorage) {
