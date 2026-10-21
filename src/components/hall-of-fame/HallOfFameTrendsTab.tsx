@@ -27,7 +27,20 @@ const CAMPUS_PALETTE = [
   '#7C3AED', // Vivid Violet
   '#DC2626', // Crimson Red
   '#0D9488', // Deep Teal
-  '#E11D48', // Rose
+  '#E11D48', // Rose Pink
+  '#2563EB', // Royal Blue
+  '#4F46E5', // Indigo
+  '#059669', // Mint Emerald
+  '#B45309', // Dark Ochre
+  '#9333EA', // Bright Purple
+  '#C026D3', // Fuchsia
+  '#EA580C', // Deep Orange
+  '#0891B2', // Cyan
+  '#65A30D', // Lime Green
+  '#475569', // Slate
+  '#BE185D', // Dark Pink
+  '#854D0E', // Bronze Brown
+  '#0F172A', // Midnight Navy
 ]
 
 // Smooth cubic Bézier path generator
@@ -86,15 +99,22 @@ export const HallOfFameTrendsTab: React.FC<HallOfFameTrendsTabProps> = ({
 
   const { periods, series } = trendData
 
-  // Toggle campus selection
+  // Toggle campus selection (no arbitrary limit, can select all campuses)
   const toggleCampus = (campus: string) => {
     if (selectedCampuses.includes(campus)) {
       if (selectedCampuses.length === 1) return // keep at least 1
       setSelectedCampuses((prev) => prev.filter((c) => c !== campus))
     } else {
-      if (selectedCampuses.length >= 6) return // max 6 for chart readability
       setSelectedCampuses((prev) => [...prev, campus])
     }
+  }
+
+  const handleSelectAll = () => {
+    setSelectedCampuses([...KAMPUS_OPTIONS])
+  }
+
+  const handleResetTop3 = () => {
+    setSelectedCampuses([initialCampus, 'Gontor 2', 'Gontor Putri 1'])
   }
 
   // Find max value for Y-axis scale
@@ -226,19 +246,39 @@ export const HallOfFameTrendsTab: React.FC<HallOfFameTrendsTabProps> = ({
 
           <div className="flex items-center gap-2 text-xs text-slate-500 font-semibold">
             <span>Kontingen Terpilih:</span>
-            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-[#166534] font-bold">
-              {selectedCampuses.length} / 6 Maksimal
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-[#166534] font-bold">
+              {selectedCampuses.length === KAMPUS_OPTIONS.length
+                ? `Semua Kampus (${selectedCampuses.length}/${KAMPUS_OPTIONS.length})`
+                : `${selectedCampuses.length} / ${KAMPUS_OPTIONS.length} Kampus`}
             </span>
           </div>
         </div>
 
         {/* Campus Chips Multi-Selector */}
         <div className="space-y-2 pt-2">
-          <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-            <span>Pilih Kontingen Kampus Pembanding:</span>
-            <span className="text-[10px] lowercase text-slate-400 font-normal">
-              (klik untuk menambah / mengurangi)
-            </span>
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <div className="flex items-center gap-2">
+              <span>Pilih Kontingen Kampus Pembanding:</span>
+              <span className="text-[10px] lowercase text-slate-400 font-normal">
+                (bisa pilih semua kampus)
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSelectAll}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 text-[#166534] border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+              >
+                Pilih Semua ({KAMPUS_OPTIONS.length})
+              </button>
+              <button
+                type="button"
+                onClick={handleResetTop3}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-colors cursor-pointer"
+              >
+                Reset (Top 3)
+              </button>
+            </div>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {KAMPUS_OPTIONS.map((c) => {
