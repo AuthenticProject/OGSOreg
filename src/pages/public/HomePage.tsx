@@ -73,11 +73,14 @@ export const HomePage: React.FC = () => {
       {/* SECTION 01 — HERO SECTION (Deep Forest Palette with Cinematic Stage & Geometry) */}
       {/* ========================================================================= */}
       <section className="relative min-h-[96vh] bg-[#071510] text-white overflow-hidden flex items-center justify-center py-24 lg:py-32">
-        {/* Layer 1: Real Auditorium Stage Photo Ambient Backdrop */}
+        {/* Layer 1: Real Auditorium Stage Video Ambient Backdrop */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
-          <img
-            src="/foto/IMG_20251123_201518_980.jpg"
-            alt=""
+          <video
+            src="/hero-bg.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
             className="w-full h-full object-cover object-center opacity-30 filter saturate-150 contrast-125 mix-blend-luminosity scale-105"
           />
           {/* Multi-layered dark forest vignette for optimal text readability */}
