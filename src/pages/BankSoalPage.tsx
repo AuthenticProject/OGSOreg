@@ -171,13 +171,25 @@ export const BankSoalPage: React.FC = () => {
   }
 
   const handleDownload = (doc: BankSoalDocument) => {
-    // Simulated PDF Download
+    const finalFileName = doc.file_name.endsWith('.pdf') ? doc.file_name : `${doc.file_name}.pdf`
+    if (doc.file_url) {
+      const a = document.createElement('a')
+      a.href = doc.file_url
+      a.download = finalFileName
+      a.target = '_blank'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      return
+    }
+
+    // Fallback simulated PDF Download
     const dummyContent = `%PDF-1.4\n%OGSO Bank Soal: ${doc.title}\n1 0 obj\n<< /Title (${doc.title}) >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF`
     const blob = new Blob([dummyContent], { type: 'application/pdf' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = doc.file_name.endsWith('.pdf') ? doc.file_name : `${doc.file_name}.pdf`
+    a.download = finalFileName
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -294,10 +306,21 @@ export const BankSoalPage: React.FC = () => {
               (d) => (isSuperAdmin ? true : d.is_published)
             )
 
-            // Group docs by Kelas 1–5
+            // Group docs by Kelas 1–5 (Shigor covers Jenjang 1–3, Semua Jenjang covers all)
             const docsByClass: Record<string, BankSoalDocument[]> = {}
             ALLOWED_JENJANG.forEach((cls) => {
-              const matched = visibleDocs.filter((d) => d.jenjang === cls)
+              const matched = visibleDocs.filter((d) => {
+                if (d.jenjang === cls) return true
+                const lowerTitle = d.title.toLowerCase()
+                const lowerFile = d.file_name.toLowerCase()
+                const isShigor = lowerTitle.includes('shigor') || lowerFile.includes('shigor') || lowerTitle.includes('jenjang 1–3') || lowerTitle.includes('jenjang 1-3')
+                if (isShigor && (cls === 'Jenjang 1' || cls === 'Jenjang 2' || cls === 'Jenjang 3')) {
+                  return true
+                }
+                const isAll = lowerTitle.includes('semua jenjang') || lowerFile.includes('semua_jenjang')
+                if (isAll) return true
+                return false
+              })
               if (matched.length > 0) {
                 docsByClass[cls] = matched
               }
@@ -502,22 +525,32 @@ export const BankSoalPage: React.FC = () => {
             </div>
 
             <div className="p-6 space-y-4">
-              <div className="bg-slate-100 rounded-xl p-8 border border-dashed border-slate-300 text-center space-y-3">
-                <FileText className="w-16 h-16 text-emerald-700/60 mx-auto" />
-                <div className="space-y-1">
-                  <p className="font-semibold text-slate-900 text-base">
-                    Naskah Resmi Kompetisi OGSO
-                  </p>
-                  <p className="text-xs text-slate-500 max-w-md mx-auto">
-                    Dokumen soal babak {previewDoc.collection.babak.toLowerCase()} untuk jenjang {previewDoc.doc.jenjang}.
-                    Gunakan berkas ini sebagai bahan pembinaan dan latihan santri.
-                  </p>
+              {previewDoc.doc.file_url ? (
+                <div className="w-full h-96 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shadow-inner">
+                  <iframe
+                    src={`${previewDoc.doc.file_url}#toolbar=0`}
+                    className="w-full h-full"
+                    title={previewDoc.doc.title}
+                  />
                 </div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full text-xs font-medium text-slate-600 border border-slate-200 shadow-xs">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  Format PDF Resmi • Siap Cetak
+              ) : (
+                <div className="bg-slate-100 rounded-xl p-8 border border-dashed border-slate-300 text-center space-y-3">
+                  <FileText className="w-16 h-16 text-emerald-700/60 mx-auto" />
+                  <div className="space-y-1">
+                    <p className="font-semibold text-slate-900 text-base">
+                      Naskah Resmi Kompetisi OGSO
+                    </p>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto">
+                      Dokumen soal babak {previewDoc.collection.babak.toLowerCase()} untuk jenjang {previewDoc.doc.jenjang}.
+                      Gunakan berkas ini sebagai bahan pembinaan dan latihan santri.
+                    </p>
+                  </div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full text-xs font-medium text-slate-600 border border-slate-200 shadow-xs">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    Format PDF Resmi • Siap Cetak
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100 flex items-center justify-between">
                 <div>
