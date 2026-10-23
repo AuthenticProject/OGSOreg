@@ -68,8 +68,8 @@ export interface BankSoalCollection {
   created_at: string
 }
 
-const SILABUS_STORAGE_KEY = 'ogsoreg_silabus_2026_v2'
-const BANK_SOAL_STORAGE_KEY = 'ogsoreg_bank_soal_v3'
+const SILABUS_STORAGE_KEY = 'ogsoreg_silabus_2026_v3'
+const BANK_SOAL_STORAGE_KEY = 'ogsoreg_bank_soal_v4'
 
 // Official syllabuses for Jenjang 1–5 extracted from Silabus_OGSO_2026.xlsx
 const INITIAL_SYLLABUSES: SyllabusItem[] = [
@@ -767,7 +767,7 @@ class MateriService {
         jenjang: normalizedJenjang,
         target_kelas: s.target_kelas || initialMatch?.target_kelas,
         breakdown: (s.breakdown && s.breakdown.length > 0) ? s.breakdown : initialMatch?.breakdown,
-        book_references: (s.book_references && s.book_references.length > 0) ? s.book_references : initialMatch?.book_references,
+        book_references: initialMatch?.book_references || s.book_references,
       }
     })
 
