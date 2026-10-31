@@ -179,7 +179,21 @@ class CustomFieldService {
           }
         }
       } catch {
-        // Fall back gracefully to cache / local storage
+        // Fall back gracefully
+      }
+
+      try {
+        const cloudFields = await cloudSyncService.getCloudSetting<CustomFieldDefinition[] | null>('custom_field_definitions', null)
+        if (cloudFields && Array.isArray(cloudFields) && cloudFields.length > 0) {
+          this.cache = cloudFields
+          this.isLoaded = true
+          this.notify()
+          return [...this.cache]
+        } else if (this.cache.length > 0) {
+          cloudSyncService.saveCloudSetting('custom_field_definitions', this.cache)
+        }
+      } catch {
+        // Ignore
       }
     }
 

@@ -379,12 +379,21 @@ export const websiteContentService = {
           window.dispatchEvent(new Event('ogsoreg_website_content_updated'))
         }
         return cloudSetting
+      } else {
+        const localContent = this.getContent()
+        cloudSyncService.saveCloudSetting('website_content', localContent)
       }
     } catch (err) {
       console.warn('[WebsiteContent] Cloud sync check error:', err)
     }
 
     return this.getContent()
+  },
+
+  async forceFullCloudSync(): Promise<WebsiteContentConfig> {
+    const current = this.getContent()
+    await cloudSyncService.saveCloudSetting('website_content', current)
+    return current
   },
 
   saveContent(content: Partial<WebsiteContentConfig>): WebsiteContentConfig {

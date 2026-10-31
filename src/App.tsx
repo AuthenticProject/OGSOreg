@@ -11,6 +11,7 @@ import { studentRepository } from './services/studentRepository'
 import { websiteContentService } from './services/websiteContentService'
 import { participantPeriodService } from './services/participantPeriodService'
 import { hallOfFameService } from './services/hallOfFameService'
+import { materiService } from './services/materiService'
 
 // Public Website Pages
 import { HomePage } from './pages/public/HomePage'
@@ -63,6 +64,7 @@ export function App() {
           websiteContentService.syncFromCloud(),
           participantPeriodService.syncFromCloud(),
           hallOfFameService.syncFromCloud(),
+          materiService.syncFromCloud(),
         ])
       } catch (err) {
         console.warn('[OGSOreg] Initial cloud sync warning:', err)

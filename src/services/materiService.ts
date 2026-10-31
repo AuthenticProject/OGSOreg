@@ -718,23 +718,57 @@ class MateriService {
     if (!isSupabaseConfigured() || this.isCloudSyncing) return
     this.isCloudSyncing = true
     try {
-      // 1. Silabus
+      // 1. Silabus Sync
       const cloudSilabus = await cloudSyncService.getCloudSetting<SyllabusItem[] | null>('materi_silabus', null)
+      const localSilabus = this.getSyllabuses()
+
       if (cloudSilabus && Array.isArray(cloudSilabus) && cloudSilabus.length > 0) {
-        localStorage.setItem(SILABUS_STORAGE_KEY, JSON.stringify(cloudSilabus))
+        const cloudIdSet = new Set(cloudSilabus.map((s) => s.id))
+        const unuploaded = localSilabus.filter((s) => !cloudIdSet.has(s.id))
+        const merged = [...cloudSilabus, ...unuploaded]
+        localStorage.setItem(SILABUS_STORAGE_KEY, JSON.stringify(merged))
         window.dispatchEvent(new CustomEvent('ogsoreg_silabus_updated'))
+        if (unuploaded.length > 0) {
+          cloudSyncService.saveCloudSetting('materi_silabus', merged)
+        }
+      } else if (localSilabus.length > 0) {
+        // Upload initial / local silabus to cloud
+        cloudSyncService.saveCloudSetting('materi_silabus', localSilabus)
       }
 
-      // 2. Bank Soal
+      // 2. Bank Soal Sync
       const cloudBankSoal = await cloudSyncService.getCloudSetting<BankSoalCollection[] | null>('materi_bank_soal', null)
+      const localBankSoal = this.getBankSoalCollections()
+
       if (cloudBankSoal && Array.isArray(cloudBankSoal) && cloudBankSoal.length > 0) {
-        localStorage.setItem(BANK_SOAL_STORAGE_KEY, JSON.stringify(cloudBankSoal))
+        const cloudIdSet = new Set(cloudBankSoal.map((b) => b.id))
+        const unuploaded = localBankSoal.filter((b) => !cloudIdSet.has(b.id))
+        const merged = [...cloudBankSoal, ...unuploaded]
+        localStorage.setItem(BANK_SOAL_STORAGE_KEY, JSON.stringify(merged))
         window.dispatchEvent(new CustomEvent('ogsoreg_bank_soal_updated'))
+        if (unuploaded.length > 0) {
+          cloudSyncService.saveCloudSetting('materi_bank_soal', merged)
+        }
+      } else if (localBankSoal.length > 0) {
+        // Upload initial / local bank soal to cloud
+        cloudSyncService.saveCloudSetting('materi_bank_soal', localBankSoal)
       }
     } catch (err) {
       console.warn('[MateriService] Cloud sync error:', err)
     } finally {
       this.isCloudSyncing = false
+    }
+  }
+
+  async forceFullCloudSync(): Promise<{ silabus: number; bankSoal: number }> {
+    await this.syncFromCloud()
+    const silabus = this.getSyllabuses()
+    const bankSoal = this.getBankSoalCollections()
+    await cloudSyncService.saveCloudSetting('materi_silabus', silabus)
+    await cloudSyncService.saveCloudSetting('materi_bank_soal', bankSoal)
+    return {
+      silabus: silabus.length,
+      bankSoal: bankSoal.length,
     }
   }
 

@@ -16,6 +16,7 @@ import {
   FolderOpen,
   Globe,
   Lock,
+  RefreshCw,
 } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
@@ -66,6 +67,8 @@ export const BankSoalPage: React.FC = () => {
   const [docFileSize, setDocFileSize] = useState('1.2 MB')
   const [docPublished, setDocPublished] = useState(true)
   const [formError, setFormError] = useState<string | null>(null)
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false)
+  const [syncStatusMsg, setSyncStatusMsg] = useState<string | null>(null)
 
   const loadData = () => {
     // If not super admin, only published collections & docs
@@ -80,7 +83,33 @@ export const BankSoalPage: React.FC = () => {
 
   useEffect(() => {
     loadData()
+    // Background cloud sync on mount
+    materiService.syncFromCloud().catch(() => {})
+
+    const handleUpdate = () => {
+      loadData()
+    }
+
+    window.addEventListener('ogsoreg_bank_soal_updated', handleUpdate)
+    return () => {
+      window.removeEventListener('ogsoreg_bank_soal_updated', handleUpdate)
+    }
   }, [activeBabak, isSuperAdmin])
+
+  const handleManualSync = async () => {
+    setIsCloudSyncing(true)
+    setSyncStatusMsg(null)
+    try {
+      const res = await materiService.forceFullCloudSync()
+      loadData()
+      setSyncStatusMsg(`Sinkronisasi Cloud Berhasil: ${res.bankSoal} koleksi bank soal aktif di semua device.`)
+      setTimeout(() => setSyncStatusMsg(null), 5000)
+    } catch (err: any) {
+      alert(`Gagal sinkronisasi bank soal: ${err?.message || 'Koneksi terganggu'}`)
+    } finally {
+      setIsCloudSyncing(false)
+    }
+  }
 
   const toggleExpand = (id: string) => {
     setExpandedYearIds((prev) => {
@@ -228,18 +257,40 @@ export const BankSoalPage: React.FC = () => {
           </span>
         }
         actions={
-          isSuperAdmin && (
+          <div className="flex items-center gap-2">
             <Button
-              variant="primary"
-              onClick={handleOpenAddCollection}
-              className="bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm flex items-center gap-2"
+              variant="outline"
+              size="sm"
+              disabled={isCloudSyncing}
+              onClick={handleManualSync}
+              leftIcon={<RefreshCw className={`w-4 h-4 mr-1.5 ${isCloudSyncing ? 'animate-spin text-emerald-600' : 'text-slate-600'}`} />}
+              className="bg-white hover:bg-slate-50 border-slate-300 text-slate-700 font-medium"
+              title="Sinkronkan bank soal ke Supabase Cloud"
             >
-              <Plus className="w-4 h-4" />
-              Tambah Koleksi {activeBabak}
+              {isCloudSyncing ? 'Menyinkronkan...' : 'Sinkronkan Cloud'}
             </Button>
-          )
+            {isSuperAdmin && (
+              <Button
+                variant="primary"
+                onClick={handleOpenAddCollection}
+                className="bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Tambah Koleksi {activeBabak}
+              </Button>
+            )}
+          </div>
         }
       />
+
+      {syncStatusMsg && (
+        <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs font-semibold flex items-center justify-between shadow-sm animate-fade-in">
+          <span>{syncStatusMsg}</span>
+          <button onClick={() => setSyncStatusMsg(null)} className="text-emerald-700 hover:text-emerald-900 ml-2">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Strict 2 Sections: Soal Babak Penyisihan & Soal Babak Final */}
       <div className="bg-white rounded-xl shadow-xs border border-slate-200 p-2 flex flex-col sm:flex-row items-center justify-between gap-3">

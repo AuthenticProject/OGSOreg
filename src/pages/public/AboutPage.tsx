@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Sparkles,
@@ -12,7 +12,16 @@ import { websiteContentService } from '../../services/websiteContentService'
 import { getWhatsAppLink } from '../../lib/whatsapp'
 
 export const AboutPage: React.FC = () => {
-  const content = websiteContentService.getContent()
+  const [content, setContent] = useState(() => websiteContentService.getContent())
+
+  useEffect(() => {
+    websiteContentService.syncFromCloud().catch(() => {})
+    const handleUpdate = () => {
+      setContent(websiteContentService.getContent())
+    }
+    window.addEventListener('ogsoreg_website_content_updated', handleUpdate)
+    return () => window.removeEventListener('ogsoreg_website_content_updated', handleUpdate)
+  }, [])
 
   const goals = [
     'Meningkatkan kemampuan akademik dan memperluas wawasan santri dalam menguasai berbagai bidang ilmu pengetahuan Agama dan Umum.',

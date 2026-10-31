@@ -16,6 +16,7 @@ import {
   FileText,
   ChevronRight,
   ShieldCheck,
+  RefreshCw,
 } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/feedback/EmptyState'
@@ -166,6 +167,8 @@ export const SilabusPage: React.FC = () => {
   const [formPages, setFormPages] = useState<number>(18)
   const [formPublished, setFormPublished] = useState(true)
   const [formError, setFormError] = useState<string | null>(null)
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false)
+  const [syncStatusMsg, setSyncStatusMsg] = useState<string | null>(null)
 
   const loadData = () => {
     const list = materiService.getSyllabuses(!isSuperAdmin)
@@ -174,7 +177,33 @@ export const SilabusPage: React.FC = () => {
 
   useEffect(() => {
     loadData()
+    // Background cloud sync on mount
+    materiService.syncFromCloud().catch(() => {})
+
+    const handleUpdate = () => {
+      loadData()
+    }
+
+    window.addEventListener('ogsoreg_silabus_updated', handleUpdate)
+    return () => {
+      window.removeEventListener('ogsoreg_silabus_updated', handleUpdate)
+    }
   }, [isSuperAdmin])
+
+  const handleManualSync = async () => {
+    setIsCloudSyncing(true)
+    setSyncStatusMsg(null)
+    try {
+      const res = await materiService.forceFullCloudSync()
+      loadData()
+      setSyncStatusMsg(`Sinkronisasi Cloud Berhasil: ${res.silabus} materi silabus aktif di semua device.`)
+      setTimeout(() => setSyncStatusMsg(null), 5000)
+    } catch (err: any) {
+      alert(`Gagal sinkronisasi silabus: ${err?.message || 'Koneksi terganggu'}`)
+    } finally {
+      setIsCloudSyncing(false)
+    }
+  }
 
   const activeSyllabus = syllabuses.find((s) => s.jenjang === selectedJenjang)
   const config = JENJANG_CONFIG[selectedJenjang]
@@ -337,6 +366,18 @@ export const SilabusPage: React.FC = () => {
               <ChevronRight className="w-4 h-4" />
             </Link>
 
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isCloudSyncing}
+              onClick={handleManualSync}
+              leftIcon={<RefreshCw className={`w-4 h-4 mr-1.5 ${isCloudSyncing ? 'animate-spin text-emerald-600' : 'text-slate-600'}`} />}
+              className="bg-white hover:bg-slate-50 border-slate-300 text-slate-700 font-medium rounded-xl px-4 py-3"
+              title="Sinkronkan materi silabus ke Supabase Cloud"
+            >
+              {isCloudSyncing ? 'Menyinkronkan...' : 'Sinkronkan Cloud'}
+            </Button>
+
             {isSuperAdmin && (
               <Button
                 variant="outline"
@@ -349,6 +390,15 @@ export const SilabusPage: React.FC = () => {
               </Button>
             )}
           </div>
+
+          {syncStatusMsg && (
+            <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs font-semibold flex items-center justify-between shadow-sm animate-fade-in">
+              <span>{syncStatusMsg}</span>
+              <button onClick={() => setSyncStatusMsg(null)} className="text-emerald-700 hover:text-emerald-900 ml-2">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       </section>
 
