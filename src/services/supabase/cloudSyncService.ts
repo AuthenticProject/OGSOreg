@@ -26,7 +26,10 @@ class CloudSyncService {
     if (typeof window !== 'undefined') {
       window.addEventListener('online', () => {
         this.emitStateChange('idle')
-        this.checkAvailableTables()
+        this.checkAvailableTables(true)
+      })
+      window.addEventListener('focus', () => {
+        this.checkAvailableTables(true)
       })
       window.addEventListener('offline', () => {
         this.emitStateChange('offline')
@@ -59,9 +62,9 @@ class CloudSyncService {
   /**
    * Verifies which cloud tables exist in Supabase schema cache
    */
-  public async checkAvailableTables(): Promise<Set<string>> {
+  public async checkAvailableTables(force: boolean = false): Promise<Set<string>> {
     if (!isSupabaseConfigured()) return this.verifiedTables
-    if (this.checkedTableSupport) return this.verifiedTables
+    if (!force && this.checkedTableSupport && this.verifiedTables.has('app_settings')) return this.verifiedTables
     if (this.isCheckingTables) return this.verifiedTables
 
     this.isCheckingTables = true
@@ -86,6 +89,8 @@ class CloudSyncService {
             const { error } = await supabase.from(tbl).select('*', { count: 'exact', head: true })
             if (!error) {
               this.verifiedTables.add(tbl)
+            } else {
+              this.verifiedTables.delete(tbl)
             }
           } catch {
             // Ignore missing table
@@ -176,6 +181,10 @@ class CloudSyncService {
     this.emitStateChange('syncing')
     try {
       await this.checkAvailableTables()
+      if (!this.verifiedTables.has('app_settings')) {
+        await this.checkAvailableTables(true)
+      }
+
       if (this.verifiedTables.has('app_settings')) {
         const now = new Date().toISOString()
         const { error } = await supabase.from('app_settings').upsert({
@@ -194,6 +203,9 @@ class CloudSyncService {
           return false
         }
       } else {
+        console.warn(
+          `[CloudSync] Tabel app_settings belum ada di Supabase. Data '${key}' baru tersimpan lokal. Harap jalankan skrip supabase/fix_multi_device_sync.sql di Supabase SQL Editor agar bisa diakses semua device.`
+        )
         this.emitStateChange('idle')
         return false
       }

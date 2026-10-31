@@ -23,6 +23,8 @@ export function normalizeInstitutionId(id?: string | null): string {
 }
 
 let isCustomFieldsSupportedInSupabase: boolean | null = null
+let isKelasSupportedInSupabase: boolean | null = null
+let dbJenjangMode: 'jenjang' | 'kelas' | null = 'kelas' // Default to 'kelas' as currently enforced by Supabase constraint
 
 export function isMissingColumnError(error: any, columnName: string): boolean {
   if (!error) return false
@@ -39,21 +41,44 @@ export function isMissingColumnError(error: any, columnName: string): boolean {
   )
 }
 
+export function isJenjangConstraintError(error: any): boolean {
+  if (!error) return false
+  const code = String(error.code || '')
+  const msg = String(error.message || '').toLowerCase()
+  return code === '23514' || msg.includes('students_jenjang_check') || msg.includes('jenjang')
+}
+
 function toSupabaseInsertPayload(s: Partial<Student>): any {
+  let dbJenjang = s.jenjang
+  if (dbJenjang) {
+    const match = String(dbJenjang).match(/[1-5]/)
+    const num = match ? match[0] : '1'
+    if (dbJenjangMode === 'kelas') {
+      dbJenjang = `Kelas ${num}` as StudentJenjang
+    } else if (dbJenjangMode === 'jenjang') {
+      dbJenjang = `Jenjang ${num}` as StudentJenjang
+    } else {
+      dbJenjang = `Kelas ${num}` as StudentJenjang
+    }
+  }
+
   const payload: Record<string, any> = {
     username: s.username?.toLowerCase().trim(),
     firstname: s.firstname?.trim(),
     lastname: s.lastname?.trim(),
     full_name: s.full_name || `${s.firstname || ''} ${s.lastname || ''}`.trim(),
     email: s.email?.toLowerCase().trim(),
-    jenjang: s.jenjang,
-    kelas: s.kelas || null,
+    jenjang: dbJenjang,
     kampus: s.kampus || null,
     institution_id: normalizeInstitutionId(s.institution_id),
     source: s.source || 'manual',
     sync_status: s.sync_status || 'local_only',
     moodle_user_id: s.moodle_user_id || null,
     last_synced_at: s.last_synced_at || null,
+  }
+
+  if (isKelasSupportedInSupabase !== false && s.kelas) {
+    payload.kelas = s.kelas
   }
 
   if (isCustomFieldsSupportedInSupabase !== false && s.custom_fields && Object.keys(s.custom_fields).length > 0) {
@@ -177,6 +202,131 @@ class StudentRepository {
     }
   }
 
+  private async executeSupabaseInsert(payload: any): Promise<{ data: any; error: any }> {
+    let currentPayload = { ...payload }
+    let { data, error } = await supabase.from('students').insert(currentPayload).select().single()
+
+    // 1. Check if 'kelas' column missing in Supabase
+    if (error && isMissingColumnError(error, 'kelas')) {
+      isKelasSupportedInSupabase = false
+      const { kelas, ...noKelas } = currentPayload
+      currentPayload = noKelas
+      const retry = await supabase.from('students').insert(currentPayload).select().single()
+      data = retry.data
+      error = retry.error
+    }
+
+    // 2. Check if 'custom_fields' column missing in Supabase
+    if (error && isMissingColumnError(error, 'custom_fields')) {
+      isCustomFieldsSupportedInSupabase = false
+      const { custom_fields, ...noCustom } = currentPayload
+      currentPayload = noCustom
+      const retry = await supabase.from('students').insert(currentPayload).select().single()
+      data = retry.data
+      error = retry.error
+    }
+
+    // 3. Check if 'students_jenjang_check' constraint failed
+    if (error && isJenjangConstraintError(error)) {
+      const match = String(currentPayload.jenjang || '').match(/[1-5]/)
+      const num = match ? match[0] : '1'
+      dbJenjangMode = dbJenjangMode === 'kelas' ? 'jenjang' : 'kelas'
+      currentPayload.jenjang = dbJenjangMode === 'kelas' ? `Kelas ${num}` : `Jenjang ${num}`
+      const retry = await supabase.from('students').insert(currentPayload).select().single()
+      data = retry.data
+      error = retry.error
+    }
+
+    return { data, error }
+  }
+
+  private async executeSupabaseBulkInsert(payloads: any[]): Promise<{ data: any; error: any }> {
+    if (payloads.length === 0) return { data: [], error: null }
+    let currentPayloads = payloads.map((p) => ({ ...p }))
+    let { data, error } = await supabase.from('students').insert(currentPayloads).select()
+
+    if (error && isMissingColumnError(error, 'kelas')) {
+      isKelasSupportedInSupabase = false
+      currentPayloads = currentPayloads.map(({ kelas, ...rest }) => rest)
+      const retry = await supabase.from('students').insert(currentPayloads).select()
+      data = retry.data
+      error = retry.error
+    }
+
+    if (error && isMissingColumnError(error, 'custom_fields')) {
+      isCustomFieldsSupportedInSupabase = false
+      currentPayloads = currentPayloads.map(({ custom_fields, ...rest }) => rest)
+      const retry = await supabase.from('students').insert(currentPayloads).select()
+      data = retry.data
+      error = retry.error
+    }
+
+    if (error && isJenjangConstraintError(error)) {
+      dbJenjangMode = dbJenjangMode === 'kelas' ? 'jenjang' : 'kelas'
+      currentPayloads = currentPayloads.map((p) => {
+        const match = String(p.jenjang || '').match(/[1-5]/)
+        const num = match ? match[0] : '1'
+        return {
+          ...p,
+          jenjang: dbJenjangMode === 'kelas' ? `Kelas ${num}` : `Jenjang ${num}`,
+        }
+      })
+      const retry = await supabase.from('students').insert(currentPayloads).select()
+      data = retry.data
+      error = retry.error
+    }
+
+    return { data, error }
+  }
+
+  private async executeSupabaseUpdate(
+    filter: { id?: string; username?: string },
+    payload: any
+  ): Promise<{ data: any; error: any }> {
+    let currentPayload = { ...payload }
+    const applyFilter = (q: any) => {
+      const isUuid = filter.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(filter.id)
+      if (isUuid) {
+        return q.eq('id', filter.id)
+      } else if (filter.username) {
+        return q.ilike('username', filter.username.trim()).eq('institution_id', CANONICAL_INSTITUTION_ID)
+      }
+      return q
+    }
+
+    let { data, error } = await applyFilter(supabase.from('students').update(currentPayload)).select().single()
+
+    if (error && isMissingColumnError(error, 'kelas')) {
+      isKelasSupportedInSupabase = false
+      const { kelas, ...noKelas } = currentPayload
+      currentPayload = noKelas
+      const retry = await applyFilter(supabase.from('students').update(currentPayload)).select().single()
+      data = retry.data
+      error = retry.error
+    }
+
+    if (error && isMissingColumnError(error, 'custom_fields')) {
+      isCustomFieldsSupportedInSupabase = false
+      const { custom_fields, ...noCustom } = currentPayload
+      currentPayload = noCustom
+      const retry = await applyFilter(supabase.from('students').update(currentPayload)).select().single()
+      data = retry.data
+      error = retry.error
+    }
+
+    if (error && isJenjangConstraintError(error)) {
+      const match = String(currentPayload.jenjang || '').match(/[1-5]/)
+      const num = match ? match[0] : '1'
+      dbJenjangMode = dbJenjangMode === 'kelas' ? 'jenjang' : 'kelas'
+      currentPayload.jenjang = dbJenjangMode === 'kelas' ? `Kelas ${num}` : `Jenjang ${num}`
+      const retry = await applyFilter(supabase.from('students').update(currentPayload)).select().single()
+      data = retry.data
+      error = retry.error
+    }
+
+    return { data, error }
+  }
+
   /**
    * Otomatis melakukan sinkronisasi dua arah antara data lokal dan Supabase Cloud
    */
@@ -195,8 +345,23 @@ class StudentRepository {
       }
 
       const cloudMap = new Map<string, Student>()
-      ;(cloudStudents || []).forEach((s) => {
-        cloudMap.set((s.username || s.id).toLowerCase(), s as Student)
+      ;(cloudStudents || []).forEach((raw: any) => {
+        let jenjang = normalizeJenjang(raw.jenjang) as StudentJenjang
+        let kelas = raw.kelas as StudentKelas | undefined
+        if (!kelas) {
+          const rawJ = String(raw.jenjang || '')
+          if (rawJ === 'Kelas 1' || jenjang === 'Jenjang 1') kelas = 'Kelas 1'
+          else if (rawJ === 'Kelas 2' || jenjang === 'Jenjang 2') kelas = 'Kelas 2'
+          else if (rawJ === 'Kelas 3' || jenjang === 'Jenjang 3') kelas = 'Kelas 3'
+          else if (rawJ === 'Kelas 4' || jenjang === 'Jenjang 4') kelas = 'Kelas 4'
+          else if (rawJ === 'Kelas 5' || jenjang === 'Jenjang 5') kelas = 'Kelas 5'
+        }
+        const s: Student = {
+          ...raw,
+          jenjang,
+          kelas,
+        }
+        cloudMap.set((s.username || s.id).toLowerCase(), s)
       })
 
       // Cek siswa lokal yang belum ada di Supabase Cloud
@@ -212,22 +377,15 @@ class StudentRepository {
 
       // Upload siswa lokal ke Supabase Cloud
       if (toUpload.length > 0) {
-        let { data: inserted, error: insertErr } = await supabase
-          .from('students')
-          .insert(toUpload)
-          .select()
-
-        if (insertErr && isMissingColumnError(insertErr, 'custom_fields')) {
-          isCustomFieldsSupportedInSupabase = false
-          const stripped = toUpload.map(({ custom_fields, ...rest }: any) => rest)
-          const retry = await supabase.from('students').insert(stripped).select()
-          inserted = retry.data
-          insertErr = retry.error
-        }
+        const { data: inserted, error: insertErr } = await this.executeSupabaseBulkInsert(toUpload)
 
         if (!insertErr && inserted) {
-          inserted.forEach((ins) => {
-            cloudMap.set((ins.username || ins.id).toLowerCase(), ins as Student)
+          inserted.forEach((ins: any) => {
+            const rawJ = normalizeJenjang(ins.jenjang) as StudentJenjang
+            cloudMap.set((ins.username || ins.id).toLowerCase(), {
+              ...ins,
+              jenjang: rawJ,
+            } as Student)
           })
         }
       }
@@ -460,7 +618,12 @@ class StudentRepository {
           )
         }
         if (jenjang && jenjang !== 'all' && jenjang !== 'ALL') {
-          query = query.eq('jenjang', jenjang)
+          const match = String(jenjang).match(/[1-5]/)
+          if (match) {
+            query = query.or(`jenjang.eq.Jenjang ${match[0]},jenjang.eq.Kelas ${match[0]}`)
+          } else {
+            query = query.eq('jenjang', jenjang)
+          }
         }
         if (kelas && kelas !== 'all' && kelas !== 'ALL') {
           query = query.eq('kelas', kelas)
@@ -494,8 +657,26 @@ class StudentRepository {
 
         const { data, count, error } = await query
         if (!error && data) {
+          const normalizedCloud: Student[] = (data || []).map((raw: any) => {
+            let j = normalizeJenjang(raw.jenjang) as StudentJenjang
+            let k = raw.kelas as StudentKelas | undefined
+            if (!k) {
+              const rawJ = String(raw.jenjang || '')
+              if (rawJ === 'Kelas 1' || j === 'Jenjang 1') k = 'Kelas 1'
+              else if (rawJ === 'Kelas 2' || j === 'Jenjang 2') k = 'Kelas 2'
+              else if (rawJ === 'Kelas 3' || j === 'Jenjang 3') k = 'Kelas 3'
+              else if (rawJ === 'Kelas 4' || j === 'Jenjang 4') k = 'Kelas 4'
+              else if (rawJ === 'Kelas 5' || j === 'Jenjang 5') k = 'Kelas 5'
+            }
+            return {
+              ...raw,
+              jenjang: j,
+              kelas: k,
+            }
+          })
+
           const localStudents = this.getRawStore(CANONICAL_INSTITUTION_ID)
-          const cloudKeys = new Set((data || []).map((s: any) => (s.username || s.id).toLowerCase().trim()))
+          const cloudKeys = new Set(normalizedCloud.map((s) => (s.username || s.id).toLowerCase().trim()))
 
           const missingLocals = localStudents.filter((loc) => {
             const key = (loc.username || loc.id).toLowerCase().trim()
@@ -515,7 +696,7 @@ class StudentRepository {
             return true
           })
 
-          const combinedData = [...missingLocals, ...(data as Student[])]
+          const combinedData = [...missingLocals, ...normalizedCloud]
           if (combinedData.length > 0) {
             const stats = await this.getStats(CANONICAL_INSTITUTION_ID, assignedCampus)
             return {
@@ -719,28 +900,23 @@ class StudentRepository {
     if (isSupabaseConfigured()) {
       try {
         const dbPayload = toSupabaseInsertPayload(newStudent)
-        let { data: dbData, error } = await supabase
-          .from('students')
-          .insert(dbPayload)
-          .select()
-          .single()
-
-        // Handle case if custom_fields column is not yet migrated in Supabase
-        if (error && isMissingColumnError(error, 'custom_fields')) {
-          isCustomFieldsSupportedInSupabase = false
-          const { custom_fields, ...safePayload } = dbPayload
-          const retry = await supabase.from('students').insert(safePayload).select().single()
-          dbData = retry.data
-          error = retry.error
-        }
+        const { data: dbData, error } = await this.executeSupabaseInsert(dbPayload)
 
         if (!error && dbData) {
-          const finalStudent = { ...newStudent, ...(dbData as any) } as Student
+          const rawJ = normalizeJenjang(dbData.jenjang || newStudent.jenjang) as StudentJenjang
+          const finalStudent = {
+            ...newStudent,
+            ...(dbData as any),
+            jenjang: rawJ,
+            kelas: newStudent.kelas || (dbData.kelas as StudentKelas) || undefined,
+          } as Student
           this.setRawStore(CANONICAL_INSTITUTION_ID, [finalStudent, ...currentStudents])
           return { success: true, student: finalStudent, ...(finalStudent as any) }
+        } else if (error) {
+          console.warn('[StudentRepository] Supabase insert warning:', error.message)
         }
-      } catch {
-        // Fall back to local persistence
+      } catch (err) {
+        console.warn('[StudentRepository] Supabase insert exception:', err)
       }
     }
 
@@ -841,39 +1017,28 @@ class StudentRepository {
 
     if (isSupabaseConfigured()) {
       try {
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
         const dbPayload = toSupabaseInsertPayload(updatedStudent)
-        let query = supabase.from('students').update(dbPayload)
-        if (isUuid) {
-          query = query.eq('id', id)
-        } else if (existing?.username) {
-          query = query.ilike('username', existing.username.trim()).eq('institution_id', CANONICAL_INSTITUTION_ID)
-        }
-
-        let { data: dbData, error } = await query.select().single()
-
-        if (error && isMissingColumnError(error, 'custom_fields')) {
-          isCustomFieldsSupportedInSupabase = false
-          const { custom_fields, ...safeStudent } = dbPayload
-          let retryQuery = supabase.from('students').update(safeStudent)
-          if (isUuid) {
-            retryQuery = retryQuery.eq('id', id)
-          } else if (existing?.username) {
-            retryQuery = retryQuery.ilike('username', existing.username.trim()).eq('institution_id', CANONICAL_INSTITUTION_ID)
-          }
-          const retry = await retryQuery.select().single()
-          dbData = retry.data
-          error = retry.error
-        }
+        const { data: dbData, error } = await this.executeSupabaseUpdate(
+          { id, username: existing?.username },
+          dbPayload
+        )
 
         if (!error && dbData) {
-          const finalStudent = { ...updatedStudent, ...(dbData as any) } as Student
+          const rawJ = normalizeJenjang(dbData.jenjang || updatedStudent.jenjang) as StudentJenjang
+          const finalStudent = {
+            ...updatedStudent,
+            ...(dbData as any),
+            jenjang: rawJ,
+            kelas: updatedStudent.kelas || (dbData.kelas as StudentKelas) || undefined,
+          } as Student
           currentStudents[existingIndex] = finalStudent
           this.setRawStore(institutionId, currentStudents)
           return { success: true, student: finalStudent, ...(finalStudent as any) }
+        } else if (error) {
+          console.warn('[StudentRepository] Supabase update warning:', error.message)
         }
-      } catch {
-        // Fall back
+      } catch (err) {
+        console.warn('[StudentRepository] Supabase update exception:', err)
       }
     }
 
@@ -1080,21 +1245,13 @@ class StudentRepository {
       if (isSupabaseConfigured()) {
         try {
           const dbPayloads = toInsert.map((s) => toSupabaseInsertPayload(s))
-          let { error } = await supabase.from('students').insert(dbPayloads)
-
-          // Handle if custom_fields column is not yet migrated in Supabase
-          if (error && isMissingColumnError(error, 'custom_fields')) {
-            isCustomFieldsSupportedInSupabase = false
-            const stripped = dbPayloads.map(({ custom_fields, ...rest }: any) => rest)
-            const retry = await supabase.from('students').insert(stripped)
-            error = retry.error
-          }
+          const { error } = await this.executeSupabaseBulkInsert(dbPayloads)
 
           if (error) {
-            console.warn('Supabase bulk insert warning, falling back to local adapter:', error.message)
+            console.warn('[StudentRepository] Supabase bulk insert warning, falling back to local adapter:', error.message)
           }
-        } catch {
-          // Local fallback
+        } catch (err) {
+          console.warn('[StudentRepository] Supabase bulk insert exception:', err)
         }
       }
 

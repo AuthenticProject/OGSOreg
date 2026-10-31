@@ -461,23 +461,58 @@ class ParticipantPeriodService {
       // 1. Periods Sync
       const cloudPeriods = await cloudSyncService.getCloudSetting<CompetitionPeriod[] | null>('competition_periods', null)
       if (cloudPeriods && Array.isArray(cloudPeriods) && cloudPeriods.length > 0) {
-        const sorted = sortPeriodsNewestFirst(cloudPeriods)
-        localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(sorted))
+        const localPeriods = this.getPeriods()
+        const cloudIdSet = new Set(cloudPeriods.map((p) => p.id))
+        const unuploaded = localPeriods.filter((p) => !cloudIdSet.has(p.id) && !INITIAL_PERIODS.some((ip) => ip.id === p.id))
+        const merged = sortPeriodsNewestFirst([...cloudPeriods, ...unuploaded])
+        localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(merged))
         window.dispatchEvent(new CustomEvent('ogsoreg_periods_updated'))
+        if (unuploaded.length > 0) {
+          cloudSyncService.saveCloudSetting('competition_periods', merged)
+        }
+      } else {
+        const localPeriods = this.getPeriods()
+        if (localPeriods.length > 0) {
+          cloudSyncService.saveCloudSetting('competition_periods', localPeriods)
+        }
       }
 
       // 2. Winners Sync
       const cloudWinners = await cloudSyncService.getCloudSetting<PeriodWinner[] | null>('competition_winners', null)
       if (cloudWinners && Array.isArray(cloudWinners) && cloudWinners.length > 0) {
-        localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(cloudWinners))
+        const localWinners = this.getWinners()
+        const cloudIdSet = new Set(cloudWinners.map((w) => w.id))
+        const unuploaded = localWinners.filter((w) => !cloudIdSet.has(w.id))
+        const merged = [...cloudWinners, ...unuploaded]
+        localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(merged))
         window.dispatchEvent(new CustomEvent('ogsoreg_winners_updated'))
+        if (unuploaded.length > 0) {
+          cloudSyncService.saveCloudSetting('competition_winners', merged)
+        }
+      } else {
+        const localWinners = this.getWinners()
+        if (localWinners.length > 0) {
+          cloudSyncService.saveCloudSetting('competition_winners', localWinners)
+        }
       }
 
       // 3. Certificates Sync
       const cloudCerts = await cloudSyncService.getCloudSetting<PeriodCertificate[] | null>('competition_certificates', null)
       if (cloudCerts && Array.isArray(cloudCerts) && cloudCerts.length > 0) {
-        localStorage.setItem(CERTIFICATES_STORAGE_KEY, JSON.stringify(cloudCerts))
+        const localCerts = this.getCertificates()
+        const cloudIdSet = new Set(cloudCerts.map((c) => c.id))
+        const unuploaded = localCerts.filter((c) => !cloudIdSet.has(c.id))
+        const merged = [...cloudCerts, ...unuploaded]
+        localStorage.setItem(CERTIFICATES_STORAGE_KEY, JSON.stringify(merged))
         window.dispatchEvent(new CustomEvent('ogsoreg_certificates_updated'))
+        if (unuploaded.length > 0) {
+          cloudSyncService.saveCloudSetting('competition_certificates', merged)
+        }
+      } else {
+        const localCerts = this.getCertificates()
+        if (localCerts.length > 0) {
+          cloudSyncService.saveCloudSetting('competition_certificates', localCerts)
+        }
       }
     } catch (err) {
       console.warn('[ParticipantPeriodService] Cloud sync error:', err)

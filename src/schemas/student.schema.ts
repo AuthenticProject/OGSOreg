@@ -7,6 +7,7 @@ import {
   type StudentJenjang,
 } from '../types/student'
 import { KAMPUS_OPTIONS, type StudentKampus } from '../types/campus'
+import { normalizeJenjang } from '../services/dataNormalizer'
 
 const baseStudentObject = z.object({
   id: z.string().optional(),
@@ -36,11 +37,14 @@ const baseStudentObject = z.object({
     .refine((val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val), {
       message: 'Format email tidak valid (contoh: santri@sekolah.sch.id).',
     }),
-  jenjang: z
-    .string()
-    .refine((val) => STUDENT_JENJANG_OPTIONS.includes(val as StudentJenjang), {
-      message: 'Jenjang harus salah satu dari: Jenjang 1, Jenjang 2, Jenjang 3, Jenjang 4, Jenjang 5.',
-    }),
+  jenjang: z.preprocess(
+    (val) => normalizeJenjang(val) || val,
+    z
+      .string()
+      .refine((val) => STUDENT_JENJANG_OPTIONS.includes(val as StudentJenjang), {
+        message: 'Jenjang harus salah satu dari: Jenjang 1, Jenjang 2, Jenjang 3, Jenjang 4, Jenjang 5.',
+      })
+  ),
   kelas: z
     .string()
     .optional()
