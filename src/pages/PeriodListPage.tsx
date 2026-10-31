@@ -12,6 +12,7 @@ import {
   Trash2,
   X,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
@@ -38,6 +39,7 @@ export const PeriodListPage: React.FC = () => {
   const [formStartDate, setFormStartDate] = useState('')
   const [formEndDate, setFormEndDate] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false)
 
   const loadPeriods = () => {
     const list = participantPeriodService.getPeriods()
@@ -46,7 +48,32 @@ export const PeriodListPage: React.FC = () => {
 
   useEffect(() => {
     loadPeriods()
+    participantPeriodService.syncFromCloud().catch(() => {})
+
+    const handleUpdate = () => {
+      loadPeriods()
+    }
+
+    window.addEventListener('ogsoreg_periods_updated', handleUpdate)
+    window.addEventListener('ogsoreg_winners_updated', handleUpdate)
+
+    return () => {
+      window.removeEventListener('ogsoreg_periods_updated', handleUpdate)
+      window.removeEventListener('ogsoreg_winners_updated', handleUpdate)
+    }
   }, [])
+
+  const handleManualSync = async () => {
+    setIsCloudSyncing(true)
+    try {
+      await participantPeriodService.forceFullCloudSync()
+      loadPeriods()
+    } catch (err: any) {
+      alert(`Gagal sinkronisasi: ${err?.message || 'Koneksi terganggu'}`)
+    } finally {
+      setIsCloudSyncing(false)
+    }
+  }
 
   const handleOpenAdd = () => {
     setEditingPeriod(null)
@@ -109,16 +136,29 @@ export const PeriodListPage: React.FC = () => {
         title="Participant — Periode Kompetisi"
         subtitle="Pilih periode pelaksanaan Olimpiade Gontor Sains & Matematika untuk melihat Data Juara, Unduh Sertifikat Pemenang, dan Sertifikat Peserta."
         actions={
-          isSuperAdmin && (
+          <div className="flex items-center gap-2">
             <Button
-              variant="primary"
+              variant="outline"
               size="sm"
-              onClick={handleOpenAdd}
-              leftIcon={<Plus className="w-4 h-4 mr-1.5" />}
+              disabled={isCloudSyncing}
+              onClick={handleManualSync}
+              leftIcon={<RefreshCw className={`w-4 h-4 mr-1.5 ${isCloudSyncing ? 'animate-spin text-emerald-600' : 'text-slate-600'}`} />}
+              className="bg-white hover:bg-slate-50 border-slate-300 text-slate-700 font-medium"
+              title="Sinkronkan data periode dan pemenang ke Supabase Cloud"
             >
-              Tambah Periode Baru
+              {isCloudSyncing ? 'Menyinkronkan...' : 'Sinkronkan Cloud'}
             </Button>
-          )
+            {isSuperAdmin && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleOpenAdd}
+                leftIcon={<Plus className="w-4 h-4 mr-1.5" />}
+              >
+                Tambah Periode Baru
+              </Button>
+            )}
+          </div>
         }
       />
 

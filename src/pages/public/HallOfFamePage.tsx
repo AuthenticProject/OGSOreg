@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { HallOfFameHeader, type HallOfFameTab } from '../../components/hall-of-fame/HallOfFameHeader'
 import { HallOfFameOverviewTab } from '../../components/hall-of-fame/HallOfFameOverviewTab'
@@ -10,12 +10,18 @@ import {
   hallOfFameService,
   slugToCampus,
 } from '../../services/hallOfFameService'
-import type { CompetitionPeriod } from '../../services/participantPeriodService'
+import {
+  participantPeriodService,
+  type CompetitionPeriod,
+} from '../../services/participantPeriodService'
 
 export const HallOfFamePage: React.FC = () => {
   const { campusSlug: routeCampusSlug } = useParams<{ campusSlug?: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
+
+  // Data update ticker for cloud real-time updates
+  const [dataVersion, setDataVersion] = useState(0)
 
   // Periods
   const [periods, setPeriods] = useState<CompetitionPeriod[]>([])
@@ -32,11 +38,37 @@ export const HallOfFamePage: React.FC = () => {
     routeCampusSlug || searchParams.get('campus') || 'gontor-1'
   )
 
+  // Cloud sync and real-time listeners on mount
+  useEffect(() => {
+    Promise.allSettled([
+      participantPeriodService.syncFromCloud(),
+      hallOfFameService.syncFromCloud(),
+    ]).then(() => {
+      setDataVersion((v) => v + 1)
+    })
+
+    const handleUpdate = () => {
+      setDataVersion((v) => v + 1)
+    }
+
+    window.addEventListener('ogsoreg_winners_updated', handleUpdate)
+    window.addEventListener('ogsoreg_periods_updated', handleUpdate)
+    window.addEventListener('ogsoreg_hof_settings_updated', handleUpdate)
+    window.addEventListener('ogsoreg_hof_aggregates_updated', handleUpdate)
+
+    return () => {
+      window.removeEventListener('ogsoreg_winners_updated', handleUpdate)
+      window.removeEventListener('ogsoreg_periods_updated', handleUpdate)
+      window.removeEventListener('ogsoreg_hof_settings_updated', handleUpdate)
+      window.removeEventListener('ogsoreg_hof_aggregates_updated', handleUpdate)
+    }
+  }, [])
+
   // Load eligible periods
   useEffect(() => {
     const eligible = hallOfFameService.getEligiblePeriods()
     setPeriods(eligible)
-    if (eligible.length > 0 && !selectedPeriodId) {
+    if (eligible.length > 0 && (!selectedPeriodId || !eligible.some((p) => p.id === selectedPeriodId))) {
       const periodFromQuery = searchParams.get('period')
       if (periodFromQuery && eligible.some((p) => p.id === periodFromQuery)) {
         setSelectedPeriodId(periodFromQuery)
@@ -44,7 +76,7 @@ export const HallOfFamePage: React.FC = () => {
         setSelectedPeriodId(eligible[0].id)
       }
     }
-  }, [selectedPeriodId, searchParams])
+  }, [selectedPeriodId, searchParams, dataVersion])
 
   // Sync route param changes
   useEffect(() => {
@@ -78,7 +110,10 @@ export const HallOfFamePage: React.FC = () => {
   }
 
   const selectedCampusName = slugToCampus(selectedCampusSlug)
-  const overviewData = hallOfFameService.getHallOfFameOverview()
+  const overviewData = useMemo(() => {
+    return hallOfFameService.getHallOfFameOverview()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataVersion])
 
   return (
     <div className="w-full bg-[#F5F8F4] text-[#0C241B] py-10 lg:py-14 min-h-screen">

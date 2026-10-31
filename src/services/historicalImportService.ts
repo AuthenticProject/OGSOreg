@@ -463,6 +463,9 @@ export async function commitHistoricalImport(
   for (const win of newIndividualWinners) {
     participantPeriodService.saveWinner(win)
   }
+  if (newIndividualWinners.length > 0) {
+    participantPeriodService.uploadWinnersToCloud(participantPeriodService.getWinners()).catch(() => {})
+  }
 
   // Save aggregate records
   if (newAggregates.length > 0) {

@@ -14,6 +14,8 @@ import {
   Layers,
   School,
   Sparkles,
+  RefreshCw,
+  X,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { Button } from '../components/ui/Button'
@@ -44,6 +46,8 @@ export const HallOfFameManagementPage: React.FC = () => {
   const [weightsSaved, setWeightsSaved] = useState(false)
   const [importHistory, setImportHistory] = useState<HistoricalImportLog[]>([])
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false)
+  const [syncStatusMsg, setSyncStatusMsg] = useState<string | null>(null)
 
   // Load periods & logs
   const loadData = () => {
@@ -57,7 +61,41 @@ export const HallOfFameManagementPage: React.FC = () => {
 
   useEffect(() => {
     loadData()
+    // Auto sync on mount
+    hallOfFameService.syncFromCloud().catch(() => {})
+
+    const handleUpdate = () => {
+      loadData()
+    }
+
+    window.addEventListener('ogsoreg_hof_settings_updated', handleUpdate)
+    window.addEventListener('ogsoreg_hof_aggregates_updated', handleUpdate)
+    window.addEventListener('ogsoreg_periods_updated', handleUpdate)
+    window.addEventListener('ogsoreg_winners_updated', handleUpdate)
+
+    return () => {
+      window.removeEventListener('ogsoreg_hof_settings_updated', handleUpdate)
+      window.removeEventListener('ogsoreg_hof_aggregates_updated', handleUpdate)
+      window.removeEventListener('ogsoreg_periods_updated', handleUpdate)
+      window.removeEventListener('ogsoreg_winners_updated', handleUpdate)
+    }
   }, [])
+
+  const handleManualSync = async () => {
+    setIsCloudSyncing(true)
+    setSyncStatusMsg(null)
+    try {
+      const res = await hallOfFameService.forceFullCloudSync()
+      await participantPeriodService.forceFullCloudSync()
+      loadData()
+      setSyncStatusMsg(`Sinkronisasi Cloud Berhasil: ${res.aggregates} rekap agregat & konfigurasi Hall of Fame aktif di semua device.`)
+      setTimeout(() => setSyncStatusMsg(null), 5000)
+    } catch (err: any) {
+      alert(`Gagal sinkronisasi: ${err?.message || 'Koneksi terganggu'}`)
+    } finally {
+      setIsCloudSyncing(false)
+    }
+  }
 
   // Handle Save Scoring Weights
   const handleSaveWeights = (e: React.FormEvent) => {
@@ -109,6 +147,15 @@ export const HallOfFameManagementPage: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <Button
+            onClick={handleManualSync}
+            disabled={isCloudSyncing}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all shadow-xs cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isCloudSyncing ? 'animate-spin text-emerald-300' : ''}`} />
+            <span>{isCloudSyncing ? 'Menyinkronkan...' : 'Sinkronkan Cloud'}</span>
+          </Button>
+
           <Link
             to="/hall-of-fame"
             target="_blank"
@@ -129,6 +176,15 @@ export const HallOfFameManagementPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {syncStatusMsg && (
+        <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-2xl text-emerald-950 text-xs font-semibold flex items-center justify-between shadow-sm animate-fade-in">
+          <span>{syncStatusMsg}</span>
+          <button onClick={() => setSyncStatusMsg(null)} className="text-emerald-700 hover:text-emerald-900 ml-2">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* 2. Campus Admin Notice (Role Boundary Enforcement) */}
       {!isSuperAdmin && (

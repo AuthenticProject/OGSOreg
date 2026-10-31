@@ -10,6 +10,7 @@ import { cloudSyncService } from './services/supabase/cloudSyncService'
 import { studentRepository } from './services/studentRepository'
 import { websiteContentService } from './services/websiteContentService'
 import { participantPeriodService } from './services/participantPeriodService'
+import { hallOfFameService } from './services/hallOfFameService'
 
 // Public Website Pages
 import { HomePage } from './pages/public/HomePage'
@@ -56,11 +57,12 @@ export function App() {
     // Initial global multi-device synchronization
     const initSync = async () => {
       try {
-        await cloudSyncService.checkAvailableTables()
+        await cloudSyncService.checkAvailableTables(true)
         await Promise.allSettled([
           studentRepository.syncWithSupabase(),
           websiteContentService.syncFromCloud(),
           participantPeriodService.syncFromCloud(),
+          hallOfFameService.syncFromCloud(),
         ])
       } catch (err) {
         console.warn('[OGSOreg] Initial cloud sync warning:', err)

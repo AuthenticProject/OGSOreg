@@ -293,16 +293,45 @@ class HallOfFameService {
       if (cloudSettings) {
         localStorage.setItem(HOF_SETTINGS_KEY, JSON.stringify(cloudSettings))
         window.dispatchEvent(new CustomEvent('ogsoreg_hof_settings_updated'))
+      } else {
+        const localSettings = this.getSettings()
+        cloudSyncService.saveCloudSetting('hall_of_fame_settings', localSettings)
       }
 
-      const cloudAggregates = await cloudSyncService.getCloudSetting('hall_of_fame_historical_aggregates', null)
-      if (cloudAggregates && Array.isArray(cloudAggregates)) {
-        localStorage.setItem(HOF_HISTORICAL_AGGREGATES_KEY, JSON.stringify(cloudAggregates))
+      const cloudAggregates = await cloudSyncService.getCloudSetting<HistoricalAggregateRecord[] | null>(
+        'hall_of_fame_historical_aggregates',
+        null
+      )
+      const localAggregates = this.getHistoricalAggregates()
+
+      if (cloudAggregates && Array.isArray(cloudAggregates) && cloudAggregates.length > 0) {
+        const aggMap = new Map<string, HistoricalAggregateRecord>()
+        cloudAggregates.forEach((r) => aggMap.set(`${r.period_id}_${r.campus}`, r))
+        const unuploaded = localAggregates.filter((r) => !aggMap.has(`${r.period_id}_${r.campus}`))
+        unuploaded.forEach((r) => aggMap.set(`${r.period_id}_${r.campus}`, r))
+        const merged = Array.from(aggMap.values())
+        localStorage.setItem(HOF_HISTORICAL_AGGREGATES_KEY, JSON.stringify(merged))
         window.dispatchEvent(new CustomEvent('ogsoreg_hof_aggregates_updated'))
+        if (unuploaded.length > 0) {
+          cloudSyncService.saveCloudSetting('hall_of_fame_historical_aggregates', merged)
+        }
+      } else if (localAggregates.length > 0) {
+        cloudSyncService.saveCloudSetting('hall_of_fame_historical_aggregates', localAggregates)
       }
     } catch (err) {
       console.warn('[HallOfFameService] Cloud sync error:', err)
     }
+  }
+
+  async forceFullCloudSync(): Promise<{ settings: boolean; aggregates: number }> {
+    await this.syncFromCloud()
+    const settings = this.getSettings()
+    const aggregates = this.getHistoricalAggregates()
+    const sResult = await cloudSyncService.saveCloudSetting('hall_of_fame_settings', settings)
+    if (aggregates.length > 0) {
+      await cloudSyncService.saveCloudSetting('hall_of_fame_historical_aggregates', aggregates)
+    }
+    return { settings: sResult, aggregates: aggregates.length }
   }
 
   // -------------------------------------------------------------

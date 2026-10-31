@@ -230,6 +230,9 @@ export const WinnerImportModal: React.FC<WinnerImportModalProps> = ({
         })
       })
 
+      // Batch upload to Supabase cloud immediately
+      participantPeriodService.uploadWinnersToCloud(participantPeriodService.getWinners()).catch(() => {})
+
       setSavedCount(validRows.length)
       setStep(3)
       onSuccess()

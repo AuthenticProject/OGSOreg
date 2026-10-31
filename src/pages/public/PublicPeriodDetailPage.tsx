@@ -32,13 +32,28 @@ export const PublicPeriodDetailPage: React.FC = () => {
 
   useEffect(() => {
     if (!periodId) return
-    const p = participantPeriodService.getPeriodById(periodId)
-    setPeriod(p)
-    if (p) {
-      const wList = participantPeriodService.getWinners(periodId)
-      setWinners(wList)
-      const certList = participantPeriodService.getCertificates(periodId, 'winner')
-      setCertificates(certList)
+    const loadData = () => {
+      const p = participantPeriodService.getPeriodById(periodId)
+      setPeriod(p)
+      if (p) {
+        const wList = participantPeriodService.getWinners(periodId)
+        setWinners(wList)
+        const certList = participantPeriodService.getCertificates(periodId, 'winner')
+        setCertificates(certList)
+      }
+    }
+
+    loadData()
+    participantPeriodService.syncFromCloud().catch(() => {})
+
+    window.addEventListener('ogsoreg_winners_updated', loadData)
+    window.addEventListener('ogsoreg_periods_updated', loadData)
+    window.addEventListener('ogsoreg_certificates_updated', loadData)
+
+    return () => {
+      window.removeEventListener('ogsoreg_winners_updated', loadData)
+      window.removeEventListener('ogsoreg_periods_updated', loadData)
+      window.removeEventListener('ogsoreg_certificates_updated', loadData)
     }
   }, [periodId])
 

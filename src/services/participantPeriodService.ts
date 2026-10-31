@@ -459,7 +459,26 @@ class ParticipantPeriodService {
     this.isCloudSyncing = true
     try {
       // 1. Periods Sync
-      const cloudPeriods = await cloudSyncService.getCloudSetting<CompetitionPeriod[] | null>('competition_periods', null)
+      let cloudPeriods: CompetitionPeriod[] | null = null
+      if (isSupabaseConfigured()) {
+        try {
+          const { data: dbPeriods } = await supabase.from('competition_periods').select('*')
+          if (dbPeriods && Array.isArray(dbPeriods) && dbPeriods.length > 0) {
+            cloudPeriods = dbPeriods as CompetitionPeriod[]
+          }
+        } catch {}
+      }
+      const appSettingsPeriods = await cloudSyncService.getCloudSetting<CompetitionPeriod[] | null>('competition_periods', null)
+      if (appSettingsPeriods && Array.isArray(appSettingsPeriods) && appSettingsPeriods.length > 0) {
+        if (!cloudPeriods || cloudPeriods.length === 0) {
+          cloudPeriods = appSettingsPeriods
+        } else {
+          const cpIds = new Set(cloudPeriods.map((p) => p.id))
+          const missing = appSettingsPeriods.filter((p) => !cpIds.has(p.id))
+          cloudPeriods = [...cloudPeriods, ...missing]
+        }
+      }
+
       if (cloudPeriods && Array.isArray(cloudPeriods) && cloudPeriods.length > 0) {
         const localPeriods = this.getPeriods()
         const cloudIdSet = new Set(cloudPeriods.map((p) => p.id))
@@ -468,32 +487,67 @@ class ParticipantPeriodService {
         localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(merged))
         window.dispatchEvent(new CustomEvent('ogsoreg_periods_updated'))
         if (unuploaded.length > 0) {
-          cloudSyncService.saveCloudSetting('competition_periods', merged)
+          this.uploadPeriodsToCloud(merged).catch(() => {})
         }
       } else {
         const localPeriods = this.getPeriods()
         if (localPeriods.length > 0) {
-          cloudSyncService.saveCloudSetting('competition_periods', localPeriods)
+          this.uploadPeriodsToCloud(localPeriods).catch(() => {})
         }
       }
 
-      // 2. Winners Sync
-      const cloudWinners = await cloudSyncService.getCloudSetting<PeriodWinner[] | null>('competition_winners', null)
+      // 2. Winners Sync: Fetch from direct table AND app_settings
+      let cloudWinners: PeriodWinner[] | null = null
+      if (isSupabaseConfigured()) {
+        try {
+          const { data: dbWinners, error } = await supabase.from('competition_winners').select('*')
+          if (!error && dbWinners && Array.isArray(dbWinners) && dbWinners.length > 0) {
+            cloudWinners = dbWinners.map((w: any) => {
+              let extra: any = {}
+              try {
+                extra = w.notes ? JSON.parse(w.notes) : {}
+              } catch {}
+              return {
+                id: w.id,
+                period_id: w.period_id,
+                student_name: w.student_name,
+                campus: w.campus,
+                category: w.category,
+                award: w.award,
+                score: w.score !== null && w.score !== undefined ? Number(w.score) : undefined,
+                nisn_username: extra.nisn_username || w.student_id || '',
+                jenjang: extra.jenjang || undefined,
+                certificate_id: extra.certificate_id || undefined,
+                created_at: w.created_at,
+              }
+            })
+          }
+        } catch {}
+      }
+
+      const appSettingsWinners = await cloudSyncService.getCloudSetting<PeriodWinner[] | null>('competition_winners', null)
+      if (appSettingsWinners && Array.isArray(appSettingsWinners) && appSettingsWinners.length > 0) {
+        if (!cloudWinners || cloudWinners.length === 0) {
+          cloudWinners = appSettingsWinners
+        } else {
+          const cwIds = new Set(cloudWinners.map((w) => w.id))
+          const missing = appSettingsWinners.filter((w) => !cwIds.has(w.id))
+          cloudWinners = [...cloudWinners, ...missing]
+        }
+      }
+
+      const localWinners = this.getWinners()
       if (cloudWinners && Array.isArray(cloudWinners) && cloudWinners.length > 0) {
-        const localWinners = this.getWinners()
         const cloudIdSet = new Set(cloudWinners.map((w) => w.id))
         const unuploaded = localWinners.filter((w) => !cloudIdSet.has(w.id))
         const merged = [...cloudWinners, ...unuploaded]
         localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(merged))
         window.dispatchEvent(new CustomEvent('ogsoreg_winners_updated'))
         if (unuploaded.length > 0) {
-          cloudSyncService.saveCloudSetting('competition_winners', merged)
+          this.uploadWinnersToCloud(merged).catch(() => {})
         }
-      } else {
-        const localWinners = this.getWinners()
-        if (localWinners.length > 0) {
-          cloudSyncService.saveCloudSetting('competition_winners', localWinners)
-        }
+      } else if (localWinners.length > 0) {
+        this.uploadWinnersToCloud(localWinners).catch(() => {})
       }
 
       // 3. Certificates Sync
@@ -518,6 +572,84 @@ class ParticipantPeriodService {
       console.warn('[ParticipantPeriodService] Cloud sync error:', err)
     } finally {
       this.isCloudSyncing = false
+    }
+  }
+
+  async uploadWinnersToCloud(winners: PeriodWinner[]): Promise<void> {
+    if (!isSupabaseConfigured() || winners.length === 0) return
+    try {
+      await cloudSyncService.saveCloudSetting('competition_winners', winners)
+
+      const rows = winners.map((w) => ({
+        id: w.id,
+        period_id: w.period_id,
+        student_id: w.nisn_username || null,
+        student_name: w.student_name,
+        campus: w.campus,
+        category: w.category,
+        award: w.award,
+        rank: getAwardRank(w.award),
+        score: w.score ?? null,
+        notes: JSON.stringify({
+          jenjang: w.jenjang,
+          certificate_id: w.certificate_id,
+          nisn_username: w.nisn_username,
+        }),
+        updated_at: new Date().toISOString(),
+      }))
+
+      // Batch in chunks of 50
+      for (let i = 0; i < rows.length; i += 50) {
+        const chunk = rows.slice(i, i + 50)
+        await supabase.from('competition_winners').upsert(chunk)
+      }
+    } catch (err) {
+      console.warn('[ParticipantPeriodService] Upload winners to cloud failed:', err)
+    }
+  }
+
+  async uploadPeriodsToCloud(periods: CompetitionPeriod[]): Promise<void> {
+    if (!isSupabaseConfigured() || periods.length === 0) return
+    try {
+      await cloudSyncService.saveCloudSetting('competition_periods', periods)
+      const rows = periods.map((p) => ({
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        year: Number(p.year) || 2026,
+        description: p.description || '',
+        status: p.status || 'active',
+        start_date: p.start_date ? new Date(p.start_date).toISOString() : null,
+        end_date: p.end_date ? new Date(p.end_date).toISOString() : null,
+        is_published: p.is_published !== undefined ? p.is_published : true,
+        total_winners: p.total_winners || 0,
+        total_participants: p.total_participants || 0,
+        updated_at: new Date().toISOString(),
+      }))
+      await supabase.from('competition_periods').upsert(rows)
+    } catch (err) {
+      console.warn('[ParticipantPeriodService] Upload periods to cloud failed:', err)
+    }
+  }
+
+  async forceFullCloudSync(): Promise<{ winners: number; periods: number; certificates: number }> {
+    await this.syncFromCloud()
+    const allWinners = this.getWinners()
+    const allPeriods = this.getPeriods()
+    const allCerts = this.getCertificates()
+    if (allWinners.length > 0) {
+      await this.uploadWinnersToCloud(allWinners)
+    }
+    if (allPeriods.length > 0) {
+      await this.uploadPeriodsToCloud(allPeriods)
+    }
+    if (allCerts.length > 0) {
+      await cloudSyncService.saveCloudSetting('competition_certificates', allCerts)
+    }
+    return {
+      winners: allWinners.length,
+      periods: allPeriods.length,
+      certificates: allCerts.length,
     }
   }
 
@@ -620,6 +752,25 @@ class ParticipantPeriodService {
 
     // Persist to Cloud
     cloudSyncService.saveCloudSetting('competition_periods', sorted)
+    if (isSupabaseConfigured()) {
+      const pRow = {
+        id: saved.id,
+        name: saved.name,
+        slug: saved.slug,
+        year: Number(saved.year) || 2026,
+        description: saved.description || '',
+        status: saved.status || 'active',
+        start_date: saved.start_date ? new Date(saved.start_date).toISOString() : null,
+        end_date: saved.end_date ? new Date(saved.end_date).toISOString() : null,
+        is_published: saved.is_published !== undefined ? saved.is_published : true,
+        total_winners: saved.total_winners || 0,
+        total_participants: saved.total_participants || 0,
+        updated_at: new Date().toISOString(),
+      }
+      supabase.from('competition_periods').upsert(pRow).then(({ error }) => {
+        if (error) console.warn('[ParticipantPeriodService] Direct period upsert warning:', error.message)
+      })
+    }
     return saved
   }
 
@@ -633,6 +784,11 @@ class ParticipantPeriodService {
 
     // Persist to Cloud
     cloudSyncService.saveCloudSetting('competition_periods', sorted)
+    if (isSupabaseConfigured()) {
+      supabase.from('competition_periods').delete().eq('id', id).then(({ error }) => {
+        if (error) console.warn('[ParticipantPeriodService] Direct period delete warning:', error.message)
+      })
+    }
     return true
   }
 
@@ -791,6 +947,28 @@ class ParticipantPeriodService {
       window.dispatchEvent(new CustomEvent('ogsoreg_winners_updated'))
     }
     cloudSyncService.saveCloudSetting('competition_winners', list)
+    if (isSupabaseConfigured()) {
+      const wRow = {
+        id: saved.id,
+        period_id: saved.period_id,
+        student_id: saved.nisn_username || null,
+        student_name: saved.student_name,
+        campus: saved.campus,
+        category: saved.category,
+        award: saved.award,
+        rank: getAwardRank(saved.award),
+        score: saved.score ?? null,
+        notes: JSON.stringify({
+          jenjang: saved.jenjang,
+          certificate_id: saved.certificate_id,
+          nisn_username: saved.nisn_username,
+        }),
+        updated_at: new Date().toISOString(),
+      }
+      supabase.from('competition_winners').upsert(wRow).then(({ error }) => {
+        if (error) console.warn('[ParticipantPeriodService] Direct winner upsert warning:', error.message)
+      })
+    }
     return saved
   }
 
@@ -803,6 +981,11 @@ class ParticipantPeriodService {
     localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(list))
     window.dispatchEvent(new CustomEvent('ogsoreg_winners_updated'))
     cloudSyncService.saveCloudSetting('competition_winners', list)
+    if (isSupabaseConfigured()) {
+      supabase.from('competition_winners').delete().eq('id', id).then(({ error }) => {
+        if (error) console.warn('[ParticipantPeriodService] Direct winner delete warning:', error.message)
+      })
+    }
     return true
   }
 
@@ -816,6 +999,11 @@ class ParticipantPeriodService {
     localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(list))
     window.dispatchEvent(new CustomEvent('ogsoreg_winners_updated'))
     cloudSyncService.saveCloudSetting('competition_winners', list)
+    if (isSupabaseConfigured()) {
+      supabase.from('competition_winners').delete().in('id', ids).then(({ error }) => {
+        if (error) console.warn('[ParticipantPeriodService] Direct bulk winner delete warning:', error.message)
+      })
+    }
     return true
   }
 

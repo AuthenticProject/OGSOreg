@@ -20,6 +20,7 @@ import {
   Layers,
   LayoutGrid,
   FileSpreadsheet,
+  RefreshCw,
 } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
@@ -93,6 +94,8 @@ export const PeriodDetailPage: React.FC = () => {
   const [winnerCategory, setWinnerCategory] = useState('Matematika Terpadu')
   const [winnerScore, setWinnerScore] = useState<number | ''>(95)
   const [winnerFormError, setWinnerFormError] = useState<string | null>(null)
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false)
+  const [syncStatusMsg, setSyncStatusMsg] = useState<string | null>(null)
 
   const loadPeriodData = () => {
     if (!periodId) return
@@ -111,7 +114,38 @@ export const PeriodDetailPage: React.FC = () => {
 
   useEffect(() => {
     loadPeriodData()
+    // Auto sync on mount
+    participantPeriodService.syncFromCloud().catch(() => {})
+
+    const handleUpdate = () => {
+      loadPeriodData()
+    }
+
+    window.addEventListener('ogsoreg_winners_updated', handleUpdate)
+    window.addEventListener('ogsoreg_periods_updated', handleUpdate)
+    window.addEventListener('ogsoreg_certificates_updated', handleUpdate)
+
+    return () => {
+      window.removeEventListener('ogsoreg_winners_updated', handleUpdate)
+      window.removeEventListener('ogsoreg_periods_updated', handleUpdate)
+      window.removeEventListener('ogsoreg_certificates_updated', handleUpdate)
+    }
   }, [periodId])
+
+  const handleManualSync = async () => {
+    setIsCloudSyncing(true)
+    setSyncStatusMsg(null)
+    try {
+      const res = await participantPeriodService.forceFullCloudSync()
+      loadPeriodData()
+      setSyncStatusMsg(`Sinkronisasi Cloud Berhasil: ${res.winners} pemenang & ${res.periods} periode siap di semua device.`)
+      setTimeout(() => setSyncStatusMsg(null), 5000)
+    } catch (err: any) {
+      alert(`Gagal sinkronisasi ke cloud: ${err?.message || 'Koneksi terganggu'}`)
+    } finally {
+      setIsCloudSyncing(false)
+    }
+  }
 
   // Filter logic
   const filterList = <
@@ -401,6 +435,17 @@ export const PeriodDetailPage: React.FC = () => {
         }
         actions={
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isCloudSyncing}
+              onClick={handleManualSync}
+              leftIcon={<RefreshCw className={`w-4 h-4 mr-1 ${isCloudSyncing ? 'animate-spin text-emerald-600' : 'text-slate-600'}`} />}
+              className="bg-white hover:bg-slate-50 border-slate-300 text-slate-700 font-medium"
+              title="Sinkronkan data pemenang & periode ke Supabase Cloud"
+            >
+              {isCloudSyncing ? 'Menyinkronkan...' : 'Sinkronkan Cloud'}
+            </Button>
             {isSuperAdmin && (
               <>
                 <Button
@@ -425,6 +470,15 @@ export const PeriodDetailPage: React.FC = () => {
           </div>
         }
       />
+
+      {syncStatusMsg && (
+        <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-lg text-emerald-900 text-xs font-semibold flex items-center justify-between shadow-sm animate-fade-in">
+          <span>{syncStatusMsg}</span>
+          <button onClick={() => setSyncStatusMsg(null)} className="text-emerald-700 hover:text-emerald-900 ml-2">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Tabs Selection: 3 Sections */}
       <div className="flex border-b border-slate-200 gap-1 text-xs font-bold overflow-x-auto">
