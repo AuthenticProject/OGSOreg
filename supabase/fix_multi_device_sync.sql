@@ -219,3 +219,50 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN NULL;
   END;
 END $$;
+
+-- 8. FIX USER PROFILES & DIRECT PASSWORD UPDATE RPC
+-- Mengizinkan update user_profiles (agar status must_change_password = false tersimpan permanen)
+-- dan membuat fungsi RPC change_user_password_direct untuk sinkronisasi sandi baru ke auth.users
+ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Profiles superadmin update" ON public.user_profiles;
+DROP POLICY IF EXISTS "Profiles update access" ON public.user_profiles;
+
+CREATE POLICY "Profiles update access" ON public.user_profiles
+  FOR UPDATE TO anon, authenticated
+  USING (true)
+  WITH CHECK (true);
+
+CREATE OR REPLACE FUNCTION public.change_user_password_direct(
+  p_username TEXT,
+  p_new_password TEXT
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+  v_uid UUID;
+  v_clean_uname TEXT := LOWER(TRIM(p_username));
+BEGIN
+  -- 1. Update public.user_profiles: must_change_password = false
+  UPDATE public.user_profiles
+  SET must_change_password = false,
+      updated_at = NOW()
+  WHERE LOWER(username) = v_clean_uname;
+
+  -- 2. Ambil auth_user_id dari user_profiles
+  SELECT auth_user_id INTO v_uid
+  FROM public.user_profiles
+  WHERE LOWER(username) = v_clean_uname;
+
+  -- 3. Update auth.users password jika ada
+  IF v_uid IS NOT NULL THEN
+    UPDATE auth.users
+    SET encrypted_password = crypt(p_new_password, gen_salt('bf')),
+        updated_at = NOW()
+    WHERE id = v_uid;
+  END IF;
+
+  RETURN true;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION public.change_user_password_direct(TEXT, TEXT) TO anon, authenticated;
+

@@ -108,10 +108,9 @@ BEGIN
         now()
       );
     ELSE
-      -- Update password and confirm existing user
+      -- Confirm existing user without wiping custom password
       UPDATE auth.users 
-      SET encrypted_password = v_pass,
-          email_confirmed_at = COALESCE(email_confirmed_at, now()),
+      SET email_confirmed_at = COALESCE(email_confirmed_at, now()),
           raw_user_meta_data = jsonb_build_object('username', v_uname, 'role', v_role, 'campus_id', v_campus),
           updated_at = now()
       WHERE id = v_uid;
@@ -144,7 +143,8 @@ BEGIN
       email = EXCLUDED.email,
       role = EXCLUDED.role,
       campus_id = EXCLUDED.campus_id,
-      must_change_password = EXCLUDED.must_change_password,
+      -- Preserve existing password change status
+      must_change_password = COALESCE(public.user_profiles.must_change_password, EXCLUDED.must_change_password),
       updated_at = now();
       
   END LOOP;

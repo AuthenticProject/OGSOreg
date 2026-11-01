@@ -109,24 +109,62 @@ class AccountService {
   }
 
   private mergeRemoteCredentials(remoteProfiles: AppUserProfile[], remotePasswords: Record<string, string>) {
-    // Merge passwords
-    this.inMemoryPasswords = { ...this.inMemoryPasswords, ...remotePasswords }
+    if (!remoteProfiles || !remotePasswords) return
 
-    // Merge profiles
+    // 1. Merge Passwords safely:
+    // Never overwrite an existing custom password with a default password!
+    for (const [rawUname, remotePass] of Object.entries(remotePasswords)) {
+      if (!remotePass) continue
+      const uname = rawUname.trim()
+      const unameLower = uname.toLowerCase()
+      const existingPass = this.inMemoryPasswords[uname] || this.inMemoryPasswords[unameLower]
+
+      if (!existingPass || existingPass === SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD) {
+        // Local is default or empty, take remote
+        this.inMemoryPasswords[uname] = remotePass
+        this.inMemoryPasswords[unameLower] = remotePass
+      } else if (remotePass !== SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD) {
+        // Both are custom passwords, adopt remote
+        this.inMemoryPasswords[uname] = remotePass
+        this.inMemoryPasswords[unameLower] = remotePass
+      }
+      // If existingPass is custom and remotePass is SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD, DO NOT overwrite!
+    }
+
+    // 2. Merge Profiles safely:
     const profileMap = new Map<string, AppUserProfile>()
     this.inMemoryProfiles.forEach((p) => profileMap.set(p.username.toLowerCase(), p))
-    remoteProfiles.forEach((rp) => {
+
+    for (const rp of remoteProfiles) {
       const key = rp.username.toLowerCase()
       const existing = profileMap.get(key)
-      profileMap.set(key, { ...existing, ...rp })
-    })
+      if (!existing) {
+        profileMap.set(key, rp)
+      } else {
+        // CRITICAL: If either existing or remote has already changed password (must_change_password === false),
+        // it MUST remain false! Never revert must_change_password to true from a remote default!
+        const resolvedMustChange =
+          existing.must_change_password === false || rp.must_change_password === false
+            ? false
+            : Boolean(existing.must_change_password ?? rp.must_change_password)
+
+        profileMap.set(key, {
+          ...existing,
+          ...rp,
+          must_change_password: resolvedMustChange,
+        })
+      }
+    }
 
     this.inMemoryProfiles = Array.from(profileMap.values())
+
     if (typeof window !== 'undefined' && window.localStorage) {
       try {
         window.localStorage.setItem(LOCAL_USERS_STORAGE_KEY, JSON.stringify(this.inMemoryProfiles))
         window.localStorage.setItem(LOCAL_PASSWORDS_STORAGE_KEY, JSON.stringify(this.inMemoryPasswords))
-      } catch {}
+      } catch {
+        // Ignore
+      }
     }
   }
 
@@ -169,16 +207,18 @@ class AccountService {
     this.inMemoryProfiles = loadedProfiles
     this.inMemoryPasswords = loadedPasswords
 
-    // Sinkronisasi & Migrasi: Wajibkan 20 akun admin kampus ganti password jika masih pakai sandi default
+    // Only set must_change_password if undefined; if already custom password, ensure it is false
     for (const p of this.inMemoryProfiles) {
       if (p.role === 'campus_admin') {
-        const currentPass = this.inMemoryPasswords[p.username]
-        if (!currentPass || currentPass === SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD) {
-          p.must_change_password = true
+        const currentPass = this.inMemoryPasswords[p.username] || this.inMemoryPasswords[p.username.toLowerCase()]
+        if (p.must_change_password === undefined || p.must_change_password === null) {
+          p.must_change_password = (!currentPass || currentPass === SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD)
+        } else if (currentPass && currentPass !== SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD) {
+          p.must_change_password = false
         }
       }
     }
-    this.persistStore()
+    // Never call persistStore() during loadStore() to avoid clobbering cloud with defaults
   }
 
   private persistStore() {
@@ -238,7 +278,6 @@ class AccountService {
             this.inMemoryPasswords[sp.username] =
               sp.role === 'super_admin' ? LOCAL_DEV_SUPER_ADMIN_PASSWORD : SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD
           }
-          this.persistStore()
           return sp
         }
       } catch (err) {
@@ -273,7 +312,6 @@ class AccountService {
             ? LOCAL_DEV_SUPER_ADMIN_PASSWORD
             : SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD
       }
-      this.persistStore()
       return restoredUser
     }
 
@@ -347,6 +385,11 @@ class AccountService {
       return { success: false, error: rateLimit.message }
     }
 
+    // Always fetch latest cloud credentials before validating login
+    if (isSupabaseConfigured()) {
+      await this.syncFromCloud().catch(() => {})
+    }
+
     // 2. Try Supabase Auth if configured
     if (isSupabaseConfigured()) {
       try {
@@ -387,6 +430,16 @@ class AccountService {
               const idx = this.inMemoryProfiles.findIndex(
                 (p) => p.username.toLowerCase() === sp.username.toLowerCase() || p.id === sp.id
               )
+
+              // If logged in with non-default password, or if local/remote already false, must_change_password MUST be false!
+              if (
+                password !== SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD ||
+                sp.must_change_password === false ||
+                (idx >= 0 && this.inMemoryProfiles[idx].must_change_password === false)
+              ) {
+                sp.must_change_password = false
+              }
+
               if (idx >= 0) {
                 this.inMemoryProfiles[idx] = { ...this.inMemoryProfiles[idx], ...sp }
               } else {
@@ -396,10 +449,13 @@ class AccountService {
               this.inMemoryPasswords[sp.username] = password
               this.persistStore()
 
-              // Update last_login_at
+              // Update last_login_at and must_change_password in database
               await supabase
                 .from('user_profiles')
-                .update({ last_login_at: new Date().toISOString() })
+                .update({
+                  last_login_at: new Date().toISOString(),
+                  must_change_password: sp.must_change_password,
+                })
                 .eq('id', profileData.id)
 
               return {
@@ -418,7 +474,40 @@ class AccountService {
     }
 
     const cleanUsername = username.trim().toLowerCase()
-    const profile = this.inMemoryProfiles.find((p) => p.username.toLowerCase() === cleanUsername)
+    let profile = this.inMemoryProfiles.find((p) => p.username.toLowerCase() === cleanUsername)
+
+    // Also check live Supabase user_profiles if available to sync status
+    if (isSupabaseConfigured()) {
+      try {
+        const { data: dbProfile } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .ilike('username', cleanUsername)
+          .maybeSingle()
+        if (dbProfile) {
+          const sp = dbProfile as AppUserProfile
+          const idx = this.inMemoryProfiles.findIndex((p) => p.username.toLowerCase() === cleanUsername)
+          if (idx >= 0) {
+            const resolvedMustChange =
+              this.inMemoryProfiles[idx].must_change_password === false || sp.must_change_password === false
+                ? false
+                : Boolean(sp.must_change_password ?? this.inMemoryProfiles[idx].must_change_password)
+            this.inMemoryProfiles[idx] = {
+              ...this.inMemoryProfiles[idx],
+              ...sp,
+              must_change_password: resolvedMustChange,
+            }
+            profile = this.inMemoryProfiles[idx]
+          } else {
+            this.inMemoryProfiles.push(sp)
+            profile = sp
+          }
+        }
+      } catch (err) {
+        console.warn('Fallback Supabase profile lookup error:', err)
+      }
+    }
+
     const expectedPassword =
       this.inMemoryPasswords[cleanUsername] ||
       this.inMemoryPasswords[profile?.username || ''] ||
@@ -444,9 +533,28 @@ class AccountService {
 
     this.clearFailedAttempts(username)
 
+    // If logging in with a non-default password, or if already marked false, must_change_password is false!
+    if (password !== SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD || profile.must_change_password === false) {
+      profile.must_change_password = false
+    }
+
     // Update login timestamp
     profile.last_login_at = new Date().toISOString()
     this.persistStore()
+
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase
+          .from('user_profiles')
+          .update({
+            last_login_at: profile.last_login_at,
+            must_change_password: profile.must_change_password,
+          })
+          .ilike('username', cleanUsername)
+      } catch {
+        // ignore
+      }
+    }
 
     return {
       success: true,
@@ -485,6 +593,13 @@ class AccountService {
       return { success: false, error: 'Kata sandi baru tidak boleh sama dengan kata sandi sebelumnya.' }
     }
 
+    if (newPass === SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD) {
+      return {
+        success: false,
+        error: 'Kata sandi baru tidak boleh sama dengan kata sandi sementara default (OGSO2026).',
+      }
+    }
+
     if (newPass.length < 8) {
       return { success: false, error: 'Kata sandi minimal 8 karakter.' }
     }
@@ -512,17 +627,32 @@ class AccountService {
       this.inMemoryPasswords[userKey] ||
       (profile.role === 'super_admin' ? LOCAL_DEV_SUPER_ADMIN_PASSWORD : SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD)
 
-    if (currentPass !== expectedCurrentPass) {
+    // Accept either expectedCurrentPass OR default shared password if transitioning
+    if (currentPass !== expectedCurrentPass && currentPass !== SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD) {
       return { success: false, error: 'Kata sandi saat ini / sementara tidak tepat.' }
     }
 
-    // Live Supabase update
+    // Live Supabase update across all database layers
     if (isSupabaseConfigured()) {
+      try {
+        await supabase.rpc('change_user_password_direct', {
+          p_username: profile.username,
+          p_new_password: newPass,
+        })
+      } catch (rpcErr) {
+        console.warn('change_user_password_direct RPC notice:', rpcErr)
+      }
+
       try {
         const { error: updateAuthErr } = await supabase.auth.updateUser({ password: newPass })
         if (updateAuthErr) {
           console.warn('Supabase updateUser warning:', updateAuthErr.message)
         }
+      } catch (authErr) {
+        console.warn('Supabase auth updateUser error:', authErr)
+      }
+
+      try {
         await supabase
           .from('user_profiles')
           .update({ must_change_password: false, updated_at: new Date().toISOString() })
@@ -532,12 +662,15 @@ class AccountService {
       }
     }
 
-    // Local in-memory update (super admin can see this updated password via getUserPassword / getAllUserPasswords)
+    // Local in-memory and cloud settings update
     profile.must_change_password = false
     profile.updated_at = new Date().toISOString()
     this.inMemoryPasswords[profile.username] = newPass
+    this.inMemoryPasswords[profile.username.toLowerCase()] = newPass
     this.inMemoryPasswords[userKey] = newPass
+    this.inMemoryPasswords[userKey.toLowerCase()] = newPass
     this.persistStore()
+
     return { success: true }
   }
 
@@ -582,7 +715,6 @@ class AccountService {
                 sp.role === 'super_admin' ? LOCAL_DEV_SUPER_ADMIN_PASSWORD : SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD
             }
           }
-          this.persistStore()
           return spList
         }
       } catch {

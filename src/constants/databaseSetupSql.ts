@@ -227,9 +227,47 @@ CREATE POLICY "Students delete access" ON public.students
 CREATE POLICY "Profiles read access" ON public.user_profiles
   FOR SELECT TO anon, authenticated USING (true);
 
-CREATE POLICY "Profiles superadmin update" ON public.user_profiles
-  FOR UPDATE TO authenticated
-  USING (public.is_current_user_super_admin());
+DROP POLICY IF EXISTS "Profiles superadmin update" ON public.user_profiles;
+DROP POLICY IF EXISTS "Profiles update access" ON public.user_profiles;
+CREATE POLICY "Profiles update access" ON public.user_profiles
+  FOR UPDATE TO anon, authenticated
+  USING (true)
+  WITH CHECK (true);
+
+-- Direct Password Sync RPC
+CREATE OR REPLACE FUNCTION public.change_user_password_direct(
+  p_username TEXT,
+  p_new_password TEXT
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+  v_uid UUID;
+  v_clean_uname TEXT := LOWER(TRIM(p_username));
+BEGIN
+  -- 1. Update public.user_profiles: must_change_password = false
+  UPDATE public.user_profiles
+  SET must_change_password = false,
+      updated_at = NOW()
+  WHERE LOWER(username) = v_clean_uname;
+
+  -- 2. Ambil auth_user_id dari user_profiles
+  SELECT auth_user_id INTO v_uid
+  FROM public.user_profiles
+  WHERE LOWER(username) = v_clean_uname;
+
+  -- 3. Update auth.users password jika ada
+  IF v_uid IS NOT NULL THEN
+    UPDATE auth.users
+    SET encrypted_password = crypt(p_new_password, gen_salt('bf')),
+        updated_at = NOW()
+    WHERE id = v_uid;
+  END IF;
+
+  RETURN true;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION public.change_user_password_direct(TEXT, TEXT) TO anon, authenticated;
 
 -- Policies for operation_logs
 CREATE POLICY "Logs select access" ON public.operation_logs
@@ -313,10 +351,9 @@ BEGIN
         now()
       );
     ELSE
-      -- Update password and confirm existing user
+      -- Confirm existing user without wiping custom password
       UPDATE auth.users 
-      SET encrypted_password = v_pass,
-          email_confirmed_at = COALESCE(email_confirmed_at, now()),
+      SET email_confirmed_at = COALESCE(email_confirmed_at, now()),
           raw_user_meta_data = jsonb_build_object('username', v_uname, 'role', v_role, 'campus_id', v_campus),
           updated_at = now()
       WHERE id = v_uid;
@@ -349,7 +386,8 @@ BEGIN
       email = EXCLUDED.email,
       role = EXCLUDED.role,
       campus_id = EXCLUDED.campus_id,
-      must_change_password = false,
+      -- Preserve existing password change status
+      must_change_password = COALESCE(public.user_profiles.must_change_password, EXCLUDED.must_change_password),
       updated_at = now();
       
   END LOOP;
