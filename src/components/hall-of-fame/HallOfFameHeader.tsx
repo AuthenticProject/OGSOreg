@@ -1,5 +1,5 @@
 import React from 'react'
-import { Trophy, TrendingUp, Medal, School, Sparkles } from 'lucide-react'
+import { Trophy, TrendingUp, Medal, School, Sparkles, RefreshCw } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
 export type HallOfFameTab = 'overview' | 'standings' | 'trends' | 'all-time' | 'profiles'
@@ -8,12 +8,16 @@ interface HallOfFameHeaderProps {
   activeTab: HallOfFameTab
   onTabChange: (tab: HallOfFameTab) => void
   selectedCampusName?: string
+  isSyncing?: boolean
+  onRefresh?: () => void
 }
 
 export const HallOfFameHeader: React.FC<HallOfFameHeaderProps> = ({
   activeTab,
   onTabChange,
   selectedCampusName,
+  isSyncing,
+  onRefresh,
 }) => {
   const tabs: Array<{ id: HallOfFameTab; label: string; icon: React.ComponentType<{ className?: string }> }> = [
     { id: 'overview', label: 'Ringkasan Eksekutif', icon: Sparkles },
@@ -47,9 +51,23 @@ export const HallOfFameHeader: React.FC<HallOfFameHeaderProps> = ({
 
       {/* Main Header Content */}
       <div className="relative z-10 px-6 py-10 sm:px-10 sm:py-14 text-center max-w-4xl mx-auto space-y-4">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-950/70 border border-emerald-500/30 text-xs font-semibold text-[#A7F3D0] backdrop-blur-md">
-          <Trophy className="w-3.5 h-3.5 text-[#D5C49A]" />
-          <span>Arsip Prestasi & Peringkat Resmi Antar-Kampus</span>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-950/70 border border-emerald-500/30 text-xs font-semibold text-[#A7F3D0] backdrop-blur-md">
+            <Trophy className="w-3.5 h-3.5 text-[#D5C49A]" />
+            <span>Arsip Prestasi & Peringkat Resmi Antar-Kampus</span>
+          </div>
+
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              disabled={isSyncing}
+              title="Sinkronkan data terbaru dari Cloud Supabase"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-500/30 text-xs font-semibold text-[#A7F3D0] transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={cn('w-3 h-3 text-[#D5C49A]', isSyncing && 'animate-spin text-emerald-300')} />
+              <span>{isSyncing ? 'Menyinkronkan...' : 'Segarkan Cloud'}</span>
+            </button>
+          )}
         </div>
 
         <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white font-sans leading-tight">

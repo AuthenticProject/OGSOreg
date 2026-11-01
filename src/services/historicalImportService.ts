@@ -464,12 +464,13 @@ export async function commitHistoricalImport(
     participantPeriodService.saveWinner(win)
   }
   if (newIndividualWinners.length > 0) {
-    participantPeriodService.uploadWinnersToCloud(participantPeriodService.getWinners()).catch(() => {})
+    await participantPeriodService.uploadWinnersToCloud(participantPeriodService.getWinners())
   }
 
   // Save aggregate records
   if (newAggregates.length > 0) {
     hallOfFameService.saveHistoricalAggregates(newAggregates)
+    await hallOfFameService.uploadAggregatesToCloud(hallOfFameService.getHistoricalAggregates())
   }
 
   // Log Audit

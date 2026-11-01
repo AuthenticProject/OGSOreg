@@ -9,6 +9,7 @@ import {
   Building2,
   Calendar,
   Info,
+  RefreshCw,
 } from 'lucide-react'
 import {
   participantPeriodService,
@@ -29,28 +30,42 @@ export const PublicPeriodDetailPage: React.FC = () => {
   const [certificates, setCertificates] = useState<PeriodCertificate[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedJenjang, setSelectedJenjang] = useState<string>('all')
+  const [isSyncing, setIsSyncing] = useState(true)
 
   useEffect(() => {
     if (!periodId) return
+    let isMounted = true
     const loadData = () => {
       const p = participantPeriodService.getPeriodById(periodId)
-      setPeriod(p)
-      if (p) {
-        const wList = participantPeriodService.getWinners(periodId)
-        setWinners(wList)
-        const certList = participantPeriodService.getCertificates(periodId, 'winner')
-        setCertificates(certList)
+      if (isMounted) {
+        setPeriod(p)
+        if (p) {
+          const wList = participantPeriodService.getWinners(periodId)
+          setWinners(wList)
+          const certList = participantPeriodService.getCertificates(periodId, 'winner')
+          setCertificates(certList)
+        }
       }
     }
 
     loadData()
-    participantPeriodService.syncFromCloud().catch(() => {})
+    setIsSyncing(true)
+    participantPeriodService
+      .syncFromCloud()
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) {
+          loadData()
+          setIsSyncing(false)
+        }
+      })
 
     window.addEventListener('ogsoreg_winners_updated', loadData)
     window.addEventListener('ogsoreg_periods_updated', loadData)
     window.addEventListener('ogsoreg_certificates_updated', loadData)
 
     return () => {
+      isMounted = false
       window.removeEventListener('ogsoreg_winners_updated', loadData)
       window.removeEventListener('ogsoreg_periods_updated', loadData)
       window.removeEventListener('ogsoreg_certificates_updated', loadData)
@@ -104,6 +119,18 @@ export const PublicPeriodDetailPage: React.FC = () => {
   }, [winners, isLegacyPeriod])
 
   if (!period) {
+    if (isSyncing) {
+      return (
+        <div className="min-h-[60vh] flex flex-col items-center justify-center py-20 px-4 text-center">
+          <RefreshCw className="w-10 h-10 text-emerald-600 animate-spin mb-4" />
+          <h2 className="text-lg font-bold text-[#0C241B]">Menyinkronkan Data Juara...</h2>
+          <p className="text-xs text-slate-500 mt-1 max-w-md">
+            Mengunduh arsip periode dan pemenang resmi dari Cloud Supabase
+          </p>
+        </div>
+      )
+    }
+
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center py-20 px-4 text-center">
         <Trophy className="w-12 h-12 text-slate-300 mb-4" />

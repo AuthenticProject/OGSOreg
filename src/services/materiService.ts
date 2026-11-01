@@ -70,6 +70,50 @@ export interface BankSoalCollection {
 
 const SILABUS_STORAGE_KEY = 'ogsoreg_silabus_2026_v3'
 const BANK_SOAL_STORAGE_KEY = 'ogsoreg_bank_soal_v5'
+const DELETED_SILABUS_KEY = 'ogsoreg_deleted_silabus_v1'
+const DELETED_BANK_SOAL_KEY = 'ogsoreg_deleted_bank_soal_v1'
+
+export function getDeletedSilabusIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set()
+  try {
+    const raw = localStorage.getItem(DELETED_SILABUS_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return new Set(parsed)
+    }
+  } catch {}
+  return new Set()
+}
+
+export function addDeletedSilabusIds(ids: string[]): void {
+  if (typeof window === 'undefined' || ids.length === 0) return
+  try {
+    const set = getDeletedSilabusIds()
+    ids.forEach((id) => set.add(id))
+    localStorage.setItem(DELETED_SILABUS_KEY, JSON.stringify(Array.from(set)))
+  } catch {}
+}
+
+export function getDeletedBankSoalIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set()
+  try {
+    const raw = localStorage.getItem(DELETED_BANK_SOAL_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return new Set(parsed)
+    }
+  } catch {}
+  return new Set()
+}
+
+export function addDeletedBankSoalIds(ids: string[]): void {
+  if (typeof window === 'undefined' || ids.length === 0) return
+  try {
+    const set = getDeletedBankSoalIds()
+    ids.forEach((id) => set.add(id))
+    localStorage.setItem(DELETED_BANK_SOAL_KEY, JSON.stringify(Array.from(set)))
+  } catch {}
+}
 
 // Official syllabuses for Jenjang 1–5 extracted from Silabus_OGSO_2026.xlsx
 const INITIAL_SYLLABUSES: SyllabusItem[] = [
@@ -719,13 +763,24 @@ class MateriService {
     this.isCloudSyncing = true
     try {
       // 1. Silabus Sync
-      const cloudSilabus = await cloudSyncService.getCloudSetting<SyllabusItem[] | null>('materi_silabus', null)
-      const localSilabus = this.getSyllabuses()
+      try {
+        const cloudDeletedSilabus = await cloudSyncService.getCloudSetting<string[]>('deleted_silabus_ids', [])
+        if (Array.isArray(cloudDeletedSilabus) && cloudDeletedSilabus.length > 0) {
+          addDeletedSilabusIds(cloudDeletedSilabus)
+        }
+      } catch {}
+
+      const deletedSilabusSet = getDeletedSilabusIds()
+      let cloudSilabus = await cloudSyncService.getCloudSetting<SyllabusItem[] | null>('materi_silabus', null)
+      if (cloudSilabus && Array.isArray(cloudSilabus)) {
+        cloudSilabus = cloudSilabus.filter((s) => !deletedSilabusSet.has(s.id))
+      }
+      const localSilabus = this.getSyllabuses().filter((s) => !deletedSilabusSet.has(s.id))
 
       if (cloudSilabus && Array.isArray(cloudSilabus) && cloudSilabus.length > 0) {
         const cloudIdSet = new Set(cloudSilabus.map((s) => s.id))
-        const unuploaded = localSilabus.filter((s) => !cloudIdSet.has(s.id))
-        const merged = [...cloudSilabus, ...unuploaded]
+        const unuploaded = localSilabus.filter((s) => !cloudIdSet.has(s.id) && !deletedSilabusSet.has(s.id))
+        const merged = [...cloudSilabus, ...unuploaded].filter((s) => !deletedSilabusSet.has(s.id))
         localStorage.setItem(SILABUS_STORAGE_KEY, JSON.stringify(merged))
         window.dispatchEvent(new CustomEvent('ogsoreg_silabus_updated'))
         if (unuploaded.length > 0) {
@@ -737,13 +792,27 @@ class MateriService {
       }
 
       // 2. Bank Soal Sync
-      const cloudBankSoal = await cloudSyncService.getCloudSetting<BankSoalCollection[] | null>('materi_bank_soal', null)
-      const localBankSoal = this.getBankSoalCollections()
+      try {
+        const cloudDeletedBankSoal = await cloudSyncService.getCloudSetting<string[]>('deleted_bank_soal_ids', [])
+        if (Array.isArray(cloudDeletedBankSoal) && cloudDeletedBankSoal.length > 0) {
+          addDeletedBankSoalIds(cloudDeletedBankSoal)
+        }
+      } catch {}
+
+      const deletedBankSoalSet = getDeletedBankSoalIds()
+      let cloudBankSoal = await cloudSyncService.getCloudSetting<BankSoalCollection[] | null>('materi_bank_soal', null)
+      if (cloudBankSoal && Array.isArray(cloudBankSoal)) {
+        cloudBankSoal = cloudBankSoal.filter((b) => !deletedBankSoalSet.has(b.id)).map((c) => ({
+          ...c,
+          documents: (c.documents || []).filter((d) => !deletedBankSoalSet.has(d.id)),
+        }))
+      }
+      const localBankSoal = this.getBankSoalCollections().filter((b) => !deletedBankSoalSet.has(b.id))
 
       if (cloudBankSoal && Array.isArray(cloudBankSoal) && cloudBankSoal.length > 0) {
         const cloudIdSet = new Set(cloudBankSoal.map((b) => b.id))
-        const unuploaded = localBankSoal.filter((b) => !cloudIdSet.has(b.id))
-        const merged = [...cloudBankSoal, ...unuploaded]
+        const unuploaded = localBankSoal.filter((b) => !cloudIdSet.has(b.id) && !deletedBankSoalSet.has(b.id))
+        const merged = [...cloudBankSoal, ...unuploaded].filter((b) => !deletedBankSoalSet.has(b.id))
         localStorage.setItem(BANK_SOAL_STORAGE_KEY, JSON.stringify(merged))
         window.dispatchEvent(new CustomEvent('ogsoreg_bank_soal_updated'))
         if (unuploaded.length > 0) {
@@ -793,7 +862,8 @@ class MateriService {
       }
     }
 
-    list = list.map((s) => {
+    const deletedSilabusSet = getDeletedSilabusIds()
+    list = list.filter((s) => !deletedSilabusSet.has(s.id)).map((s) => {
       const normalizedJenjang = normalizeMateriJenjang(s.jenjang)
       const initialMatch = INITIAL_SYLLABUSES.find((init) => init.jenjang === normalizedJenjang)
       return {
@@ -841,12 +911,17 @@ class MateriService {
   }
 
   deleteSyllabus(id: string): boolean {
+    addDeletedSilabusIds([id])
+    cloudSyncService.saveCloudSetting('deleted_silabus_ids', Array.from(getDeletedSilabusIds())).catch(() => {})
     const list = this.getSyllabuses().filter((s) => s.id !== id)
     if (typeof window !== 'undefined') {
       localStorage.setItem(SILABUS_STORAGE_KEY, JSON.stringify(list))
       window.dispatchEvent(new CustomEvent('ogsoreg_silabus_updated'))
     }
     cloudSyncService.saveCloudSetting('materi_silabus', list)
+    if (isSupabaseConfigured()) {
+      supabase.from('syllabuses').delete().eq('id', id).then(() => {})
+    }
     return true
   }
 
@@ -887,13 +962,18 @@ class MateriService {
       }
     }
 
-    list = list.map((c) => ({
-      ...c,
-      documents: (c.documents || []).map((d) => ({
-        ...d,
-        jenjang: normalizeMateriJenjang(d.jenjang),
-      })),
-    }))
+    const deletedBankSoalSet = getDeletedBankSoalIds()
+    list = list
+      .filter((c) => !deletedBankSoalSet.has(c.id))
+      .map((c) => ({
+        ...c,
+        documents: (c.documents || [])
+          .filter((d) => !deletedBankSoalSet.has(d.id))
+          .map((d) => ({
+            ...d,
+            jenjang: normalizeMateriJenjang(d.jenjang),
+          })),
+      }))
 
     if (babak) {
       list = list.filter((c) => c.babak === babak)
@@ -967,6 +1047,9 @@ class MateriService {
   }
 
   deleteDocument(collectionId: string, docId: string): boolean {
+    addDeletedBankSoalIds([docId])
+    cloudSyncService.saveCloudSetting('deleted_bank_soal_ids', Array.from(getDeletedBankSoalIds())).catch(() => {})
+
     const list = this.getBankSoalCollections()
     const col = list.find((c) => c.id === collectionId)
     if (!col || !col.documents) return false
@@ -978,10 +1061,16 @@ class MateriService {
       window.dispatchEvent(new CustomEvent('ogsoreg_bank_soal_updated'))
     }
     cloudSyncService.saveCloudSetting('materi_bank_soal', list)
+    if (isSupabaseConfigured()) {
+      supabase.from('bank_soal').delete().eq('id', docId).then(() => {})
+    }
     return true
   }
 
   deleteCollection(collectionId: string): boolean {
+    addDeletedBankSoalIds([collectionId])
+    cloudSyncService.saveCloudSetting('deleted_bank_soal_ids', Array.from(getDeletedBankSoalIds())).catch(() => {})
+
     const list = this.getBankSoalCollections().filter((c) => c.id !== collectionId)
     if (typeof window !== 'undefined') {
       localStorage.setItem(BANK_SOAL_STORAGE_KEY, JSON.stringify(list))

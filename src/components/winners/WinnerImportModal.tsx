@@ -211,7 +211,7 @@ export const WinnerImportModal: React.FC<WinnerImportModalProps> = ({
   }
 
   // Final submit to participantPeriodService
-  const handleConfirmSubmit = () => {
+  const handleConfirmSubmit = async () => {
     const validRows = stagedRows.filter((r) => r._status !== 'ERROR')
     if (validRows.length === 0) return
 
@@ -231,7 +231,7 @@ export const WinnerImportModal: React.FC<WinnerImportModalProps> = ({
       })
 
       // Batch upload to Supabase cloud immediately
-      participantPeriodService.uploadWinnersToCloud(participantPeriodService.getWinners()).catch(() => {})
+      await participantPeriodService.uploadWinnersToCloud(participantPeriodService.getWinners())
 
       setSavedCount(validRows.length)
       setStep(3)

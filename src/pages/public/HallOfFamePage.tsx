@@ -22,6 +22,7 @@ export const HallOfFamePage: React.FC = () => {
 
   // Data update ticker for cloud real-time updates
   const [dataVersion, setDataVersion] = useState(0)
+  const [isSyncing, setIsSyncing] = useState(false)
 
   // Periods
   const [periods, setPeriods] = useState<CompetitionPeriod[]>([])
@@ -38,14 +39,22 @@ export const HallOfFamePage: React.FC = () => {
     routeCampusSlug || searchParams.get('campus') || 'gontor-1'
   )
 
+  const handleManualRefresh = async () => {
+    setIsSyncing(true)
+    try {
+      await Promise.allSettled([
+        participantPeriodService.syncFromCloud(),
+        hallOfFameService.syncFromCloud(),
+      ])
+      setDataVersion((v) => v + 1)
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
   // Cloud sync and real-time listeners on mount
   useEffect(() => {
-    Promise.allSettled([
-      participantPeriodService.syncFromCloud(),
-      hallOfFameService.syncFromCloud(),
-    ]).then(() => {
-      setDataVersion((v) => v + 1)
-    })
+    handleManualRefresh()
 
     const handleUpdate = () => {
       setDataVersion((v) => v + 1)
@@ -123,11 +132,14 @@ export const HallOfFamePage: React.FC = () => {
           activeTab={activeTab}
           onTabChange={handleTabChange}
           selectedCampusName={activeTab === 'profiles' ? String(selectedCampusName) : undefined}
+          isSyncing={isSyncing}
+          onRefresh={handleManualRefresh}
         />
 
         {/* Tab 1: Overview */}
         {activeTab === 'overview' && (
           <HallOfFameOverviewTab
+            key={`overview-${dataVersion}`}
             overviewData={overviewData}
             periods={periods}
             onNavigateToStandings={() => handleTabChange('standings')}
@@ -139,6 +151,7 @@ export const HallOfFamePage: React.FC = () => {
         {/* Tab 2: Campus Standings */}
         {activeTab === 'standings' && (
           <HallOfFameStandingsTab
+            key={`standings-${selectedPeriodId}-${dataVersion}`}
             periods={periods}
             selectedPeriodId={selectedPeriodId}
             onPeriodChange={setSelectedPeriodId}
@@ -149,6 +162,7 @@ export const HallOfFamePage: React.FC = () => {
         {/* Tab 3: Historical Trends */}
         {activeTab === 'trends' && (
           <HallOfFameTrendsTab
+            key={`trends-${dataVersion}`}
             initialCampus={String(selectedCampusName)}
             onSelectCampus={handleSelectCampus}
           />
@@ -156,12 +170,16 @@ export const HallOfFamePage: React.FC = () => {
 
         {/* Tab 4: All-Time Rankings */}
         {activeTab === 'all-time' && (
-          <HallOfFameAllTimeTab onSelectCampus={handleSelectCampus} />
+          <HallOfFameAllTimeTab
+            key={`alltime-${dataVersion}`}
+            onSelectCampus={handleSelectCampus}
+          />
         )}
 
         {/* Tab 5: Campus Profiles */}
         {activeTab === 'profiles' && (
           <CampusProfileView
+            key={`profile-${selectedCampusSlug}-${dataVersion}`}
             campusSlug={selectedCampusSlug}
             onSelectCampus={handleSelectCampus}
             onNavigateToStandings={() => handleTabChange('standings')}

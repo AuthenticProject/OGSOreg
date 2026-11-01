@@ -520,6 +520,43 @@ CREATE POLICY "Public update competition_certificates" ON public.competition_cer
 CREATE POLICY "Public delete competition_certificates" ON public.competition_certificates
   FOR DELETE TO anon, authenticated USING (true);
 
+-- 13.5. COMPETITION HISTORICAL AGGREGATES TABLE (HALL OF FAME KAMPUS)
+CREATE TABLE IF NOT EXISTS public.competition_historical_aggregates (
+    id TEXT PRIMARY KEY,
+    period_id TEXT NOT NULL,
+    period_year INTEGER NOT NULL,
+    period_name TEXT NOT NULL,
+    campus TEXT NOT NULL,
+    gold INTEGER NOT NULL DEFAULT 0,
+    silver INTEGER NOT NULL DEFAULT 0,
+    bronze INTEGER NOT NULL DEFAULT 0,
+    honorable_1 INTEGER NOT NULL DEFAULT 0,
+    honorable_2 INTEGER NOT NULL DEFAULT 0,
+    source TEXT DEFAULT 'imported_aggregate',
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_hist_aggs_period_id ON public.competition_historical_aggregates(period_id);
+CREATE INDEX IF NOT EXISTS idx_hist_aggs_campus ON public.competition_historical_aggregates(campus);
+CREATE INDEX IF NOT EXISTS idx_hist_aggs_period_year ON public.competition_historical_aggregates(period_year);
+
+ALTER TABLE public.competition_historical_aggregates ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public select competition_historical_aggregates" ON public.competition_historical_aggregates;
+DROP POLICY IF EXISTS "Public insert competition_historical_aggregates" ON public.competition_historical_aggregates;
+DROP POLICY IF EXISTS "Public update competition_historical_aggregates" ON public.competition_historical_aggregates;
+DROP POLICY IF EXISTS "Public delete competition_historical_aggregates" ON public.competition_historical_aggregates;
+
+CREATE POLICY "Public select competition_historical_aggregates" ON public.competition_historical_aggregates
+  FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public insert competition_historical_aggregates" ON public.competition_historical_aggregates
+  FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY "Public update competition_historical_aggregates" ON public.competition_historical_aggregates
+  FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Public delete competition_historical_aggregates" ON public.competition_historical_aggregates
+  FOR DELETE TO anon, authenticated USING (true);
+
 -- 14. WEBSITE PUBLIC CONTENT TABLE
 CREATE TABLE IF NOT EXISTS public.website_content (
     id TEXT PRIMARY KEY DEFAULT 'current',
@@ -614,6 +651,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE
   public.competition_periods,
   public.competition_winners,
   public.competition_certificates,
+  public.competition_historical_aggregates,
   public.website_content;
 
 -- 18. VERIFICATION

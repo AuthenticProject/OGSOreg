@@ -342,6 +342,7 @@ export const PeriodDetailPage: React.FC = () => {
     }
     if (window.confirm(`Hapus data pemenang '${name}'?`)) {
       participantPeriodService.deleteWinner(id)
+      participantPeriodService.uploadWinnersToCloud(participantPeriodService.getWinners()).catch(() => {})
       setSelectedWinnerIds((prev) => prev.filter((i) => i !== id))
       loadPeriodData()
     }
@@ -370,6 +371,7 @@ export const PeriodDetailPage: React.FC = () => {
       category: winnerCategory,
       score: winnerScore !== '' ? Number(winnerScore) : undefined,
     })
+    participantPeriodService.uploadWinnersToCloud(participantPeriodService.getWinners()).catch(() => {})
 
     setIsAddWinnerModalOpen(false)
     setEditingWinner(null)

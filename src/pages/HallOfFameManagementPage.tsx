@@ -86,10 +86,10 @@ export const HallOfFameManagementPage: React.FC = () => {
     setSyncStatusMsg(null)
     try {
       const res = await hallOfFameService.forceFullCloudSync()
-      await participantPeriodService.forceFullCloudSync()
+      const pRes = await participantPeriodService.forceFullCloudSync()
       loadData()
-      setSyncStatusMsg(`Sinkronisasi Cloud Berhasil: ${res.aggregates} rekap agregat & konfigurasi Hall of Fame aktif di semua device.`)
-      setTimeout(() => setSyncStatusMsg(null), 5000)
+      setSyncStatusMsg(`Sinkronisasi Cloud Berhasil: ${res.aggregates} rekap agregat & ${pRes.winners} pemenang aktif di seluruh device (Supabase Cloud).`)
+      setTimeout(() => setSyncStatusMsg(null), 6000)
     } catch (err: any) {
       alert(`Gagal sinkronisasi: ${err?.message || 'Koneksi terganggu'}`)
     } finally {

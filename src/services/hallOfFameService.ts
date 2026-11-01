@@ -19,7 +19,7 @@ import {
   type ScoringWeights,
 } from '../types/hallOfFame'
 import { cloudSyncService } from './supabase/cloudSyncService'
-import { isSupabaseConfigured } from '../lib/supabase'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 const HOF_SETTINGS_KEY = 'ogsoreg_hall_of_fame_settings_v1'
 const HOF_HISTORICAL_AGGREGATES_KEY = 'ogsoreg_hof_historical_aggregates_v1'
@@ -261,7 +261,7 @@ class HallOfFameService {
 
     setTimeout(() => {
       this.syncFromCloud().catch(() => {})
-    }, 300)
+    }, 150)
 
     window.addEventListener('focus', () => {
       this.syncFromCloud().catch(() => {})
@@ -271,24 +271,40 @@ class HallOfFameService {
     })
 
     if (isSupabaseConfigured()) {
-      cloudSyncService.subscribeCloudSetting('hall_of_fame_settings', (remote) => {
-        if (remote) {
-          localStorage.setItem(HOF_SETTINGS_KEY, JSON.stringify(remote))
-          window.dispatchEvent(new CustomEvent('ogsoreg_hof_settings_updated'))
-        }
-      })
-      cloudSyncService.subscribeCloudSetting('hall_of_fame_historical_aggregates', (remote) => {
-        if (remote) {
-          localStorage.setItem(HOF_HISTORICAL_AGGREGATES_KEY, JSON.stringify(remote))
-          window.dispatchEvent(new CustomEvent('ogsoreg_hof_aggregates_updated'))
-        }
-      })
+      try {
+        supabase
+          .channel('realtime:hall_of_fame_data')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_winners' }, () => {
+            this.syncFromCloud().catch(() => {})
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_periods' }, () => {
+            this.syncFromCloud().catch(() => {})
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_historical_aggregates' }, () => {
+            this.syncFromCloud().catch(() => {})
+          })
+          .subscribe()
+
+        cloudSyncService.subscribeCloudSetting('hall_of_fame_settings', (remote) => {
+          if (remote) {
+            localStorage.setItem(HOF_SETTINGS_KEY, JSON.stringify(remote))
+            window.dispatchEvent(new CustomEvent('ogsoreg_hof_settings_updated'))
+          }
+        })
+        cloudSyncService.subscribeCloudSetting('hall_of_fame_historical_aggregates', (remote) => {
+          if (remote && Array.isArray(remote)) {
+            localStorage.setItem(HOF_HISTORICAL_AGGREGATES_KEY, JSON.stringify(remote))
+            window.dispatchEvent(new CustomEvent('ogsoreg_hof_aggregates_updated'))
+          }
+        })
+      } catch {}
     }
   }
 
   async syncFromCloud(): Promise<void> {
     if (!isSupabaseConfigured()) return
     try {
+      // 1. Scoring & Settings Sync
       const cloudSettings = await cloudSyncService.getCloudSetting('hall_of_fame_settings', null)
       if (cloudSettings) {
         localStorage.setItem(HOF_SETTINGS_KEY, JSON.stringify(cloudSettings))
@@ -298,10 +314,49 @@ class HallOfFameService {
         cloudSyncService.saveCloudSetting('hall_of_fame_settings', localSettings)
       }
 
-      const cloudAggregates = await cloudSyncService.getCloudSetting<HistoricalAggregateRecord[] | null>(
+      // 2. Historical Aggregates Sync (Direct Table + app_settings fallback)
+      let cloudAggregates: HistoricalAggregateRecord[] | null = null
+
+      try {
+        await cloudSyncService.checkAvailableTables()
+        if (cloudSyncService.isTableAvailable('competition_historical_aggregates')) {
+          const { data: dbAggs, error } = await supabase.from('competition_historical_aggregates').select('*')
+          if (!error && dbAggs && Array.isArray(dbAggs) && dbAggs.length > 0) {
+            cloudAggregates = dbAggs.map((r: any) => ({
+              id: r.id,
+              period_id: r.period_id,
+              period_year: Number(r.period_year),
+              period_name: r.period_name,
+              campus: r.campus,
+              gold: Number(r.gold) || 0,
+              silver: Number(r.silver) || 0,
+              bronze: Number(r.bronze) || 0,
+              honorable_1: Number(r.honorable_1) || 0,
+              honorable_2: Number(r.honorable_2) || 0,
+              source: r.source || 'imported_aggregate',
+              notes: r.notes || undefined,
+              created_at: r.created_at,
+            }))
+          }
+        }
+      } catch {}
+
+      const appSettingsAggregates = await cloudSyncService.getCloudSetting<HistoricalAggregateRecord[] | null>(
         'hall_of_fame_historical_aggregates',
         null
       )
+
+      if (appSettingsAggregates && Array.isArray(appSettingsAggregates) && appSettingsAggregates.length > 0) {
+        if (!cloudAggregates || cloudAggregates.length === 0) {
+          cloudAggregates = appSettingsAggregates
+        } else {
+          const aggMap = new Map<string, HistoricalAggregateRecord>()
+          cloudAggregates.forEach((r) => aggMap.set(`${r.period_id}_${r.campus}`, r))
+          appSettingsAggregates.forEach((r) => aggMap.set(`${r.period_id}_${r.campus}`, r))
+          cloudAggregates = Array.from(aggMap.values())
+        }
+      }
+
       const localAggregates = this.getHistoricalAggregates()
 
       if (cloudAggregates && Array.isArray(cloudAggregates) && cloudAggregates.length > 0) {
@@ -313,13 +368,47 @@ class HallOfFameService {
         localStorage.setItem(HOF_HISTORICAL_AGGREGATES_KEY, JSON.stringify(merged))
         window.dispatchEvent(new CustomEvent('ogsoreg_hof_aggregates_updated'))
         if (unuploaded.length > 0) {
-          cloudSyncService.saveCloudSetting('hall_of_fame_historical_aggregates', merged)
+          this.uploadAggregatesToCloud(merged).catch(() => {})
         }
       } else if (localAggregates.length > 0) {
-        cloudSyncService.saveCloudSetting('hall_of_fame_historical_aggregates', localAggregates)
+        this.uploadAggregatesToCloud(localAggregates).catch(() => {})
       }
     } catch (err) {
       console.warn('[HallOfFameService] Cloud sync error:', err)
+    }
+  }
+
+  async uploadAggregatesToCloud(records: HistoricalAggregateRecord[]): Promise<void> {
+    if (!isSupabaseConfigured() || records.length === 0) return
+    try {
+      await cloudSyncService.saveCloudSetting('hall_of_fame_historical_aggregates', records)
+
+      await cloudSyncService.checkAvailableTables()
+      if (cloudSyncService.isTableAvailable('competition_historical_aggregates')) {
+        const rows = records.map((r) => ({
+          id: r.id,
+          period_id: r.period_id,
+          period_year: Number(r.period_year) || 2026,
+          period_name: r.period_name,
+          campus: r.campus,
+          gold: Number(r.gold) || 0,
+          silver: Number(r.silver) || 0,
+          bronze: Number(r.bronze) || 0,
+          honorable_1: Number(r.honorable_1) || 0,
+          honorable_2: Number(r.honorable_2) || 0,
+          source: r.source || 'imported_aggregate',
+          notes: r.notes || null,
+          created_at: r.created_at || new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }))
+
+        for (let i = 0; i < rows.length; i += 50) {
+          const chunk = rows.slice(i, i + 50)
+          await supabase.from('competition_historical_aggregates').upsert(chunk)
+        }
+      }
+    } catch (err) {
+      console.warn('[HallOfFameService] Upload aggregates to cloud failed:', err)
     }
   }
 
@@ -329,7 +418,7 @@ class HallOfFameService {
     const aggregates = this.getHistoricalAggregates()
     const sResult = await cloudSyncService.saveCloudSetting('hall_of_fame_settings', settings)
     if (aggregates.length > 0) {
-      await cloudSyncService.saveCloudSetting('hall_of_fame_historical_aggregates', aggregates)
+      await this.uploadAggregatesToCloud(aggregates)
     }
     return { settings: sResult, aggregates: aggregates.length }
   }
@@ -488,7 +577,7 @@ class HallOfFameService {
       const combined = Array.from(newMap.values())
       localStorage.setItem(HOF_HISTORICAL_AGGREGATES_KEY, JSON.stringify(combined))
       window.dispatchEvent(new CustomEvent('ogsoreg_hof_aggregates_updated'))
-      cloudSyncService.saveCloudSetting('hall_of_fame_historical_aggregates', combined)
+      this.uploadAggregatesToCloud(combined).catch(() => {})
     } catch {}
   }
 

@@ -126,12 +126,47 @@ export interface PeriodCertificate {
 const PERIODS_STORAGE_KEY = 'ogsoreg_periods_v5'
 const WINNERS_STORAGE_KEY = 'ogsoreg_period_winners_v5'
 const CERTIFICATES_STORAGE_KEY = 'ogsoreg_period_certs_v5'
+const DELETED_PERIODS_KEY = 'ogsoreg_deleted_period_ids_v5'
 const DELETED_WINNERS_KEY = 'ogsoreg_deleted_winner_ids_v5'
 const DELETED_CERTS_KEY = 'ogsoreg_deleted_cert_ids_v5'
 const WINNERS_MIGRATED_FLAG = 'ogsoreg_winners_migrated_v5'
 const CERTS_MIGRATED_FLAG = 'ogsoreg_certs_migrated_v5'
 
-function getDeletedWinnerIds(): Set<string> {
+export function getDeletedPeriodIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set()
+  try {
+    const raw = localStorage.getItem(DELETED_PERIODS_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return new Set(parsed)
+    }
+  } catch {}
+  return new Set()
+}
+
+export function addDeletedPeriodIds(ids: string[]): void {
+  if (typeof window === 'undefined' || ids.length === 0) return
+  try {
+    const set = getDeletedPeriodIds()
+    ids.forEach((id) => {
+      if (id) set.add(id)
+    })
+    localStorage.setItem(DELETED_PERIODS_KEY, JSON.stringify(Array.from(set)))
+  } catch {}
+}
+
+export function removeDeletedPeriodId(id: string): void {
+  if (typeof window === 'undefined' || !id) return
+  try {
+    const set = getDeletedPeriodIds()
+    if (set.has(id)) {
+      set.delete(id)
+      localStorage.setItem(DELETED_PERIODS_KEY, JSON.stringify(Array.from(set)))
+    }
+  } catch {}
+}
+
+export function getDeletedWinnerIds(): Set<string> {
   if (typeof window === 'undefined') return new Set()
   try {
     const raw = localStorage.getItem(DELETED_WINNERS_KEY)
@@ -143,7 +178,7 @@ function getDeletedWinnerIds(): Set<string> {
   return new Set()
 }
 
-function addDeletedWinnerIds(ids: string[]): void {
+export function addDeletedWinnerIds(ids: string[]): void {
   if (typeof window === 'undefined') return
   try {
     const set = getDeletedWinnerIds()
@@ -152,7 +187,7 @@ function addDeletedWinnerIds(ids: string[]): void {
   } catch {}
 }
 
-function removeDeletedWinnerId(id: string): void {
+export function removeDeletedWinnerId(id: string): void {
   if (typeof window === 'undefined') return
   try {
     const set = getDeletedWinnerIds()
@@ -163,7 +198,7 @@ function removeDeletedWinnerId(id: string): void {
   } catch {}
 }
 
-function getDeletedCertIds(): Set<string> {
+export function getDeletedCertIds(): Set<string> {
   if (typeof window === 'undefined') return new Set()
   try {
     const raw = localStorage.getItem(DELETED_CERTS_KEY)
@@ -175,7 +210,7 @@ function getDeletedCertIds(): Set<string> {
   return new Set()
 }
 
-function addDeletedCertIds(ids: string[]): void {
+export function addDeletedCertIds(ids: string[]): void {
   if (typeof window === 'undefined') return
   try {
     const set = getDeletedCertIds()
@@ -459,6 +494,15 @@ class ParticipantPeriodService {
     this.isCloudSyncing = true
     try {
       // 1. Periods Sync
+      try {
+        const cloudDeletedPeriods = await cloudSyncService.getCloudSetting<string[]>('deleted_period_ids', [])
+        if (Array.isArray(cloudDeletedPeriods) && cloudDeletedPeriods.length > 0) {
+          addDeletedPeriodIds(cloudDeletedPeriods)
+        }
+      } catch {}
+
+      const deletedPeriodSet = getDeletedPeriodIds()
+
       let cloudPeriods: CompetitionPeriod[] | null = null
       if (isSupabaseConfigured()) {
         try {
@@ -479,24 +523,48 @@ class ParticipantPeriodService {
         }
       }
 
+      // Filter out deleted periods and clean up lingering records in cloud
+      const lingeringPeriodIds: string[] = []
+      if (cloudPeriods && Array.isArray(cloudPeriods)) {
+        cloudPeriods = cloudPeriods.filter((p) => {
+          if (deletedPeriodSet.has(p.id) || (p.slug && deletedPeriodSet.has(p.slug))) {
+            lingeringPeriodIds.push(p.id)
+            return false
+          }
+          return true
+        })
+      }
+      if (lingeringPeriodIds.length > 0 && isSupabaseConfigured()) {
+        supabase.from('competition_periods').delete().in('id', lingeringPeriodIds).then(() => {})
+      }
+
       if (cloudPeriods && Array.isArray(cloudPeriods) && cloudPeriods.length > 0) {
-        const localPeriods = this.getPeriods()
+        const localPeriods = this.getPeriods().filter((p) => !deletedPeriodSet.has(p.id) && (!p.slug || !deletedPeriodSet.has(p.slug)))
         const cloudIdSet = new Set(cloudPeriods.map((p) => p.id))
         const unuploaded = localPeriods.filter((p) => !cloudIdSet.has(p.id) && !INITIAL_PERIODS.some((ip) => ip.id === p.id))
-        const merged = sortPeriodsNewestFirst([...cloudPeriods, ...unuploaded])
+        const merged = sortPeriodsNewestFirst([...cloudPeriods, ...unuploaded].filter((p) => !deletedPeriodSet.has(p.id) && (!p.slug || !deletedPeriodSet.has(p.slug))))
         localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(merged))
         window.dispatchEvent(new CustomEvent('ogsoreg_periods_updated'))
         if (unuploaded.length > 0) {
           this.uploadPeriodsToCloud(merged).catch(() => {})
         }
       } else {
-        const localPeriods = this.getPeriods()
+        const localPeriods = this.getPeriods().filter((p) => !deletedPeriodSet.has(p.id) && (!p.slug || !deletedPeriodSet.has(p.slug)))
         if (localPeriods.length > 0) {
           this.uploadPeriodsToCloud(localPeriods).catch(() => {})
         }
       }
 
       // 2. Winners Sync: Fetch from direct table AND app_settings
+      try {
+        const cloudDeletedWinners = await cloudSyncService.getCloudSetting<string[]>('deleted_winner_ids', [])
+        if (Array.isArray(cloudDeletedWinners) && cloudDeletedWinners.length > 0) {
+          addDeletedWinnerIds(cloudDeletedWinners)
+        }
+      } catch {}
+
+      const deletedWinnerSet = getDeletedWinnerIds()
+
       let cloudWinners: PeriodWinner[] | null = null
       if (isSupabaseConfigured()) {
         try {
@@ -536,11 +604,26 @@ class ParticipantPeriodService {
         }
       }
 
-      const localWinners = this.getWinners()
+      // Filter out deleted winners and clean up lingering records in cloud
+      const lingeringWinnerIds: string[] = []
+      if (cloudWinners && Array.isArray(cloudWinners)) {
+        cloudWinners = cloudWinners.filter((w) => {
+          if (deletedWinnerSet.has(w.id)) {
+            lingeringWinnerIds.push(w.id)
+            return false
+          }
+          return true
+        })
+      }
+      if (lingeringWinnerIds.length > 0 && isSupabaseConfigured()) {
+        supabase.from('competition_winners').delete().in('id', lingeringWinnerIds).then(() => {})
+      }
+
+      const localWinners = this.getWinners().filter((w) => !deletedWinnerSet.has(w.id))
       if (cloudWinners && Array.isArray(cloudWinners) && cloudWinners.length > 0) {
         const cloudIdSet = new Set(cloudWinners.map((w) => w.id))
-        const unuploaded = localWinners.filter((w) => !cloudIdSet.has(w.id))
-        const merged = [...cloudWinners, ...unuploaded]
+        const unuploaded = localWinners.filter((w) => !cloudIdSet.has(w.id) && !deletedWinnerSet.has(w.id))
+        const merged = [...cloudWinners, ...unuploaded].filter((w) => !deletedWinnerSet.has(w.id))
         localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(merged))
         window.dispatchEvent(new CustomEvent('ogsoreg_winners_updated'))
         if (unuploaded.length > 0) {
@@ -551,22 +634,31 @@ class ParticipantPeriodService {
       }
 
       // 3. Certificates Sync
-      const cloudCerts = await cloudSyncService.getCloudSetting<PeriodCertificate[] | null>('competition_certificates', null)
+      try {
+        const cloudDeletedCerts = await cloudSyncService.getCloudSetting<string[]>('deleted_cert_ids', [])
+        if (Array.isArray(cloudDeletedCerts) && cloudDeletedCerts.length > 0) {
+          addDeletedCertIds(cloudDeletedCerts)
+        }
+      } catch {}
+
+      const deletedCertSet = getDeletedCertIds()
+      let cloudCerts = await cloudSyncService.getCloudSetting<PeriodCertificate[] | null>('competition_certificates', null)
+      if (cloudCerts && Array.isArray(cloudCerts)) {
+        cloudCerts = cloudCerts.filter((c) => !deletedCertSet.has(c.id) && !isInvalidCert(c))
+      }
+
+      const localCerts = this.getCertificates().filter((c) => !deletedCertSet.has(c.id) && !isInvalidCert(c))
       if (cloudCerts && Array.isArray(cloudCerts) && cloudCerts.length > 0) {
-        const localCerts = this.getCertificates()
         const cloudIdSet = new Set(cloudCerts.map((c) => c.id))
-        const unuploaded = localCerts.filter((c) => !cloudIdSet.has(c.id))
-        const merged = [...cloudCerts, ...unuploaded]
+        const unuploaded = localCerts.filter((c) => !cloudIdSet.has(c.id) && !deletedCertSet.has(c.id))
+        const merged = [...cloudCerts, ...unuploaded].filter((c) => !deletedCertSet.has(c.id))
         localStorage.setItem(CERTIFICATES_STORAGE_KEY, JSON.stringify(merged))
         window.dispatchEvent(new CustomEvent('ogsoreg_certificates_updated'))
         if (unuploaded.length > 0) {
           cloudSyncService.saveCloudSetting('competition_certificates', merged)
         }
-      } else {
-        const localCerts = this.getCertificates()
-        if (localCerts.length > 0) {
-          cloudSyncService.saveCloudSetting('competition_certificates', localCerts)
-        }
+      } else if (localCerts.length > 0) {
+        cloudSyncService.saveCloudSetting('competition_certificates', localCerts)
       }
     } catch (err) {
       console.warn('[ParticipantPeriodService] Cloud sync error:', err)
@@ -655,22 +747,25 @@ class ParticipantPeriodService {
 
   // Periods: Guaranteed to always sort newest to oldest
   getPeriods(): CompetitionPeriod[] {
-    if (typeof window === 'undefined') return sortPeriodsNewestFirst(INITIAL_PERIODS)
+    const deletedPeriodSet = getDeletedPeriodIds()
+    if (typeof window === 'undefined') {
+      return sortPeriodsNewestFirst(INITIAL_PERIODS.filter((ip) => !deletedPeriodSet.has(ip.id) && (!ip.slug || !deletedPeriodSet.has(ip.slug))))
+    }
     try {
       const raw = localStorage.getItem(PERIODS_STORAGE_KEY)
       let list: CompetitionPeriod[]
       if (!raw) {
-        list = sortPeriodsNewestFirst(INITIAL_PERIODS)
+        list = sortPeriodsNewestFirst(INITIAL_PERIODS.filter((ip) => !deletedPeriodSet.has(ip.id) && (!ip.slug || !deletedPeriodSet.has(ip.slug))))
       } else {
         const parsed = JSON.parse(raw)
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Ensure default INITIAL_PERIODS are merged if missing
+          // Ensure default INITIAL_PERIODS are merged if missing and not deleted
           const existingIds = new Set(parsed.map((p) => p?.id))
-          const missing = INITIAL_PERIODS.filter((ip) => !existingIds.has(ip.id))
+          const missing = INITIAL_PERIODS.filter((ip) => !existingIds.has(ip.id) && !deletedPeriodSet.has(ip.id) && (!ip.slug || !deletedPeriodSet.has(ip.slug)))
           const combined = missing.length > 0 ? [...parsed, ...missing] : parsed
-          list = sortPeriodsNewestFirst(combined)
+          list = sortPeriodsNewestFirst(combined.filter((p) => p && !deletedPeriodSet.has(p.id) && (!p.slug || !deletedPeriodSet.has(p.slug))))
         } else {
-          list = sortPeriodsNewestFirst(INITIAL_PERIODS)
+          list = sortPeriodsNewestFirst(INITIAL_PERIODS.filter((ip) => !deletedPeriodSet.has(ip.id) && (!ip.slug || !deletedPeriodSet.has(ip.slug))))
         }
       }
 
@@ -695,7 +790,7 @@ class ParticipantPeriodService {
       localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(synced))
       return synced
     } catch {
-      return sortPeriodsNewestFirst(INITIAL_PERIODS)
+      return sortPeriodsNewestFirst(INITIAL_PERIODS.filter((ip) => !deletedPeriodSet.has(ip.id) && (!ip.slug || !deletedPeriodSet.has(ip.slug))))
     }
   }
 
@@ -743,6 +838,9 @@ class ParticipantPeriodService {
       list.push(saved)
     }
 
+    removeDeletedPeriodId(saved.id)
+    if (saved.slug) removeDeletedPeriodId(saved.slug)
+
     // Always sort newest to oldest when saving any period
     const sorted = sortPeriodsNewestFirst(list)
     if (typeof window !== 'undefined') {
@@ -775,7 +873,14 @@ class ParticipantPeriodService {
   }
 
   deletePeriod(id: string): boolean {
-    const list = this.getPeriods().filter((p) => p && p.id !== id)
+    const period = this.getPeriodById(id)
+    const toDeleteIds = [id]
+    if (period?.slug) toDeleteIds.push(period.slug)
+    addDeletedPeriodIds(toDeleteIds)
+    cloudSyncService.saveCloudSetting('deleted_period_ids', Array.from(getDeletedPeriodIds())).catch(() => {})
+
+    const deletedSet = getDeletedPeriodIds()
+    const list = this.getPeriods().filter((p) => p && !deletedSet.has(p.id) && (!p.slug || !deletedSet.has(p.slug)))
     const sorted = sortPeriodsNewestFirst(list)
     if (typeof window !== 'undefined') {
       localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(sorted))
@@ -785,7 +890,7 @@ class ParticipantPeriodService {
     // Persist to Cloud
     cloudSyncService.saveCloudSetting('competition_periods', sorted)
     if (isSupabaseConfigured()) {
-      supabase.from('competition_periods').delete().eq('id', id).then(({ error }) => {
+      supabase.from('competition_periods').delete().or(`id.eq.${id},slug.eq.${id}`).then(({ error }) => {
         if (error) console.warn('[ParticipantPeriodService] Direct period delete warning:', error.message)
       })
     }
@@ -861,13 +966,19 @@ class ParticipantPeriodService {
     }
 
     if (periodId) {
-      list = list.filter((w) => {
-        if (!w || !w.period_id) return false
-        if (w.period_id === periodId) return true
-        if (periodId.startsWith('period-') && w.period_id === periodId.replace('period-', '')) return true
-        if (!periodId.startsWith('period-') && w.period_id === `period-${periodId}`) return true
-        return false
-      })
+      const p = this.getPeriodById(periodId)
+      const allowedIds = new Set<string>([periodId])
+      if (periodId.startsWith('period-')) {
+        allowedIds.add(periodId.replace('period-', ''))
+      } else {
+        allowedIds.add(`period-${periodId}`)
+      }
+      if (p) {
+        allowedIds.add(p.id)
+        if (p.slug) allowedIds.add(p.slug)
+      }
+
+      list = list.filter((w) => w && w.period_id && allowedIds.has(w.period_id))
     }
 
     let hasDirtyLegacyJenjang = false
@@ -976,6 +1087,7 @@ class ParticipantPeriodService {
     if (typeof window === 'undefined') return true
     this.ensureWinnersMigrated()
     addDeletedWinnerIds([id])
+    cloudSyncService.saveCloudSetting('deleted_winner_ids', Array.from(getDeletedWinnerIds())).catch(() => {})
 
     const list = this.getWinners().filter((w) => w.id !== id)
     localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(list))
@@ -993,6 +1105,7 @@ class ParticipantPeriodService {
     if (typeof window === 'undefined') return true
     this.ensureWinnersMigrated()
     addDeletedWinnerIds(ids)
+    cloudSyncService.saveCloudSetting('deleted_winner_ids', Array.from(getDeletedWinnerIds())).catch(() => {})
 
     const idSet = new Set(ids)
     const list = this.getWinners().filter((w) => !idSet.has(w.id))
@@ -1142,11 +1255,15 @@ class ParticipantPeriodService {
     if (typeof window === 'undefined') return true
     this.ensureCertsMigrated()
     addDeletedCertIds([id])
+    cloudSyncService.saveCloudSetting('deleted_cert_ids', Array.from(getDeletedCertIds())).catch(() => {})
 
     const list = this.getCertificates().filter((c) => c.id !== id)
     localStorage.setItem(CERTIFICATES_STORAGE_KEY, JSON.stringify(list))
     window.dispatchEvent(new CustomEvent('ogsoreg_certificates_updated'))
     cloudSyncService.saveCloudSetting('competition_certificates', list)
+    if (isSupabaseConfigured()) {
+      supabase.from('competition_certificates').delete().eq('id', id).then(() => {})
+    }
     return true
   }
 }

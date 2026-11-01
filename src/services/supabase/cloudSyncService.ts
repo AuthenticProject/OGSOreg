@@ -16,7 +16,6 @@ class CloudSyncService {
   private lastSyncedAt: string | null = null
   private verifiedTables: Set<string> = new Set()
   private checkedTableSupport: boolean = false
-  private isCheckingTables: boolean = false
 
   constructor() {
     this.initEventListeners()
@@ -59,53 +58,63 @@ class CloudSyncService {
     }
   }
 
+  private checkTablePromise: Promise<Set<string>> | null = null
+
   /**
    * Verifies which cloud tables exist in Supabase schema cache
    */
   public async checkAvailableTables(force: boolean = false): Promise<Set<string>> {
     if (!isSupabaseConfigured()) return this.verifiedTables
-    if (!force && this.checkedTableSupport && this.verifiedTables.has('app_settings')) return this.verifiedTables
-    if (this.isCheckingTables) return this.verifiedTables
-
-    this.isCheckingTables = true
-    try {
-      const candidates = [
-        'students',
-        'institutions',
-        'user_profiles',
-        'operation_logs',
-        'app_settings',
-        'competition_periods',
-        'competition_winners',
-        'competition_certificates',
-        'website_content',
-        'syllabuses',
-        'bank_soal',
-      ]
-
-      await Promise.all(
-        candidates.map(async (tbl) => {
-          try {
-            const { error } = await supabase.from(tbl).select('*', { count: 'exact', head: true })
-            if (!error) {
-              this.verifiedTables.add(tbl)
-            } else {
-              this.verifiedTables.delete(tbl)
-            }
-          } catch {
-            // Ignore missing table
-          }
-        })
-      )
-
-      this.checkedTableSupport = true
-    } catch {
-      // Ignore
-    } finally {
-      this.isCheckingTables = false
+    if (!force && this.checkedTableSupport && this.verifiedTables.has('app_settings')) {
+      return this.verifiedTables
+    }
+    if (this.checkTablePromise) {
+      return this.checkTablePromise
     }
 
-    return this.verifiedTables
+    this.checkTablePromise = (async () => {
+      try {
+        const candidates = [
+          'students',
+          'institutions',
+          'user_profiles',
+          'operation_logs',
+          'app_settings',
+          'competition_periods',
+          'competition_winners',
+          'competition_certificates',
+          'competition_historical_aggregates',
+          'website_content',
+          'syllabuses',
+          'bank_soal',
+        ]
+
+        await Promise.all(
+          candidates.map(async (tbl) => {
+            try {
+              const { error } = await supabase.from(tbl).select('*', { count: 'exact', head: true })
+              if (!error) {
+                this.verifiedTables.add(tbl)
+              } else {
+                this.verifiedTables.delete(tbl)
+              }
+            } catch {
+              // Ignore missing table
+            }
+          })
+        )
+
+        this.checkedTableSupport = true
+      } catch {
+        // Ignore
+      } finally {
+        this.checkTablePromise = null
+      }
+
+      return this.verifiedTables
+    })()
+
+    return this.checkTablePromise
   }
 
   public isTableAvailable(tableName: string): boolean {
