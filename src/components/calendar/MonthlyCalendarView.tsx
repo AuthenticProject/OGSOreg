@@ -539,135 +539,113 @@ export const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
           {/* VIEW MODE A: 7-COLUMN GOOGLE CALENDAR-STYLE MONTHLY GRID              */}
           {/* ===================================================================== */}
           {viewMode === 'grid' && (
-            <div className="w-full">
-              {/* Seven Weekday Column Headers (Sunday - Saturday / Ahad - Sabtu) */}
-              <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 divide-x divide-slate-200">
-                {WEEKDAYS_SUNDAY_FIRST.map((day, idx) => (
-                  <div
-                    key={day.full}
-                    className={cn(
-                      'py-3.5 px-2 text-center select-none',
-                      idx === 0
-                        ? 'bg-rose-50/50'
-                        : idx === 5
-                        ? 'bg-emerald-50/50'
-                        : 'bg-slate-50/80'
-                    )}
-                  >
+            <div className="w-full overflow-x-auto">
+              <div className="min-w-[700px] sm:min-w-0">
+                {/* Seven Weekday Column Headers (Sunday - Saturday / Ahad - Sabtu) */}
+                <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 divide-x divide-slate-200">
+                  {WEEKDAYS_SUNDAY_FIRST.map((day, idx) => (
                     <div
+                      key={day.full}
                       className={cn(
-                        'text-xs font-black uppercase tracking-wider',
+                        'py-3.5 px-2 text-center select-none',
                         idx === 0
-                          ? 'text-rose-600'
+                          ? 'bg-rose-50/50'
                           : idx === 5
-                          ? 'text-[#166534]'
-                          : 'text-slate-700'
+                          ? 'bg-emerald-50/50'
+                          : 'bg-slate-50/80'
                       )}
                     >
-                      <span className="hidden sm:inline">{day.full}</span>
-                      <span className="sm:hidden">{day.short}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Calendar Grid Cells */}
-              <div className="grid grid-cols-7 divide-x divide-slate-200 border-b border-slate-200 bg-slate-200">
-                {gridDays.map((cell) => {
-                  const dayEvents = dayEventsMap[cell.dateStr] || []
-                  const maxVisibleEvents = 3
-                  const visibleChips = dayEvents.slice(0, maxVisibleEvents)
-                  const overflowCount = Math.max(0, dayEvents.length - maxVisibleEvents)
-
-                  return (
-                    <div
-                      key={cell.dateStr}
-                      onClick={() => {
-                        // Public / Non-superadmin: clicking cell only views details/overflow
-                        if (dayEvents.length === 1) {
-                          handleSelectEvent(dayEvents[0])
-                        } else if (dayEvents.length > 1) {
-                          handleOpenOverflow(cell.dateStr)
-                        } else if (canManage) {
-                          // Superadmin can create event on empty cell
-                          handleOpenCreateForDate(cell.dateStr)
-                        }
-                      }}
-                      className={cn(
-                        'min-h-[85px] sm:min-h-[135px] lg:min-h-[145px] p-1.5 sm:p-2 bg-white flex flex-col justify-between transition-colors relative group border-b border-slate-200',
-                        !cell.isCurrentMonth && 'bg-slate-50/65 text-slate-400',
-                        cell.isToday && 'bg-emerald-50/40 ring-2 ring-inset ring-[#166534]/40',
-                        dayEvents.length > 0 && 'cursor-pointer hover:bg-slate-50/80'
-                      )}
-                    >
-                      {/* Cell Header: Date Number & Today indicator */}
-                      <div className="flex items-center justify-between mb-1">
-                        {/* Quick '+' button on hover (strictly visible to superadmin only) */}
-                        {canManage ? (
-                          <div className="hidden sm:block opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleOpenCreateForDate(cell.dateStr)
-                              }}
-                              className="w-5 h-5 rounded-full bg-emerald-100 text-[#166534] hover:bg-[#166534] hover:text-white flex items-center justify-center transition-colors shadow-2xs"
-                              title="Tambah Agenda di Tanggal Ini (Superadmin)"
-                            >
-                              <Plus className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ) : (
-                          <span />
+                      <div
+                        className={cn(
+                          'text-xs font-black uppercase tracking-wider',
+                          idx === 0
+                            ? 'text-rose-600'
+                            : idx === 5
+                            ? 'text-[#166534]'
+                            : 'text-slate-700'
                         )}
+                      >
+                        <span className="hidden sm:inline">{day.full}</span>
+                        <span className="sm:hidden">{day.short}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
-                        {/* Date Number Badge */}
-                        <div className="flex items-center gap-1.5 ml-auto">
-                          {cell.isToday && (
-                            <span className="hidden md:inline-block text-[9px] font-black uppercase text-[#166534] bg-emerald-100/90 px-1.5 py-0.5 rounded-md">
-                              Hari Ini
-                            </span>
+                {/* Calendar Grid Cells */}
+                <div className="grid grid-cols-7 divide-x divide-slate-200 border-b border-slate-200 bg-slate-200">
+                  {gridDays.map((cell) => {
+                    const dayEvents = dayEventsMap[cell.dateStr] || []
+                    const maxVisibleEvents = 3
+                    const visibleChips = dayEvents.slice(0, maxVisibleEvents)
+                    const overflowCount = Math.max(0, dayEvents.length - maxVisibleEvents)
+
+                    return (
+                      <div
+                        key={cell.dateStr}
+                        onClick={() => {
+                          // Public / Non-superadmin: clicking cell only views details/overflow
+                          if (dayEvents.length === 1) {
+                            handleSelectEvent(dayEvents[0])
+                          } else if (dayEvents.length > 1) {
+                            handleOpenOverflow(cell.dateStr)
+                          } else if (canManage) {
+                            // Superadmin can create event on empty cell
+                            handleOpenCreateForDate(cell.dateStr)
+                          }
+                        }}
+                        className={cn(
+                          'min-h-[105px] sm:min-h-[140px] lg:min-h-[155px] p-1.5 sm:p-2 bg-white flex flex-col justify-between transition-colors relative group border-b border-slate-200',
+                          !cell.isCurrentMonth && 'bg-slate-50/65 text-slate-400',
+                          cell.isToday && 'bg-emerald-50/40 ring-2 ring-inset ring-[#166534]/40',
+                          dayEvents.length > 0 && 'cursor-pointer hover:bg-slate-50/80'
+                        )}
+                      >
+                        {/* Cell Header: Date Number & Today indicator */}
+                        <div className="flex items-center justify-between mb-1.5">
+                          {/* Quick '+' button on hover (strictly visible to superadmin only) */}
+                          {canManage ? (
+                            <div className="hidden sm:block opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleOpenCreateForDate(cell.dateStr)
+                                }}
+                                className="w-5 h-5 rounded-full bg-emerald-100 text-[#166534] hover:bg-[#166534] hover:text-white flex items-center justify-center transition-colors shadow-2xs cursor-pointer"
+                                title="Tambah Agenda di Tanggal Ini (Superadmin)"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span />
                           )}
-                          <div
-                            className={cn(
-                              'w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[11px] sm:text-xs font-black transition-all',
-                              cell.isToday
-                                ? 'bg-gradient-to-br from-[#166534] to-[#0C241B] text-white shadow-md ring-2 ring-emerald-300'
-                                : cell.isCurrentMonth
-                                ? 'text-slate-800'
-                                : 'text-slate-300'
+
+                          {/* Date Number Badge */}
+                          <div className="flex items-center gap-1.5 ml-auto">
+                            {cell.isToday && (
+                              <span className="hidden md:inline-block text-[9px] font-black uppercase text-[#166534] bg-emerald-100/90 px-1.5 py-0.5 rounded-md">
+                                Hari Ini
+                              </span>
                             )}
-                          >
-                            {cell.dayNumber}
+                            <div
+                              className={cn(
+                                'w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[11px] sm:text-xs font-black transition-all',
+                                cell.isToday
+                                  ? 'bg-gradient-to-br from-[#166534] to-[#0C241B] text-white shadow-md ring-2 ring-emerald-300'
+                                  : cell.isCurrentMonth
+                                  ? 'text-slate-800'
+                                  : 'text-slate-300'
+                              )}
+                            >
+                              {cell.dayNumber}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Event Chips List */}
-                      <div className="space-y-1 flex-1 overflow-hidden">
-                        {/* Mobile Event Dots Indicator (Screens < 640px) */}
-                        <div className="flex sm:hidden flex-wrap items-center justify-center gap-1 py-1">
-                          {dayEvents.slice(0, 4).map((ev) => {
-                            const catMeta =
-                              CATEGORIES_CONFIG[ev.category] || FALLBACK_CATEGORY
-                            return (
-                              <span
-                                key={`dot-${ev.id}`}
-                                className="w-2 h-2 rounded-full shrink-0 shadow-2xs"
-                                style={{ backgroundColor: catMeta.color }}
-                                title={ev.title}
-                              />
-                            )
-                          })}
-                          {dayEvents.length > 4 && (
-                            <span className="text-[9px] font-black text-slate-500 leading-none">
-                              +{dayEvents.length - 4}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Desktop & Tablet Full Event Chips (sm and up) */}
-                        <div className="hidden sm:block space-y-1">
+                        {/* Event Chips List — Full Text Rendering without Truncation */}
+                        <div className="space-y-1.5 flex-1">
                           {visibleChips.map((ev) => {
                             const catMeta =
                               CATEGORIES_CONFIG[ev.category] || FALLBACK_CATEGORY
@@ -682,16 +660,16 @@ export const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
                                   handleSelectEvent(ev)
                                 }}
                                 className={cn(
-                                  'text-[11px] px-2 py-1 font-bold transition-all truncate cursor-pointer flex items-center gap-1.5 shadow-2xs hover:scale-[1.01] hover:shadow-sm',
+                                  'text-[10px] sm:text-[11px] px-2 py-1.5 font-bold transition-all cursor-pointer flex items-start gap-1.5 shadow-2xs hover:scale-[1.01] hover:shadow-xs whitespace-normal break-words leading-tight',
                                   isMulti
                                     ? 'text-white'
                                     : 'border bg-white text-slate-800 hover:border-slate-400',
                                   dayPos === 'start'
-                                    ? 'rounded-l-xl rounded-r-none mr-[-6px] z-10'
+                                    ? 'rounded-l-xl rounded-r-none mr-[-6px] sm:mr-[-8px] z-10'
                                     : dayPos === 'end'
-                                    ? 'rounded-r-xl rounded-l-none ml-[-6px]'
+                                    ? 'rounded-r-xl rounded-l-none ml-[-6px] sm:ml-[-8px]'
                                     : dayPos === 'middle'
-                                    ? 'rounded-none mx-[-6px]'
+                                    ? 'rounded-none mx-[-6px] sm:mx-[-8px]'
                                     : 'rounded-xl'
                                 )}
                                 style={
@@ -707,20 +685,26 @@ export const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
                               >
                                 {!isMulti && (
                                   <span
-                                    className="w-2 h-2 rounded-full shrink-0"
+                                    className="w-2 h-2 rounded-full shrink-0 mt-0.5"
                                     style={{ backgroundColor: catMeta.color }}
                                   />
                                 )}
 
-                                {ev.startTime && !isMulti && (
-                                  <span className="text-[10px] font-semibold text-slate-600 shrink-0">
-                                    {ev.startTime}
+                                <div className="flex-1 min-w-0">
+                                  {ev.startTime && !isMulti && (
+                                    <span className="block text-[9px] font-semibold text-slate-500 mb-0.5">
+                                      {ev.startTime} WIB
+                                    </span>
+                                  )}
+                                  <span
+                                    className={cn(
+                                      'font-bold block leading-snug break-words',
+                                      isMulti ? 'text-white' : 'text-slate-900'
+                                    )}
+                                  >
+                                    {ev.title}
                                   </span>
-                                )}
-
-                                <span className="truncate flex-1 font-bold">
-                                  {ev.title}
-                                </span>
+                                </div>
                               </div>
                             )
                           })}
@@ -733,16 +717,16 @@ export const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
                                 e.stopPropagation()
                                 handleOpenOverflow(cell.dateStr)
                               }}
-                              className="w-full text-left px-2 py-0.5 rounded-lg text-[10px] font-extrabold text-[#166534] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors cursor-pointer"
+                              className="w-full text-left px-2 py-1 rounded-lg text-[10px] font-extrabold text-[#166534] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors cursor-pointer"
                             >
-                              +{overflowCount} lainnya...
+                              +{overflowCount} agenda lainnya...
                             </button>
                           )}
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
             </div>
           )}
