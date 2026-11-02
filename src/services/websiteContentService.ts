@@ -7,12 +7,19 @@
 
 export interface TimelineEvent {
   id: string
-  dateDisplay: string
-  hijriDate?: string
   title: string
-  category: 'persiapan' | 'simulasi' | 'seremoni' | 'penyisihan' | 'final' | 'penutupan'
+  dateDisplay: string
+  startDate?: string // YYYY-MM-DD
+  endDate?: string // YYYY-MM-DD for multi-day events
+  startTime?: string // HH:mm or e.g. "20:00"
+  endTime?: string // HH:mm or e.g. "21:30"
+  isAllDay?: boolean
+  hijriDate?: string
+  category: 'persiapan' | 'simulasi' | 'seremoni' | 'penyisihan' | 'final' | 'penutupan' | 'akademik' | 'rapat' | 'deadline' | 'umum' | 'lainnya' | string
   time?: string
   levels?: string
+  description?: string
+  location?: string
   isCompleted?: boolean
   isTentative?: boolean
 }
@@ -93,115 +100,163 @@ export const DEFAULT_WEBSITE_CONTENT: WebsiteContentConfig = {
     {
       id: 'tm',
       dateDisplay: 'Jum’at, 30 Oktober 2026',
+      startDate: '2026-10-30',
+      startTime: '20:00',
+      endTime: '21:30',
       hijriDate: '19 Jumadal Ula 1448',
       title: 'Technical Meeting Online Gontor Science Olympiad',
       category: 'persiapan',
       time: '20.00 – 21.30 WIB',
+      location: 'Zoom Meeting Terpusat',
+      description: 'Sosialisasi teknis, koordinasi pengawas antar-kampus, dan panduan CBT SEB.',
       isTentative: true,
     },
     {
       id: 'simulasi-awal',
-      dateDisplay: 'Sabtu, 31 Oktober 2026',
-      hijriDate: '20 Jumadal Ula 1448',
-      title: 'Awal Masa Simulasi Sistem & Uji Coba CBT SEB',
+      dateDisplay: 'Sabtu, 31 Oktober 2026 – Selasa, 3 November 2026',
+      startDate: '2026-10-31',
+      endDate: '2026-11-03',
+      startTime: '08:00',
+      endTime: '21:30',
+      hijriDate: '20–23 Jumadal Ula 1448',
+      title: 'Masa Simulasi Sistem & Uji Coba CBT SEB',
       category: 'simulasi',
-      time: 'Fleksibel sesuai jadwal kampus',
-      isTentative: true,
-    },
-    {
-      id: 'simulasi-akhir',
-      dateDisplay: 'Selasa, 3 November 2026',
-      hijriDate: '23 Jumadal Ula 1448',
-      title: 'Akhir Masa Simulasi Sistem',
-      category: 'simulasi',
-      time: 'Hingga pukul 21.30 WIB',
+      time: 'Fleksibel sesuai jadwal kampus (s/d 21.30 WIB)',
+      location: 'Laboratorium Komputer Kampus Cabang',
+      description: 'Uji coba infrastruktur server, akun santri peserta, dan konfigurasi Save Exam Browser.',
+      levels: 'Seluruh Jenjang 1 - 5',
       isTentative: true,
     },
     {
       id: 'pembukaan',
       dateDisplay: 'Jum’at, 6 November 2026',
+      startDate: '2026-11-06',
+      startTime: '20:15',
+      endTime: '21:15',
       hijriDate: '26 Jumadal Ula 1448',
       title: 'Pembukaan Resmi Inter-Campus OGSO 1448/2026',
       category: 'seremoni',
       time: '20.15 – 21.15 WIB',
+      location: 'Zoom Terpadu Seluruh Kampus',
+      description: 'Upacara pembukaan resmi dan sambutan Pimpinan Pondok Modern Darussalam Gontor.',
       isTentative: true,
     },
     {
       id: 'penyisihan-1-2',
       dateDisplay: 'Sabtu, 7 November 2026',
+      startDate: '2026-11-07',
+      startTime: '20:00',
+      endTime: '21:30',
       hijriDate: '27 Jumadal Ula 1448',
       title: 'Babak Penyisihan — Jenjang 1 & Jenjang 2',
       category: 'penyisihan',
       time: '20.00 – 21.30 WIB',
       levels: 'Kelas 1 KMI & Kelas 2 KMI',
+      location: 'CBT SEB & Pengawasan Zoom',
+      description: 'Ujian serentak daring 40 butir soal isian singkat bidang Matematika, Fisika, dan Biologi.',
       isTentative: true,
     },
     {
       id: 'penyisihan-3-4',
       dateDisplay: 'Ahad, 8 November 2026',
+      startDate: '2026-11-08',
+      startTime: '20:00',
+      endTime: '21:30',
       hijriDate: '28 Jumadal Ula 1448',
       title: 'Babak Penyisihan — Jenjang 3 & Jenjang 4',
       category: 'penyisihan',
       time: '20.00 – 21.30 WIB',
       levels: 'Kelas 1 Int/3 KMI & Kelas 3 Int/4 KMI',
+      location: 'CBT SEB & Pengawasan Zoom',
+      description: 'Ujian serentak daring 40 butir soal isian singkat bidang Matematika, Fisika, dan Biologi.',
       isTentative: true,
     },
     {
       id: 'penyisihan-5',
       dateDisplay: 'Senin, 9 November 2026',
+      startDate: '2026-11-09',
+      startTime: '20:00',
+      endTime: '21:30',
       hijriDate: '29 Jumadal Ula 1448',
       title: 'Babak Penyisihan — Jenjang 5',
       category: 'penyisihan',
       time: '20.00 – 21.30 WIB',
       levels: 'Kelas 5 KMI (Matematika, Fisika, Biologi, Kimia)',
+      location: 'CBT SEB & Pengawasan Zoom',
+      description: 'Ujian kualifikasi santri kelas 5 KMI dengan 4 bidang studi sains terpadu.',
       isTentative: true,
     },
     {
       id: 'pengumuman-penyisihan',
       dateDisplay: 'Jum’at, 13 November 2026',
+      startDate: '2026-11-13',
+      startTime: '20:00',
+      endTime: '21:00',
       hijriDate: '4 Jumadal Akhirah 1448',
       title: 'Pengumuman Hasil Babak Penyisihan & Peserta Lolos Final',
       category: 'persiapan',
       time: 'Pukul 20.00 WIB',
+      location: 'Portal Resmi OGSO & Zoom',
+      description: 'Publikasi daftar resmi finalis yang berhak melaju ke Babak Final dari tiap kontingen.',
       isTentative: true,
     },
     {
       id: 'final-1-2',
       dateDisplay: 'Kamis, 19 November 2026',
+      startDate: '2026-11-19',
+      startTime: '20:00',
+      endTime: '21:30',
       hijriDate: '10 Jumadal Akhirah 1448',
       title: 'Babak Final — Jenjang 1 & Jenjang 2',
       category: 'final',
       time: '20.00 – 21.30 WIB',
       levels: 'Finalis Terpilih Jenjang 1 & 2',
+      location: 'CBT SEB & Pengawasan Zoom',
+      description: 'Perebutan medali emas, perak, dan perunggu tingkat nasional untuk Jenjang 1 & 2.',
       isTentative: true,
     },
     {
       id: 'final-3-4',
       dateDisplay: 'Jum’at, 20 November 2026',
+      startDate: '2026-11-20',
+      startTime: '20:00',
+      endTime: '21:30',
       hijriDate: '11 Jumadal Akhirah 1448',
       title: 'Babak Final — Jenjang 3 & Jenjang 4',
       category: 'final',
       time: '20.00 – 21.30 WIB',
       levels: 'Finalis Terpilih Jenjang 3 & 4',
+      location: 'CBT SEB & Pengawasan Zoom',
+      description: 'Babak final penentuan medali nasional untuk santri Jenjang 3 & 4.',
       isTentative: true,
     },
     {
       id: 'final-5',
       dateDisplay: 'Sabtu, 21 November 2026',
+      startDate: '2026-11-21',
+      startTime: '20:00',
+      endTime: '21:30',
       hijriDate: '12 Jumadal Akhirah 1448',
       title: 'Babak Final — Jenjang 5',
       category: 'final',
       time: '20.00 – 21.30 WIB',
       levels: 'Finalis Terpilih Jenjang 5',
+      location: 'CBT SEB & Pengawasan Zoom',
+      description: 'Babak pamungkas olimpiade sains antarkampus penentu pundi medali Juara Umum.',
       isTentative: true,
     },
     {
       id: 'award-ceremonial',
       dateDisplay: 'Jum’at, 4 Desember 2026',
+      startDate: '2026-12-04',
+      startTime: '20:15',
+      endTime: '21:15',
       hijriDate: '25 Jumadal Akhirah 1448',
       title: 'Penutupan & Award Ceremonial Online Gontor Science Olympiad',
       category: 'penutupan',
       time: '20.15 – 21.15 WIB',
+      location: 'Gedung Pertemuan & Live Streaming Seluruh Kampus',
+      description: 'Penganugerahan Piala Bergilir Juara Umum Kampus dan medali seluruh jenjang.',
       isTentative: true,
     },
   ],
@@ -442,6 +497,44 @@ export const websiteContentService = {
     }
 
     return updated
+  },
+
+  addTimelineEvent(event: Omit<TimelineEvent, 'id'> & { id?: string }): TimelineEvent {
+    const current = this.getContent()
+    const newId = event.id || `timeline-${Date.now()}`
+    const newEvent: TimelineEvent = {
+      ...event,
+      id: newId,
+    }
+    const updatedTimeline = [...current.timeline, newEvent]
+    this.saveContent({ timeline: updatedTimeline })
+    return newEvent
+  },
+
+  updateTimelineEvent(id: string, updates: Partial<TimelineEvent>): TimelineEvent | null {
+    const current = this.getContent()
+    let updatedEvent: TimelineEvent | null = null
+    const updatedTimeline = current.timeline.map((item) => {
+      if (item.id === id) {
+        updatedEvent = { ...item, ...updates }
+        return updatedEvent
+      }
+      return item
+    })
+    if (updatedEvent) {
+      this.saveContent({ timeline: updatedTimeline })
+    }
+    return updatedEvent
+  },
+
+  deleteTimelineEvent(id: string): boolean {
+    const current = this.getContent()
+    const filtered = current.timeline.filter((item) => item.id !== id)
+    if (filtered.length !== current.timeline.length) {
+      this.saveContent({ timeline: filtered })
+      return true
+    }
+    return false
   },
 
   resetToDefault(): WebsiteContentConfig {

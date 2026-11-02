@@ -136,6 +136,20 @@ export const PublicNavbar: React.FC = () => {
               Galeri
             </NavLink>
 
+            <NavLink
+              to="/jadwal"
+              className={({ isActive }) =>
+                cn(
+                  'px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
+                  isActive
+                    ? 'text-[#A7F3D0] bg-emerald-950/70 border border-emerald-500/30'
+                    : 'text-emerald-100/90 hover:text-white hover:bg-emerald-900/30'
+                )
+              }
+            >
+              Jadwal
+            </NavLink>
+
             {/* Materi Dropdown */}
             <div
               className="relative"
@@ -402,6 +416,20 @@ export const PublicNavbar: React.FC = () => {
                 }
               >
                 Galeri Foto
+              </NavLink>
+
+              <NavLink
+                to="/jadwal"
+                className={({ isActive }) =>
+                  cn(
+                    'px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors',
+                    isActive
+                      ? 'bg-emerald-900/60 text-[#A7F3D0]'
+                      : 'text-emerald-100 hover:text-white hover:bg-emerald-900/30'
+                  )
+                }
+              >
+                Jadwal & Kalender
               </NavLink>
 
               <div className="pt-2 pb-1 px-3">

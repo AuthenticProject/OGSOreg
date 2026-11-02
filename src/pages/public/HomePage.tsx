@@ -21,9 +21,6 @@ import {
   LogIn,
   School,
   GraduationCap,
-  Columns3,
-  CalendarDays,
-  Moon,
   FileText,
   Globe,
   ExternalLink,
@@ -34,6 +31,7 @@ import {
 } from '../../services/websiteContentService'
 import { hallOfFameService } from '../../services/hallOfFameService'
 import { PhotoMarqueeGallery } from '../../components/public/PhotoMarqueeGallery'
+import { MonthlyCalendarView } from '../../components/calendar/MonthlyCalendarView'
 import { cn } from '../../lib/utils'
 import { getWhatsAppLink } from '../../lib/whatsapp'
 
@@ -43,9 +41,6 @@ export const HomePage: React.FC = () => {
   )
   const [hofOverview] = useState(() => hallOfFameService.getHallOfFameOverview())
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0)
-  const [activeTimelineCategory, setActiveTimelineCategory] = useState<string>('all')
-  const [timelineViewMode, setTimelineViewMode] = useState<'kanban' | 'calendar'>('kanban')
-  const [calendarMonthFilter, setCalendarMonthFilter] = useState<'all' | '10' | '11' | '12'>('all')
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -54,20 +49,6 @@ export const HomePage: React.FC = () => {
     window.addEventListener('ogsoreg_website_content_updated', handleUpdate)
     return () => window.removeEventListener('ogsoreg_website_content_updated', handleUpdate)
   }, [])
-
-  const filteredTimeline = content.timeline.filter((item) => {
-    if (activeTimelineCategory === 'all') return true
-    if (activeTimelineCategory === 'penyisihan') return item.category === 'penyisihan'
-    if (activeTimelineCategory === 'final') return item.category === 'final'
-    if (activeTimelineCategory === 'seremoni')
-      return (
-        item.category === 'seremoni' ||
-        item.category === 'persiapan' ||
-        item.category === 'simulasi' ||
-        item.category === 'penutupan'
-      )
-    return true
-  })
 
   return (
     <div className="w-full bg-[#F5F8F4] text-[#0C241B]">
@@ -694,370 +675,39 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* SECTION 05 — COMPETITION TIMELINE (Kalender Kanban & Agenda Terjadwal)     */}
+      {/* SECTION 05 — COMPETITION CALENDAR (Google Calendar-Style Monthly View)     */}
       {/* ========================================================================= */}
-      <section className="py-20 lg:py-28 bg-white border-b border-emerald-950/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-          {/* Section Header with View Mode Switcher */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2 border-b border-slate-100">
+      <section id="jadwal" className="py-16 lg:py-24 bg-[#F5F8F4] border-y border-slate-200/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          {/* Section Header */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2 border-b border-slate-200">
             <div className="space-y-3 max-w-2xl">
               <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
                 <Calendar className="w-3.5 h-3.5 text-[#166534]" />
-                <span>Rangkaian Agenda & Alur Kompetisi</span>
+                <span>Kalender Inter-Campus OGSO 1448/2026</span>
               </div>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0C241B] tracking-tight">
-                Jadwal Tentatif OGSO 2026
+                Jadwal & Agenda Pelaksanaan
               </h2>
               <p className="text-sm text-slate-600 leading-relaxed">
-                Seluruh rangkaian kegiatan dilaksanakan secara daring terkoordinasi antar-kampus
+                Rangkaian kegiatan resmi terjadwal secara terpadu antar-kampus
                 Pondok Modern Darussalam Gontor di seluruh Indonesia.
               </p>
             </div>
 
-            {/* View Mode Toggle & Filter */}
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Kanban vs Calendar Switcher */}
-              <div className="flex items-center p-1 rounded-xl bg-slate-100/90 border border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setTimelineViewMode('kanban')}
-                  className={cn(
-                    'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer',
-                    timelineViewMode === 'kanban'
-                      ? 'bg-[#166534] text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  )}
-                >
-                  <Columns3 className="w-3.5 h-3.5" />
-                  <span>Mode Kanban</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTimelineViewMode('calendar')}
-                  className={cn(
-                    'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer',
-                    timelineViewMode === 'calendar'
-                      ? 'bg-[#166534] text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  )}
-                >
-                  <CalendarDays className="w-3.5 h-3.5" />
-                  <span>Mode Kalender</span>
-                </button>
-              </div>
-
-              {/* Category Filter Tabs */}
-              {timelineViewMode === 'kanban' ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    { id: 'all', label: 'Semua Fase' },
-                    { id: 'seremoni', label: 'Persiapan' },
-                    { id: 'penyisihan', label: 'Penyisihan' },
-                    { id: 'final', label: 'Final' },
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setActiveTimelineCategory(tab.id)}
-                      className={cn(
-                        'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer',
-                        activeTimelineCategory === tab.id
-                          ? 'bg-slate-800 text-white shadow-xs'
-                          : 'bg-[#F5F8F4] text-slate-600 hover:bg-slate-200'
-                      )}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    { id: 'all', label: 'Semua Bulan' },
-                    { id: '10', label: 'Oktober 2026' },
-                    { id: '11', label: 'November 2026' },
-                    { id: '12', label: 'Desember 2026' },
-                  ].map((month) => (
-                    <button
-                      key={month.id}
-                      type="button"
-                      onClick={() => setCalendarMonthFilter(month.id as any)}
-                      className={cn(
-                        'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer',
-                        calendarMonthFilter === month.id
-                          ? 'bg-slate-800 text-white shadow-xs'
-                          : 'bg-[#F5F8F4] text-slate-600 hover:bg-slate-200'
-                      )}
-                    >
-                      {month.label}
-                    </button>
-                  ))}
-                </div>
-              )}
+            <div className="flex items-center gap-2">
+              <Link
+                to="/jadwal"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#166534] hover:bg-[#0F3D20] transition-colors shadow-xs"
+              >
+                <span>Halaman Kalender Penuh</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </Link>
             </div>
           </div>
 
-          {/* ========================================================================= */}
-          {/* VIEW 1: KANBAN BOARD VIEW                                                 */}
-          {/* ========================================================================= */}
-          {timelineViewMode === 'kanban' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
-              {[
-                {
-                  id: 'persiapan',
-                  phaseNumber: '01',
-                  title: 'Persiapan & Simulasi',
-                  subtitle: 'Technical Meeting & SEB',
-                  topBar: 'bg-sky-500',
-                  headerBg: 'bg-sky-50/70 border-sky-200',
-                  headerText: 'text-sky-900',
-                  countBadge: 'bg-sky-100 text-sky-800',
-                  itemFilter: (item: any) =>
-                    (item.category === 'persiapan' || item.category === 'simulasi') &&
-                    item.id !== 'pengumuman-penyisihan',
-                },
-                {
-                  id: 'penyisihan',
-                  phaseNumber: '02',
-                  title: 'Pembukaan & Penyisihan',
-                  subtitle: 'Ujian CBT Daring Terpusat',
-                  topBar: 'bg-emerald-600',
-                  headerBg: 'bg-emerald-50/70 border-emerald-200',
-                  headerText: 'text-emerald-900',
-                  countBadge: 'bg-emerald-100 text-emerald-800',
-                  itemFilter: (item: any) =>
-                    item.category === 'seremoni' || item.category === 'penyisihan',
-                },
-                {
-                  id: 'evaluasi',
-                  phaseNumber: '03',
-                  title: 'Penjurian & Seleksi',
-                  subtitle: 'Rekapitulasi Nilai & Finalis',
-                  topBar: 'bg-amber-500',
-                  headerBg: 'bg-amber-50/70 border-amber-200',
-                  headerText: 'text-amber-900',
-                  countBadge: 'bg-amber-100 text-amber-800',
-                  itemFilter: (item: any) => item.id === 'pengumuman-penyisihan',
-                },
-                {
-                  id: 'final',
-                  phaseNumber: '04',
-                  title: 'Babak Final & Awarding',
-                  subtitle: 'Penentuan Juara & Medali',
-                  topBar: 'bg-rose-600',
-                  headerBg: 'bg-rose-50/70 border-rose-200',
-                  headerText: 'text-rose-900',
-                  countBadge: 'bg-rose-100 text-rose-800',
-                  itemFilter: (item: any) =>
-                    item.category === 'final' || item.category === 'penutupan',
-                },
-              ].map((column) => {
-                const columnItems = filteredTimeline.filter(column.itemFilter)
-
-                return (
-                  <div
-                    key={column.id}
-                    className="flex flex-col rounded-2xl bg-slate-50/80 border border-slate-200 shadow-2xs overflow-hidden"
-                  >
-                    {/* Top colored accent line */}
-                    <div className={cn('h-1.5 w-full', column.topBar)} />
-
-                    {/* Column Header */}
-                    <div
-                      className={cn(
-                        'px-4 py-3.5 border-b border-slate-200/80 flex items-center justify-between',
-                        column.headerBg
-                      )}
-                    >
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                            Fase {column.phaseNumber}
-                          </span>
-                        </div>
-                        <h3 className={cn('text-sm font-extrabold leading-snug', column.headerText)}>
-                          {column.title}
-                        </h3>
-                        <p className="text-[11px] text-slate-500">{column.subtitle}</p>
-                      </div>
-
-                      <span
-                        className={cn(
-                          'text-xs font-bold px-2.5 py-0.5 rounded-full shrink-0 shadow-2xs',
-                          column.countBadge
-                        )}
-                      >
-                        {columnItems.length}
-                      </span>
-                    </div>
-
-                    {/* Kanban Card List with generous whitespace */}
-                    <div className="p-3.5 space-y-3.5 min-h-[300px]">
-                      {columnItems.length > 0 ? (
-                        columnItems.map((item) => {
-                          const dateParts = item.dateDisplay.split(', ')
-                          const dayName = dateParts[0] || 'Hari'
-                          const dateStr = dateParts[1] || item.dateDisplay
-
-                          return (
-                            <div
-                              key={item.id}
-                              className="bg-white rounded-xl border border-slate-200/90 hover:border-emerald-500/80 shadow-xs hover:shadow-md transition-all p-4 space-y-3 group"
-                            >
-                              {/* Top Bar in Card: Category and Tentative status */}
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/60">
-                                    {item.category}
-                                  </span>
-                                  <span className="text-[10px] font-medium text-slate-500">
-                                    {dayName}, {dateStr.split(' ')[0]} {dateStr.split(' ')[1]}
-                                  </span>
-                                </div>
-                                {item.isTentative && (
-                                  <span className="text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
-                                    Tentatif
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* Title */}
-                              <h4 className="font-bold text-sm text-[#0C241B] leading-snug group-hover:text-emerald-800 transition-colors">
-                                {item.title}
-                              </h4>
-
-                              {/* Target Levels */}
-                              {item.levels && (
-                                <div className="flex items-start gap-2 text-xs font-semibold text-emerald-900 bg-emerald-50/60 p-2 rounded-lg border border-emerald-100">
-                                  <School className="w-3.5 h-3.5 text-emerald-700 mt-0.5 shrink-0" />
-                                  <span className="leading-snug">{item.levels}</span>
-                                </div>
-                              )}
-
-                              {/* Date & Time with ample whitespace */}
-                              <div className="pt-3 border-t border-slate-100 space-y-1.5">
-                                <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                                  <Calendar className="w-3.5 h-3.5 text-[#166534] shrink-0" />
-                                  <span>{item.dateDisplay}</span>
-                                </div>
-
-                                {item.hijriDate && (
-                                  <div className="flex items-center gap-2 text-[11px] text-slate-500 pl-5.5">
-                                    <Moon className="w-3 h-3 text-slate-400 shrink-0" />
-                                    <span>{item.hijriDate}</span>
-                                  </div>
-                                )}
-
-                                {item.time && (
-                                  <div className="flex items-center gap-2 text-xs text-slate-600 pl-5.5">
-                                    <Clock className="w-3 h-3 text-slate-400 shrink-0" />
-                                    <span>{item.time}</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )
-                        })
-                      ) : (
-                        <div className="p-6 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">
-                          Tidak ada agenda dalam filter ini.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
-          {/* ========================================================================= */}
-          {/* VIEW 2: INTERACTIVE CALENDAR MONTH VIEW                                    */}
-          {/* ========================================================================= */}
-          {timelineViewMode === 'calendar' && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {filteredTimeline
-                  .filter((item) => {
-                    if (calendarMonthFilter === 'all') return true
-                    if (calendarMonthFilter === '10') return item.dateDisplay.includes('Oktober')
-                    if (calendarMonthFilter === '11') return item.dateDisplay.includes('November')
-                    if (calendarMonthFilter === '12') return item.dateDisplay.includes('Desember')
-                    return true
-                  })
-                  .map((item) => {
-                    const dateParts = item.dateDisplay.split(', ')
-                    const dayName = dateParts[0] || 'Hari'
-                    const dateStr = dateParts[1] || item.dateDisplay
-                    const dayNum = dateStr.split(' ')[0] || ''
-                    const monthName = dateStr.split(' ')[1] || ''
-
-                    return (
-                      <div
-                        key={item.id}
-                        className="bg-white rounded-2xl border border-slate-200/90 hover:border-emerald-500 shadow-xs hover:shadow-md transition-all p-5 flex flex-col justify-between space-y-4"
-                      >
-                        <div className="space-y-3">
-                          {/* Calendar Date Badge Header */}
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-50 text-[#166534] border border-emerald-200/80 flex flex-col items-center justify-center shrink-0 shadow-2xs font-black">
-                                <span className="text-[10px] uppercase tracking-wider text-emerald-800 leading-none">
-                                  {dayName}
-                                </span>
-                                <span className="text-xl font-extrabold text-[#0C241B] leading-none mt-1">
-                                  {dayNum}
-                                </span>
-                                <span className="text-[9px] uppercase font-bold text-emerald-700 leading-none mt-0.5">
-                                  {monthName}
-                                </span>
-                              </div>
-
-                              <div>
-                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100/80 text-emerald-900 border border-emerald-200">
-                                  {item.category}
-                                </span>
-                                {item.isTentative && (
-                                  <span className="ml-1.5 text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
-                                    Tentatif
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Agenda Title */}
-                          <h4 className="font-extrabold text-base text-[#0C241B] leading-snug">
-                            {item.title}
-                          </h4>
-
-                          {/* Target Levels */}
-                          {item.levels && (
-                            <div className="text-xs font-semibold text-emerald-900 bg-emerald-50 p-2 rounded-lg border border-emerald-100">
-                              Sasaran: {item.levels}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Timing and Hijri Dates */}
-                        <div className="pt-3 border-t border-slate-100 space-y-1 text-xs">
-                          <div className="flex items-center gap-2 font-bold text-slate-800">
-                            <Clock className="w-3.5 h-3.5 text-[#166534]" />
-                            <span>{item.time || 'Waktu Fleksibel'}</span>
-                          </div>
-
-                          {item.hijriDate && (
-                            <div className="flex items-center gap-2 text-[11px] text-slate-500 pl-5.5">
-                              <Moon className="w-3 h-3 text-slate-400" />
-                              <span>{item.hijriDate}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-              </div>
-            </div>
-          )}
+          {/* Google Calendar-Style Monthly View */}
+          <MonthlyCalendarView />
         </div>
       </section>
 
