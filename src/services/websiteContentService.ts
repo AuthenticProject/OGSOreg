@@ -74,7 +74,7 @@ export interface WebsiteContentConfig {
 export const DEFAULT_WEBSITE_CONTENT: WebsiteContentConfig = {
   hero: {
     announcementBanner: 'Jadwal Resmi Inter-Campus Online Gontor Science Olympiad 1448/2026',
-    displayHeadline: 'Where Knowledge Meets Discovery.',
+    displayHeadline: 'Be Scientist, Be Closer To Allah',
     officialTheme: 'Dengan Ilmu Al-Qur’an dan Ilmu Sains, Santri Saintis Siap Membangun Peradaban Islam',
     subheadline:
       'Ajang kompetisi sains bergengsi tingkat nasional antar-kampus Pondok Modern Darussalam Gontor yang mengintegrasikan kecerdasan akademik, ketajaman analisis, dan nilai-nilai luhur Al-Qur’an.',

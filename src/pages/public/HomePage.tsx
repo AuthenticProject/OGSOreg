@@ -137,10 +137,21 @@ export const HomePage: React.FC = () => {
 
             {/* Creative Display Headline */}
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.1] font-sans drop-shadow-md">
-              Where Knowledge{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#A7F3D0] via-[#86EFAC] to-[#D5C49A] drop-shadow-sm">
-                Meets Discovery.
-              </span>
+              {content.hero.displayHeadline && content.hero.displayHeadline.includes(',') ? (
+                <>
+                  {content.hero.displayHeadline.split(',')[0]},{' '}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#A7F3D0] via-[#86EFAC] to-[#D5C49A] drop-shadow-sm">
+                    {content.hero.displayHeadline.split(',').slice(1).join(',').trim()}
+                  </span>
+                </>
+              ) : (
+                <>
+                  Be Scientist,{' '}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#A7F3D0] via-[#86EFAC] to-[#D5C49A] drop-shadow-sm">
+                    Be Closer To Allah
+                  </span>
+                </>
+              )}
             </h1>
 
             {/* Official Indonesian Competition Theme */}
