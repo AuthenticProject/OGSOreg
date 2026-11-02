@@ -13,6 +13,8 @@ import {
   Database,
   Layers,
   Building,
+  Globe,
+  ExternalLink,
 } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatCard } from '../components/ui/StatCard'
@@ -89,6 +91,17 @@ export const DashboardPage: React.FC = () => {
         subtitle="Asisten pendaftaran kolektif dan manajemen santri untuk LMS Moodle OGSO."
         actions={
           <div className="flex items-center gap-2">
+            <a
+              href="https://ogso.gontor.ac.id/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center font-semibold rounded-lg transition-colors border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 shadow-2xs px-3 py-1.5 text-xs gap-1.5"
+              title="Buka Portal LMS / CBT Moodle OGSO Pusat"
+            >
+              <Globe className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Portal OGSO</span>
+              <ExternalLink className="w-3 h-3 text-slate-400" />
+            </a>
             <Button
               variant="outline"
               size="sm"
@@ -236,7 +249,7 @@ export const DashboardPage: React.FC = () => {
             Aksi Cepat
           </h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
           <button
             onClick={() => navigate('/imports')}
             className="flex items-center gap-3.5 p-3.5 rounded-xl bg-white border border-border hover:border-[#166534] hover:shadow-card transition-all text-left group"
@@ -296,6 +309,26 @@ export const DashboardPage: React.FC = () => {
               <p className="text-xs text-muted-foreground">Log & arsip unggahan</p>
             </div>
           </button>
+
+          <a
+            href="https://ogso.gontor.ac.id/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3.5 p-3.5 rounded-xl bg-white border border-emerald-200/90 hover:border-emerald-500 hover:shadow-card transition-all text-left group"
+          >
+            <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+              <Globe className="w-5 h-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1">
+                <p className="text-sm font-semibold text-foreground group-hover:text-emerald-700 transition-colors truncate">
+                  Portal OGSO
+                </p>
+                <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-emerald-600 shrink-0" />
+              </div>
+              <p className="text-xs text-muted-foreground truncate">ogso.gontor.ac.id</p>
+            </div>
+          </a>
         </div>
       </div>
 

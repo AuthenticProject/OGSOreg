@@ -393,8 +393,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           })}
         </div>
 
-        {/* Quick Link to Public Website */}
-        <div className="px-3 pt-2 pb-2 shrink-0">
+        {/* Quick Shortcuts */}
+        <div className="px-3 pt-2 pb-2 space-y-1.5 shrink-0">
+          <a
+            href="https://ogso.gontor.ac.id/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#22C55E]/15 hover:bg-[#22C55E]/25 border border-[#22C55E]/30 text-xs font-semibold text-[#86EFAC] hover:text-white transition-all group shadow-sm"
+            title="Buka Portal LMS / CBT OGSO (https://ogso.gontor.ac.id/)"
+          >
+            <div className="flex items-center gap-2">
+              <Globe className="w-3.5 h-3.5 text-[#22C55E] group-hover:rotate-12 transition-transform" />
+              <span>Portal ogso.gontor.ac.id</span>
+            </div>
+            <ExternalLink className="w-3 h-3 text-emerald-300 group-hover:text-white" />
+          </a>
+
           <NavLink
             to="/"
             target="_blank"
