@@ -295,6 +295,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </NavLink>
           </div>
 
+          {/* STANDALONE: PORTAL OGSO (ogso.gontor.ac.id) */}
+          <div className="mt-1">
+            <a
+              href="https://ogso.gontor.ac.id/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group relative flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150 text-emerald-100 hover:bg-[#22C55E]/20 hover:text-white border border-[#22C55E]/30 bg-[#22C55E]/10 shadow-xs"
+              title="Buka Portal LMS / CBT Moodle OGSO Pusat (https://ogso.gontor.ac.id/)"
+            >
+              <div className="flex items-center gap-3">
+                <Globe className="w-4 h-4 text-[#22C55E] transition-transform group-hover:scale-110" />
+                <span>PORTAL OGSO</span>
+              </div>
+              <ExternalLink className="w-3.5 h-3.5 text-emerald-300/80 group-hover:text-white" />
+            </a>
+          </div>
+
           <div className="h-px bg-white/10 my-2" />
 
           {/* 4 EXPANDABLE MAIN MENUS */}

@@ -9,6 +9,8 @@ import {
   Trophy,
   LogIn,
   ChevronRight,
+  Globe,
+  ExternalLink,
 } from 'lucide-react'
 import { getWhatsAppLink } from '../../lib/whatsapp'
 
@@ -230,7 +232,19 @@ export const PublicFooter: React.FC = () => {
                 </div>
               </a>
 
-            <div className="pt-2">
+            <div className="pt-2 flex flex-wrap gap-2">
+              <a
+                href="https://ogso.gontor.ac.id/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#86EFAC] bg-emerald-950 hover:bg-emerald-900/80 border border-emerald-500/40 transition-colors"
+                title="Buka Portal LMS / CBT Moodle OGSO Pusat"
+              >
+                <Globe className="w-3.5 h-3.5 text-[#22C55E]" />
+                <span>Portal ogso.gontor.ac.id</span>
+                <ExternalLink className="w-3 h-3 text-emerald-400" />
+              </a>
+
               <Link
                 to="/login"
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-200 bg-emerald-950 hover:bg-emerald-900/60 border border-emerald-700/50 transition-colors"
