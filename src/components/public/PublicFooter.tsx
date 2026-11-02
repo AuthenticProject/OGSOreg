@@ -155,12 +155,12 @@ export const PublicFooter: React.FC = () => {
               </li>
               <li>
                 <a
-                  href="/documents/Silabus_OGSO_2026.xlsx"
-                  download="Silabus_OGSO_2026.xlsx"
+                  href="/documents/Silabus_OGSO_2026.pdf"
+                  download="Silabus_OGSO_2026.pdf"
                   className="hover:text-white transition-colors flex items-center gap-1.5 text-emerald-300"
                 >
                   <Download className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Unduh Silabus (Excel)</span>
+                  <span>Unduh Silabus (PDF)</span>
                 </a>
               </li>
             </ul>

@@ -226,9 +226,9 @@ export const SilabusPage: React.FC = () => {
     setFormJenjang(selectedJenjang)
     setFormSubject('Matematika & Sains')
     setFormDescription('')
-    setFormFileName('Silabus_OGSO_2026.xlsx')
-    setFormFileSize('14.8 KB')
-    setFormPages(18)
+    setFormFileName('Silabus_OGSO_2026.pdf')
+    setFormFileSize('62 KB')
+    setFormPages(3)
     setFormPublished(true)
     setFormError(null)
     setIsModalOpen(true)
@@ -241,8 +241,8 @@ export const SilabusPage: React.FC = () => {
     setFormSubject(item.subject)
     setFormDescription(item.description)
     setFormFileName(item.file_name)
-    setFormFileSize(item.file_size || '14.8 KB')
-    setFormPages(item.pages || 18)
+    setFormFileSize(item.file_size || '62 KB')
+    setFormPages(item.pages || 3)
     setFormPublished(item.is_published)
     setFormError(null)
     setIsModalOpen(true)
@@ -268,8 +268,8 @@ export const SilabusPage: React.FC = () => {
       jenjang: formJenjang,
       subject: formSubject.trim(),
       description: formDescription.trim(),
-      file_url: '/documents/Silabus_OGSO_2026.xlsx',
-      file_name: formFileName.trim() || 'Silabus_OGSO_2026.xlsx',
+      file_url: '/documents/Silabus_OGSO_2026.pdf',
+      file_name: formFileName.trim() || 'Silabus_OGSO_2026.pdf',
       file_size: formFileSize.trim(),
       pages: Number(formPages),
       is_published: formPublished,
@@ -281,8 +281,8 @@ export const SilabusPage: React.FC = () => {
 
   const handleDownload = (item?: SyllabusItem) => {
     const link = document.createElement('a')
-    link.href = item?.file_url || '/documents/Silabus_OGSO_2026.xlsx'
-    link.download = item?.file_name || 'Silabus_OGSO_2026.xlsx'
+    link.href = item?.file_url || '/documents/Silabus_OGSO_2026.pdf'
+    link.download = item?.file_name || 'Silabus_OGSO_2026.pdf'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -340,12 +340,12 @@ export const SilabusPage: React.FC = () => {
           {/* Action CTAs with generous whitespace */}
           <div className="flex flex-wrap items-center gap-3.5 pt-2">
             <a
-              href="/documents/Silabus_OGSO_2026.xlsx"
-              download="Silabus_OGSO_2026.xlsx"
+              href="/documents/Silabus_OGSO_2026.pdf"
+              download="Silabus_OGSO_2026.pdf"
               className="inline-flex items-center gap-2.5 px-6 py-3 rounded-xl text-white font-bold text-xs sm:text-sm tracking-wide bg-[#166534] hover:bg-[#14532D] shadow-sm hover:shadow-md transition-all"
             >
               <Download className="w-4 h-4 text-emerald-200" />
-              <span>Unduh Silabus Resmi (.xlsx)</span>
+              <span>Unduh Silabus Resmi (.pdf)</span>
             </a>
 
             <a
@@ -853,19 +853,19 @@ export const SilabusPage: React.FC = () => {
                 Unduh Seluruh Dokumen Silabus & Petunjuk Teknis
               </h4>
               <p className="text-xs sm:text-sm text-emerald-200/80 max-w-xl">
-                File Excel mencakup seluruh jenjang 1 hingga 5 lengkap dengan rincian topik per bidang
+                Dokumen PDF mencakup seluruh jenjang 1 hingga 5 (Kurikulum Syar'i) lengkap dengan rincian topik per bidang
                 studi dan daftar buku referensi Darussalam Press.
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3.5 shrink-0">
               <a
-                href="/documents/Silabus_OGSO_2026.xlsx"
-                download="Silabus_OGSO_2026.xlsx"
+                href="/documents/Silabus_OGSO_2026.pdf"
+                download="Silabus_OGSO_2026.pdf"
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-[#0C241B] font-extrabold text-xs tracking-wide transition-all shadow-sm"
               >
                 <Download className="w-4 h-4" />
-                <span>Unduh Silabus (.xlsx)</span>
+                <span>Unduh Silabus (.pdf)</span>
               </a>
 
               <Link

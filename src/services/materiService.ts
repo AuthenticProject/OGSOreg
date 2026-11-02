@@ -185,10 +185,10 @@ const INITIAL_SYLLABUSES: SyllabusItem[] = [
         description: 'Buku teks matematika resmi KMI pembangun pondasi logika berhitung cepat dan manipulasi simbolik aljabar.',
       },
     ],
-    file_url: '/documents/Silabus_OGSO_2026.xlsx',
-    file_name: 'Silabus_OGSO_2026_Jenjang_1.xlsx',
-    file_size: '14.8 KB',
-    pages: 14,
+    file_url: '/documents/Silabus_OGSO_2026.pdf',
+    file_name: 'Silabus_OGSO_2026.pdf',
+    file_size: '62 KB',
+    pages: 3,
     is_published: true,
     created_at: '2026-01-10T00:00:00Z',
     updated_at: '2026-01-10T00:00:00Z',
@@ -263,10 +263,10 @@ const INITIAL_SYLLABUSES: SyllabusItem[] = [
         description: 'Buku teks matematika resmi KMI untuk mematangkan manipulasi aljabar persamaan dan dalil-dalil geometri bidang datar.',
       },
     ],
-    file_url: '/documents/Silabus_OGSO_2026.xlsx',
-    file_name: 'Silabus_OGSO_2026_Jenjang_2.xlsx',
-    file_size: '14.8 KB',
-    pages: 18,
+    file_url: '/documents/Silabus_OGSO_2026.pdf',
+    file_name: 'Silabus_OGSO_2026.pdf',
+    file_size: '62 KB',
+    pages: 3,
     is_published: true,
     created_at: '2026-01-10T00:00:00Z',
     updated_at: '2026-01-10T00:00:00Z',
@@ -340,10 +340,10 @@ const INITIAL_SYLLABUSES: SyllabusItem[] = [
         description: 'Buku teks matematika resmi KMI untuk memperdalam pemecahan masalah geometri ruang tiga dimensi dan pola barisan deret.',
       },
     ],
-    file_url: '/documents/Silabus_OGSO_2026.xlsx',
-    file_name: 'Silabus_OGSO_2026_Jenjang_3.xlsx',
-    file_size: '14.8 KB',
-    pages: 22,
+    file_url: '/documents/Silabus_OGSO_2026.pdf',
+    file_name: 'Silabus_OGSO_2026.pdf',
+    file_size: '62 KB',
+    pages: 3,
     is_published: true,
     created_at: '2026-01-10T00:00:00Z',
     updated_at: '2026-01-10T00:00:00Z',
@@ -432,10 +432,10 @@ const INITIAL_SYLLABUSES: SyllabusItem[] = [
         description: 'Buku matematika resmi KMI pembangun pondasi berpikir deduktif, kalkulasi aljabar tingkat lanjut, dan geometri trigonometri.',
       },
     ],
-    file_url: '/documents/Silabus_OGSO_2026.xlsx',
-    file_name: 'Silabus_OGSO_2026_Jenjang_4.xlsx',
-    file_size: '14.8 KB',
-    pages: 26,
+    file_url: '/documents/Silabus_OGSO_2026.pdf',
+    file_name: 'Silabus_OGSO_2026.pdf',
+    file_size: '62 KB',
+    pages: 3,
     is_published: true,
     created_at: '2026-01-10T00:00:00Z',
     updated_at: '2026-01-10T00:00:00Z',
@@ -554,10 +554,10 @@ const INITIAL_SYLLABUSES: SyllabusItem[] = [
         description: 'Kumpulan soal latihan berbasis penalaran kritis dan pemecahan masalah multidisiplin sains.',
       },
     ],
-    file_url: '/documents/Silabus_OGSO_2026.xlsx',
-    file_name: 'Silabus_OGSO_2026_Jenjang_5.xlsx',
-    file_size: '14.8 KB',
-    pages: 30,
+    file_url: '/documents/Silabus_OGSO_2026.pdf',
+    file_name: 'Silabus_OGSO_2026.pdf',
+    file_size: '62 KB',
+    pages: 3,
     is_published: true,
     created_at: '2026-01-10T00:00:00Z',
     updated_at: '2026-01-10T00:00:00Z',
@@ -866,12 +866,22 @@ class MateriService {
     list = list.filter((s) => !deletedSilabusSet.has(s.id)).map((s) => {
       const normalizedJenjang = normalizeMateriJenjang(s.jenjang)
       const initialMatch = INITIAL_SYLLABUSES.find((init) => init.jenjang === normalizedJenjang)
+      let fileUrl = s.file_url
+      let fileName = s.file_name
+      if (!fileUrl || fileUrl.includes('.xlsx') || fileUrl.includes('Silabus_OGSO_2026')) {
+        fileUrl = '/documents/Silabus_OGSO_2026.pdf'
+        fileName = 'Silabus_OGSO_2026.pdf'
+      }
       return {
         ...s,
         jenjang: normalizedJenjang,
         target_kelas: s.target_kelas || initialMatch?.target_kelas,
         breakdown: (s.breakdown && s.breakdown.length > 0) ? s.breakdown : initialMatch?.breakdown,
         book_references: initialMatch?.book_references || s.book_references,
+        file_url: fileUrl,
+        file_name: fileName,
+        file_size: s.file_size?.includes('.xlsx') ? '62 KB' : (s.file_size || '62 KB'),
+        pages: 3,
       }
     })
 

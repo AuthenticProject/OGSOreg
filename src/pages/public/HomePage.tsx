@@ -1092,12 +1092,12 @@ export const HomePage: React.FC = () => {
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <a
-                  href="/documents/Silabus_OGSO_2026.xlsx"
-                  download="Silabus_OGSO_2026.xlsx"
+                  href="/documents/Silabus_OGSO_2026.pdf"
+                  download="Silabus_OGSO_2026.pdf"
                   className="text-xs font-bold text-[#166534] hover:underline flex items-center gap-1.5 p-2 rounded-lg hover:bg-emerald-50 transition-colors"
                 >
                   <Download className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>Unduh XLS</span>
+                  <span>Unduh PDF</span>
                 </a>
               </div>
             </div>
