@@ -74,7 +74,7 @@ export interface WebsiteContentConfig {
 export const DEFAULT_WEBSITE_CONTENT: WebsiteContentConfig = {
   hero: {
     announcementBanner: 'Jadwal Resmi Inter-Campus Online Gontor Science Olympiad 1448/2026',
-    displayHeadline: 'Be Scientist, Be Closer To Allah',
+    displayHeadline: 'Be A Scientist, Be Closer To Allah',
     officialTheme: 'Dengan Ilmu Al-Qur’an dan Ilmu Sains, Santri Saintis Siap Membangun Peradaban Islam',
     subheadline:
       'Ajang kompetisi sains bergengsi tingkat nasional antar-kampus Pondok Modern Darussalam Gontor yang mengintegrasikan kecerdasan akademik, ketajaman analisis, dan nilai-nilai luhur Al-Qur’an.',
@@ -379,9 +379,15 @@ export const websiteContentService = {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (!raw) return DEFAULT_WEBSITE_CONTENT
-      const parsed = JSON.parse(raw) as Partial<WebsiteContentConfig>
+      const hero = { ...DEFAULT_WEBSITE_CONTENT.hero, ...(parsed.hero || {}) }
+      if (
+        hero.displayHeadline === 'Be Scientist, Be Closer To Allah' ||
+        hero.displayHeadline === 'Be A Scientist, Get Closer To Allah'
+      ) {
+        hero.displayHeadline = 'Be A Scientist, Be Closer To Allah'
+      }
       return {
-        hero: { ...DEFAULT_WEBSITE_CONTENT.hero, ...(parsed.hero || {}) },
+        hero,
         competitionInfo: {
           ...DEFAULT_WEBSITE_CONTENT.competitionInfo,
           ...(parsed.competitionInfo || {}),

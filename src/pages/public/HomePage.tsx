@@ -136,22 +136,37 @@ export const HomePage: React.FC = () => {
             </div>
 
             {/* Creative Display Headline */}
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.1] font-sans drop-shadow-md">
-              {content.hero.displayHeadline && content.hero.displayHeadline.includes(',') ? (
-                <>
-                  {content.hero.displayHeadline.split(',')[0]},{' '}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#A7F3D0] via-[#86EFAC] to-[#D5C49A] drop-shadow-sm">
-                    {content.hero.displayHeadline.split(',').slice(1).join(',').trim()}
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-tight font-sans drop-shadow-md">
+              {(() => {
+                const headline = content.hero.displayHeadline || 'Be A Scientist, Be Closer To Allah'
+                if (headline.includes('\n')) {
+                  const [first, ...rest] = headline.split('\n')
+                  return (
+                    <>
+                      <span className="block">{first}</span>
+                      <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#A7F3D0] via-[#86EFAC] to-[#D5C49A] drop-shadow-sm mt-1 sm:mt-2">
+                        {rest.join(' ').trim()}
+                      </span>
+                    </>
+                  )
+                }
+                if (headline.includes(',')) {
+                  const [first, ...rest] = headline.split(',')
+                  return (
+                    <>
+                      <span className="block">{first.trim()},</span>
+                      <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#A7F3D0] via-[#86EFAC] to-[#D5C49A] drop-shadow-sm mt-1 sm:mt-2">
+                        {rest.join(',').trim()}
+                      </span>
+                    </>
+                  )
+                }
+                return (
+                  <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#A7F3D0] via-[#86EFAC] to-[#D5C49A] drop-shadow-sm">
+                    {headline}
                   </span>
-                </>
-              ) : (
-                <>
-                  Be Scientist,{' '}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#A7F3D0] via-[#86EFAC] to-[#D5C49A] drop-shadow-sm">
-                    Be Closer To Allah
-                  </span>
-                </>
-              )}
+                )
+              })()}
             </h1>
 
             {/* Official Indonesian Competition Theme */}
@@ -946,7 +961,7 @@ export const HomePage: React.FC = () => {
 
           {/* Top 3 Campuses Podiums / Verified Empty State */}
           {hofOverview.topThreeCampuses.length > 0 &&
-          hofOverview.topThreeCampuses.some((c) => c.total_points > 0) ? (
+            hofOverview.topThreeCampuses.some((c) => c.total_points > 0) ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {hofOverview.topThreeCampuses.map((c, i) => (
                 <Link
@@ -966,8 +981,8 @@ export const HomePage: React.FC = () => {
                         i === 0
                           ? 'bg-[#D5C49A] text-[#0C241B]'
                           : i === 1
-                          ? 'bg-slate-200 text-slate-800'
-                          : 'bg-amber-100 text-amber-900'
+                            ? 'bg-slate-200 text-slate-800'
+                            : 'bg-amber-100 text-amber-900'
                       )}
                     >
                       Peringkat #{i + 1}
