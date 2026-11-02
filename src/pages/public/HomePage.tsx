@@ -31,6 +31,7 @@ import { materiService } from '../../services/materiService'
 import { PhotoMarqueeGallery } from '../../components/public/PhotoMarqueeGallery'
 import { MonthlyCalendarView } from '../../components/calendar/MonthlyCalendarView'
 import { ScrollReveal } from '../../components/ui/ScrollReveal'
+import { ScrollToTopButton } from '../../components/ui/ScrollToTopButton'
 import { cn } from '../../lib/utils'
 import { getWhatsAppLink } from '../../lib/whatsapp'
 
@@ -305,8 +306,13 @@ export const HomePage: React.FC = () => {
       {/* ========================================================================= */}
       {/* SECTION 02 — ABOUT OGSO (Editorial & Academic Philosophy) */}
       {/* ========================================================================= */}
-      <section id="tentang" className="py-20 lg:py-28 bg-[#F5F8F4] border-b border-emerald-950/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="tentang" className="relative py-20 lg:py-28 bg-gradient-to-b from-[#F5F8F4] via-emerald-50/40 to-[#F5F8F4] border-b border-emerald-950/10 overflow-hidden">
+        {/* Anti-flat ambient decoration & dot pattern */}
+        <div className="absolute inset-0 bg-dot-pattern opacity-45 pointer-events-none" />
+        <div className="absolute -top-36 -right-36 w-96 h-96 bg-emerald-400/15 rounded-full blur-3xl pointer-events-none animate-float-slow" />
+        <div className="absolute -bottom-36 -left-36 w-96 h-96 bg-teal-400/15 rounded-full blur-3xl pointer-events-none animate-float-reverse" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Left Column: Heading & Philosophy */}
             <ScrollReveal direction="left" delay={50} className="lg:col-span-6 space-y-6">
@@ -404,8 +410,13 @@ export const HomePage: React.FC = () => {
       {/* ========================================================================= */}
       {/* SECTION 03 — EXPLORE THE SCIENCES (4 Bidang Studi MAFIKIB) */}
       {/* ========================================================================= */}
-      <section className="py-20 lg:py-28 bg-white border-b border-emerald-950/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative py-20 lg:py-28 bg-gradient-to-b from-white via-slate-50/60 to-white border-b border-emerald-950/10 overflow-hidden">
+        {/* Anti-flat ambient grid pattern & radial glows */}
+        <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none" />
+        <div className="absolute top-1/4 -left-32 w-80 h-80 bg-indigo-300/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 -right-32 w-80 h-80 bg-amber-300/15 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ScrollReveal direction="up" delay={0}>
             <div className="text-center max-w-3xl mx-auto space-y-3 mb-16">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
@@ -592,8 +603,13 @@ export const HomePage: React.FC = () => {
       {/* ========================================================================= */}
       {/* SECTION 04 — COMPETITION CATEGORIES (5 Jenjang Tingkat) */}
       {/* ========================================================================= */}
-      <section className="py-20 lg:py-28 bg-[#F5F8F4] border-b border-emerald-950/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative py-20 lg:py-28 bg-gradient-to-b from-[#F5F8F4] via-emerald-50/30 to-[#F5F8F4] border-b border-emerald-950/10 overflow-hidden">
+        {/* Anti-flat ambient pattern */}
+        <div className="absolute inset-0 bg-dot-pattern opacity-40 pointer-events-none" />
+        <div className="absolute top-10 right-10 w-72 h-72 bg-emerald-300/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 left-10 w-72 h-72 bg-emerald-400/15 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ScrollReveal direction="up" delay={0}>
             <div className="text-center max-w-3xl mx-auto space-y-3 mb-16">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
@@ -758,8 +774,12 @@ export const HomePage: React.FC = () => {
       {/* ========================================================================= */}
       {/* SECTION 05 — COMPETITION CALENDAR (Google Calendar-Style Monthly View)     */}
       {/* ========================================================================= */}
-      <section id="jadwal" className="py-16 lg:py-24 bg-[#F5F8F4] border-y border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      <section id="jadwal" className="relative py-16 lg:py-24 bg-gradient-to-b from-[#F5F8F4] via-emerald-50/20 to-white border-y border-slate-200/80 overflow-hidden">
+        {/* Ambient subtle backdrop */}
+        <div className="absolute inset-0 bg-grid-pattern opacity-25 pointer-events-none" />
+        <div className="absolute -top-24 left-1/3 w-80 h-80 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
           {/* Section Header */}
           <ScrollReveal direction="up" delay={0}>
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2 border-b border-slate-200">
@@ -879,21 +899,24 @@ export const HomePage: React.FC = () => {
           {/* ========================================================================= */}
           {/* BARIS 2: JUARA 1, 2, 3 (OLYMPIC LAYOUT: JUARA 2 KIRI, JUARA 1 TENGAH, JUARA 3 KANAN) */}
           {/* ========================================================================= */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-end pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-stretch pt-4">
             {/* Juara 2 — Perak (KIRI di desktop) */}
-            <ScrollReveal direction="up" delay={100} className="order-2 md:order-1">
-              <div className="p-8 rounded-3xl bg-gradient-to-b from-slate-900/60 via-emerald-950/50 to-black/70 border-2 border-slate-300/80 shadow-2xl shadow-slate-400/10 text-center space-y-5 hover:-translate-y-3 hover:shadow-slate-300/25 transition-all duration-300 shimmer-sweep group relative overflow-hidden h-full">
+            <ScrollReveal direction="up" delay={100} className="order-2 md:order-1 h-full">
+              <div className="p-8 rounded-3xl bg-gradient-to-b from-slate-900/60 via-emerald-950/50 to-black/70 border-2 border-slate-300/80 shadow-2xl shadow-slate-400/10 text-center space-y-5 hover:-translate-y-2 hover:shadow-slate-300/25 transition-all duration-300 shimmer-sweep group relative overflow-hidden h-full flex flex-col justify-between">
                 <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl from-slate-300/20 to-transparent pointer-events-none rounded-bl-full" />
 
-                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-slate-100 via-slate-300 to-slate-400 text-slate-900 mx-auto flex items-center justify-center font-black shadow-xl shadow-slate-400/30 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
-                  <Award className="w-10 h-10 text-slate-900" />
+                <div className="space-y-5">
+                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-slate-100 via-slate-300 to-slate-400 text-slate-900 mx-auto flex items-center justify-center font-black shadow-xl shadow-slate-400/30 group-hover:scale-105 group-hover:-rotate-3 transition-transform duration-300">
+                    <Award className="w-10 h-10 text-slate-900" />
+                  </div>
+                  <div className="relative z-10">
+                    <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-300 px-3 py-1 rounded-full bg-slate-900/80 border border-slate-400/40 inline-block">
+                      Peringkat II
+                    </span>
+                    <h3 className="text-3xl font-black text-white mt-2">Juara 2</h3>
+                  </div>
                 </div>
-                <div className="relative z-10">
-                  <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-300 px-3 py-1 rounded-full bg-slate-900/80 border border-slate-400/40 inline-block">
-                    Peringkat II
-                  </span>
-                  <h3 className="text-3xl font-black text-white mt-2">Juara 2</h3>
-                </div>
+
                 <div className="p-3.5 rounded-2xl bg-black/40 border border-slate-400/30 text-xs text-slate-200 space-y-1 relative z-10">
                   <div className="font-extrabold text-white text-sm">Medali Perak</div>
                   <div className="text-slate-300/80 font-medium">+ Piagam Penghargaan Resmi</div>
@@ -901,41 +924,47 @@ export const HomePage: React.FC = () => {
               </div>
             </ScrollReveal>
 
-            {/* Juara 1 — Emas (TENGAH di desktop, elevated & crowned) */}
-            <ScrollReveal direction="up" delay={0} className="order-1 md:order-2 md:-mt-6 md:scale-105 z-10">
-              <div className="p-8 rounded-3xl bg-gradient-to-b from-amber-950/60 via-emerald-950/60 to-black/80 border-2 border-amber-400 shadow-2xl shadow-amber-500/25 text-center space-y-5 hover:-translate-y-3 hover:shadow-amber-400/40 transition-all duration-300 shimmer-sweep group relative overflow-hidden h-full">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-radial from-amber-400/30 to-transparent pointer-events-none rounded-bl-full animate-glow-pulse" />
+            {/* Juara 1 — Emas (TENGAH di desktop, seukuran dengan Juara 2 & 3) */}
+            <ScrollReveal direction="up" delay={0} className="order-1 md:order-2 h-full">
+              <div className="p-8 rounded-3xl bg-gradient-to-b from-amber-950/60 via-emerald-950/60 to-black/80 border-2 border-amber-400 shadow-2xl shadow-amber-500/25 text-center space-y-5 hover:-translate-y-2 hover:shadow-amber-400/40 transition-all duration-300 shimmer-sweep group relative overflow-hidden h-full flex flex-col justify-between">
+                <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl from-amber-400/30 to-transparent pointer-events-none rounded-bl-full animate-glow-pulse" />
 
-                <div className="w-22 h-22 rounded-3xl bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-600 text-emerald-950 mx-auto flex items-center justify-center font-black shadow-2xl shadow-amber-500/40 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-                  <Trophy className="w-11 h-11 text-amber-950" />
+                <div className="space-y-5">
+                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-600 text-emerald-950 mx-auto flex items-center justify-center font-black shadow-xl shadow-amber-500/40 group-hover:scale-105 group-hover:rotate-3 transition-transform duration-300">
+                    <Trophy className="w-10 h-10 text-amber-950" />
+                  </div>
+                  <div className="relative z-10">
+                    <span className="text-[11px] font-black uppercase tracking-widest text-amber-950 px-3.5 py-1 rounded-full bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-md inline-flex items-center gap-1.5 animate-pulse">
+                      👑 Peringkat I
+                    </span>
+                    <h3 className="text-3xl font-black text-white mt-2">Juara 1</h3>
+                  </div>
                 </div>
-                <div className="relative z-10">
-                  <span className="text-[11px] font-black uppercase tracking-widest text-amber-950 px-3.5 py-1 rounded-full bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-md inline-flex items-center gap-1.5 animate-pulse">
-                    👑 Peringkat I
-                  </span>
-                  <h3 className="text-3xl sm:text-4xl font-black text-white mt-2">Juara 1</h3>
-                </div>
-                <div className="p-4 rounded-2xl bg-black/50 border border-amber-400/40 text-xs text-amber-200 space-y-1 relative z-10">
-                  <div className="font-black text-amber-300 text-base">Medali Emas Utama</div>
+
+                <div className="p-3.5 rounded-2xl bg-black/40 border border-amber-400/40 text-xs text-amber-200 space-y-1 relative z-10">
+                  <div className="font-extrabold text-amber-300 text-sm">Medali Emas Utama</div>
                   <div className="text-amber-200/90 font-medium">+ Piagam Penghargaan Kehormatan</div>
                 </div>
               </div>
             </ScrollReveal>
 
             {/* Juara 3 — Perunggu (KANAN di desktop) */}
-            <ScrollReveal direction="up" delay={200} className="order-3 md:order-3">
-              <div className="p-8 rounded-3xl bg-gradient-to-b from-amber-950/50 via-emerald-950/50 to-black/70 border-2 border-amber-600/80 shadow-2xl shadow-amber-700/10 text-center space-y-5 hover:-translate-y-3 hover:shadow-amber-600/25 transition-all duration-300 shimmer-sweep group relative overflow-hidden h-full">
+            <ScrollReveal direction="up" delay={200} className="order-3 md:order-3 h-full">
+              <div className="p-8 rounded-3xl bg-gradient-to-b from-amber-950/50 via-emerald-950/50 to-black/70 border-2 border-amber-600/80 shadow-2xl shadow-amber-700/10 text-center space-y-5 hover:-translate-y-2 hover:shadow-amber-600/25 transition-all duration-300 shimmer-sweep group relative overflow-hidden h-full flex flex-col justify-between">
                 <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl from-amber-600/20 to-transparent pointer-events-none rounded-bl-full" />
 
-                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-600 via-amber-700 to-amber-900 text-amber-100 mx-auto flex items-center justify-center font-black shadow-xl shadow-amber-800/30 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-                  <Award className="w-10 h-10 text-amber-100" />
+                <div className="space-y-5">
+                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-600 via-amber-700 to-amber-900 text-amber-100 mx-auto flex items-center justify-center font-black shadow-xl shadow-amber-800/30 group-hover:scale-105 group-hover:rotate-3 transition-transform duration-300">
+                    <Award className="w-10 h-10 text-amber-100" />
+                  </div>
+                  <div className="relative z-10">
+                    <span className="text-[11px] font-extrabold uppercase tracking-widest text-amber-300 px-3 py-1 rounded-full bg-amber-950/80 border border-amber-600/40 inline-block">
+                      Peringkat III
+                    </span>
+                    <h3 className="text-3xl font-black text-white mt-2">Juara 3</h3>
+                  </div>
                 </div>
-                <div className="relative z-10">
-                  <span className="text-[11px] font-extrabold uppercase tracking-widest text-amber-300 px-3 py-1 rounded-full bg-amber-950/80 border border-amber-600/40 inline-block">
-                    Peringkat III
-                  </span>
-                  <h3 className="text-3xl font-black text-white mt-2">Juara 3</h3>
-                </div>
+
                 <div className="p-3.5 rounded-2xl bg-black/40 border border-amber-600/30 text-xs text-amber-200 space-y-1 relative z-10">
                   <div className="font-extrabold text-white text-sm">Medali Perunggu</div>
                   <div className="text-amber-300/80 font-medium">+ Piagam Penghargaan Resmi</div>
@@ -1139,8 +1168,13 @@ export const HomePage: React.FC = () => {
       {/* ========================================================================= */}
       {/* SECTION 07 — LEARNING RESOURCES (Silabus & Bank Soal Gateway) */}
       {/* ========================================================================= */}
-      <section className="py-20 lg:py-28 bg-[#F5F8F4] border-b border-emerald-950/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative py-20 lg:py-28 bg-gradient-to-b from-[#F5F8F4] via-emerald-50/40 to-[#F5F8F4] border-b border-emerald-950/10 overflow-hidden">
+        {/* Layered anti-flat backdrop */}
+        <div className="absolute inset-0 bg-dot-pattern opacity-40 pointer-events-none" />
+        <div className="absolute top-1/3 -right-24 w-80 h-80 bg-emerald-400/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 -left-24 w-80 h-80 bg-amber-400/15 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ScrollReveal direction="up" delay={0}>
             <div className="text-center max-w-3xl mx-auto space-y-3 mb-16">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
@@ -1275,8 +1309,13 @@ export const HomePage: React.FC = () => {
       {/* ========================================================================= */}
       {/* SECTION 08 — HOW TO REGISTER (Mekanisme Pendaftaran Kolektif) */}
       {/* ========================================================================= */}
-      <section className="py-20 lg:py-28 bg-white border-b border-emerald-950/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative py-20 lg:py-28 bg-gradient-to-b from-white via-slate-50/70 to-white border-b border-emerald-950/10 overflow-hidden">
+        {/* Anti-flat ambient mesh */}
+        <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none" />
+        <div className="absolute top-10 left-1/4 w-72 h-72 bg-emerald-300/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 right-1/4 w-72 h-72 bg-teal-300/15 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ScrollReveal direction="up" delay={0}>
             <div className="text-center max-w-3xl mx-auto space-y-3 mb-16">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
@@ -1391,8 +1430,13 @@ export const HomePage: React.FC = () => {
       {/* ========================================================================= */}
       {/* SECTION 09 — FAQ ACCORDION (Verified Official JUKLAK Information) */}
       {/* ========================================================================= */}
-      <section className="py-20 lg:py-28 bg-[#F5F8F4] border-b border-emerald-950/10">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative py-20 lg:py-28 bg-gradient-to-b from-[#F5F8F4] via-emerald-50/30 to-[#F5F8F4] border-b border-emerald-950/10 overflow-hidden">
+        {/* Anti-flat subtle ambient patterns */}
+        <div className="absolute inset-0 bg-dot-pattern opacity-40 pointer-events-none" />
+        <div className="absolute top-10 right-10 w-72 h-72 bg-emerald-300/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 left-10 w-72 h-72 bg-teal-300/15 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <ScrollReveal direction="up" delay={0}>
             <div className="text-center space-y-3 mb-12">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
@@ -1471,6 +1515,9 @@ export const HomePage: React.FC = () => {
           </ScrollReveal>
         </div>
       </section>
+
+      {/* Floating Back to Top Button */}
+      <ScrollToTopButton />
     </div>
   )
 }

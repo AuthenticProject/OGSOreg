@@ -1,9 +1,5 @@
-import React, { useState } from 'react'
-import {
-  Camera,
-  Play,
-  Pause,
-} from 'lucide-react'
+import React from 'react'
+import { Camera } from 'lucide-react'
 import { GALLERY_PHOTOS, type GalleryPhoto } from '../../constants/galleryPhotos'
 import { cn } from '../../lib/utils'
 
@@ -18,8 +14,6 @@ export const PhotoMarqueeGallery: React.FC<PhotoMarqueeGalleryProps> = ({
   showSectionHeader = true,
   variant = 'light',
 }) => {
-  const [isPlaying, setIsPlaying] = useState<boolean>(true)
-
   // Split photos into two balanced rows for the dual marquee
   const row1Photos = GALLERY_PHOTOS.slice(0, 12)
   const row2Photos = GALLERY_PHOTOS.slice(12)
@@ -62,33 +56,6 @@ export const PhotoMarqueeGallery: React.FC<PhotoMarqueeGalleryProps> = ({
                 penganugerahan jawara sains se-Indonesia.
               </p>
             </div>
-
-            {/* Play/Pause Control */}
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={() => setIsPlaying(!isPlaying)}
-                title={isPlaying ? 'Jeda Gulir' : 'Lanjutkan Gulir'}
-                className={cn(
-                  'inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm',
-                  isPlaying
-                    ? 'bg-emerald-800 text-white hover:bg-emerald-700'
-                    : 'bg-emerald-100 text-emerald-900 hover:bg-emerald-200'
-                )}
-              >
-                {isPlaying ? (
-                  <>
-                    <Pause className="w-3.5 h-3.5" />
-                    <span>Jeda</span>
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-3.5 h-3.5" />
-                    <span>Putar</span>
-                  </>
-                )}
-              </button>
-            </div>
           </div>
         )}
       </div>
@@ -113,12 +80,7 @@ export const PhotoMarqueeGallery: React.FC<PhotoMarqueeGalleryProps> = ({
 
         {/* ROW 1: Scrolling Left */}
         <div className="flex overflow-hidden">
-          <div
-            className="flex items-center gap-4 sm:gap-6 shrink-0 animate-marquee-left"
-            style={{
-              animationPlayState: isPlaying ? undefined : 'paused',
-            }}
-          >
+          <div className="flex items-center gap-4 sm:gap-6 shrink-0 animate-marquee-left">
             {[...row1Photos, ...row1Photos].map((photo, index) => (
               <PhotoCard
                 key={`r1-${photo.id}-${index}`}
@@ -130,12 +92,7 @@ export const PhotoMarqueeGallery: React.FC<PhotoMarqueeGalleryProps> = ({
 
         {/* ROW 2: Scrolling Right (Opposite Direction) */}
         <div className="flex overflow-hidden">
-          <div
-            className="flex items-center gap-4 sm:gap-6 shrink-0 animate-marquee-right"
-            style={{
-              animationPlayState: isPlaying ? undefined : 'paused',
-            }}
-          >
+          <div className="flex items-center gap-4 sm:gap-6 shrink-0 animate-marquee-right">
             {[...row2Photos, ...row2Photos].map((photo, index) => (
               <PhotoCard
                 key={`r2-${photo.id}-${index}`}
