@@ -11,8 +11,6 @@ import {
   Menu,
   X,
   Download,
-  Globe,
-  ExternalLink,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { cn } from '../../lib/utils'
@@ -281,34 +279,10 @@ export const PublicNavbar: React.FC = () => {
                 </div>
               )}
             </div>
-
-            <a
-              href="https://ogso.gontor.ac.id/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold text-emerald-100 hover:text-white hover:bg-emerald-900/50 border border-emerald-500/30 transition-all duration-200"
-              title="Buka Portal LMS / CBT OGSO (https://ogso.gontor.ac.id/)"
-            >
-              <Globe className="w-4 h-4 text-[#22C55E]" />
-              <span>Portal OGSO</span>
-              <ExternalLink className="w-3 h-3 text-emerald-400" />
-            </a>
           </nav>
 
           {/* Action Button: JUKLAK Download & Admin Login */}
           <div className="hidden sm:flex items-center gap-3.5">
-            <a
-              href="https://ogso.gontor.ac.id/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-900/70 hover:bg-emerald-800/80 border border-emerald-500/40 hover:border-emerald-400 transition-colors shadow-xs group"
-              title="Buka Portal Ujian & LMS Moodle OGSO Pusat"
-            >
-              <Globe className="w-3.5 h-3.5 text-[#22C55E] group-hover:scale-110 transition-transform" />
-              <span>Portal OGSO</span>
-              <ExternalLink className="w-3 h-3 text-emerald-300" />
-            </a>
-
             <a
               href="/documents/Petunjuk_Pelaksanaan_OGSO_2026.pdf"
               download="Petunjuk_Pelaksanaan_OGSO_2026.pdf"
@@ -511,19 +485,6 @@ export const PublicNavbar: React.FC = () => {
               </NavLink>
 
               <div className="pt-3 border-t border-emerald-900/60 flex flex-col gap-2">
-                <a
-                  href="https://ogso.gontor.ac.id/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between px-4 py-2.5 rounded-lg text-xs font-bold text-[#A7F3D0] bg-emerald-950/90 border border-emerald-500/40 hover:bg-emerald-900/70 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-[#22C55E]" />
-                    <span>Portal ogso.gontor.ac.id</span>
-                  </div>
-                  <ExternalLink className="w-3.5 h-3.5 text-emerald-300" />
-                </a>
-
                 <a
                   href="/documents/Petunjuk_Pelaksanaan_OGSO_2026.pdf"
                   download="Petunjuk_Pelaksanaan_OGSO_2026.pdf"

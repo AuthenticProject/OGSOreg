@@ -8,8 +8,6 @@ import {
   Menu,
   X,
   LayoutDashboard,
-  Globe,
-  ExternalLink,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { cn } from '../../lib/utils'
@@ -69,17 +67,6 @@ export const PublicNavbar: React.FC = () => {
               </NavLink>
             )
           })}
-          <a
-            href="https://ogso.gontor.ac.id/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:text-emerald-700 hover:bg-slate-100 transition-colors"
-            title="Buka Portal LMS / CBT Moodle OGSO"
-          >
-            <Globe className="w-4 h-4 text-emerald-600" />
-            <span>Portal OGSO</span>
-            <ExternalLink className="w-3 h-3 text-slate-400" />
-          </a>
         </nav>
 
         {/* Auth CTA */}
@@ -154,18 +141,6 @@ export const PublicNavbar: React.FC = () => {
               </NavLink>
             )
           })}
-          <a
-            href="https://ogso.gontor.ac.id/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
-          >
-            <div className="flex items-center gap-2.5">
-              <Globe className="w-4 h-4 text-emerald-600" />
-              <span>Portal ogso.gontor.ac.id</span>
-            </div>
-            <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-          </a>
         </div>
       )}
     </header>

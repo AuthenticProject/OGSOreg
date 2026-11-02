@@ -25,6 +25,8 @@ import {
   CalendarDays,
   Moon,
   FileText,
+  Globe,
+  ExternalLink,
 } from 'lucide-react'
 import {
   websiteContentService,
@@ -173,7 +175,7 @@ export const HomePage: React.FC = () => {
             </p>
 
             {/* Primary & Secondary Call to Actions */}
-            <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3.5">
+            <div className="pt-4 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3.5">
               <Link
                 to="/pendaftaran"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl font-bold text-sm text-[#0C241B] bg-gradient-to-r from-[#A7F3D0] via-[#86EFAC] to-[#4ADE80] hover:from-[#86EFAC] hover:to-[#22C55E] shadow-xl shadow-emerald-950/60 hover:shadow-emerald-500/25 hover:-translate-y-0.5 transition-all duration-300 shimmer-sweep"
@@ -198,6 +200,18 @@ export const HomePage: React.FC = () => {
               >
                 <Download className="w-4 h-4" />
                 <span>Unduh JUKLAK 2026</span>
+              </a>
+
+              <a
+                href="https://ogso.gontor.ac.id/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl font-semibold text-xs text-[#A7F3D0] bg-emerald-950/70 hover:bg-emerald-900/90 border border-emerald-500/50 hover:border-[#22C55E] hover:-translate-y-0.5 transition-all duration-300 shadow-md backdrop-blur-md group"
+                title="Buka Portal LMS / CBT Moodle OGSO Pusat (https://ogso.gontor.ac.id/)"
+              >
+                <Globe className="w-4 h-4 text-[#22C55E] group-hover:rotate-12 transition-transform" />
+                <span>Portal OGSO</span>
+                <ExternalLink className="w-3.5 h-3.5 text-emerald-300/80 group-hover:text-white" />
               </a>
             </div>
 
