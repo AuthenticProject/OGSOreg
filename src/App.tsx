@@ -37,6 +37,7 @@ import { SettingsPage } from './pages/SettingsPage'
 import { CustomFieldsPage } from './pages/CustomFieldsPage'
 import { UsersManagementPage } from './pages/UsersManagementPage'
 import { LoginPage } from './pages/LoginPage'
+import { CalendarManagementPage } from './pages/CalendarManagementPage'
 
 // Module Pages (shared / authenticated)
 import { IncomingRegistrationsPage } from './pages/IncomingRegistrationsPage'
@@ -187,7 +188,10 @@ export function App() {
             <Route path="/e-certificate/*" element={<Navigate to="/participant/periode" replace />} />
             <Route path="/certificates" element={<Navigate to="/participant/periode" replace />} />
 
-            {/* 3. PENGATURAN */}
+            {/* 3. PENGATURAN & KELOLA KALENDER LANDING PAGE */}
+            <Route path="/settings/calendar" element={<CalendarManagementPage />} />
+            <Route path="/calendar-management" element={<Navigate to="/settings/calendar" replace />} />
+            <Route path="/pengaturan/kalender" element={<Navigate to="/settings/calendar" replace />} />
             <Route path="/pengaturan" element={<Navigate to="/pengaturan/akun" replace />} />
             <Route path="/users" element={<UsersManagementPage />} />
             <Route path="/pengaturan/pengguna" element={<Navigate to="/users" replace />} />

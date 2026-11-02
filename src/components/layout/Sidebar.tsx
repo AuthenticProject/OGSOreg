@@ -9,8 +9,6 @@ import {
   FileCode,
   Inbox,
   Calendar,
-  BookOpen,
-  Archive,
   UserCog,
   UserCheck,
   Settings,
@@ -22,6 +20,7 @@ import {
   Trophy,
   Globe,
   ExternalLink,
+  CalendarDays,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useAuth } from '../../context/AuthContext'
@@ -51,11 +50,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { isSuperAdmin, appProfile } = useAuth()
   const location = useLocation()
 
-  // Track expanded state for the 4 expandable menus
+  // Track expanded state for the 3 expandable menus
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     pendaftaran: true,
     participant: true,
-    materi: false,
     pengaturan: false,
   })
 
@@ -75,12 +73,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       setExpanded((prev) => ({ ...prev, pendaftaran: true }))
     } else if (path.startsWith('/participant')) {
       setExpanded((prev) => ({ ...prev, participant: true }))
-    } else if (path.startsWith('/materi')) {
-      setExpanded((prev) => ({ ...prev, materi: true }))
     } else if (
       path.startsWith('/pengaturan') ||
       path === '/users' ||
-      path === '/settings'
+      path === '/settings' ||
+      path === '/settings/calendar' ||
+      path === '/calendar-management'
     ) {
       setExpanded((prev) => ({ ...prev, pengaturan: true }))
     }
@@ -90,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }))
   }
 
-  // Define the Approved 4 Expandable Main Menus
+  // Define the Approved Expandable Main Menus (Materi & Silabus strictly on public landing page)
   const menuSections: MenuSection[] = [
     {
       id: 'pendaftaran',
@@ -154,27 +152,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       ],
     },
     {
-      id: 'materi',
-      title: 'MATERI',
-      icon: BookOpen,
-      subItems: [
-        {
-          title: 'Silabus',
-          href: '/materi/silabus',
-          icon: BookOpen,
-        },
-        {
-          title: 'Bank Soal',
-          href: '/materi/bank-soal',
-          icon: Archive,
-        },
-      ],
-    },
-    {
       id: 'pengaturan',
       title: 'PENGATURAN',
       icon: Settings,
       subItems: [
+        {
+          title: 'Kelola Kalender Landing',
+          href: '/settings/calendar',
+          icon: CalendarDays,
+          badge: 'Super Admin',
+          superAdminOnly: true,
+        },
         {
           title: 'Manajemen Pengguna',
           href: '/users',

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Save,
   RotateCcw,
@@ -6,6 +7,7 @@ import {
   ExternalLink,
   Plus,
   Trash2,
+  CalendarDays,
 } from 'lucide-react'
 import {
   websiteContentService,
@@ -302,6 +304,24 @@ export const WebsiteContentSettingsTab: React.FC = () => {
       {/* TAB 2: TIMELINE MANAGER */}
       {activeTab === 'timeline' && (
         <div className="space-y-6">
+          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-emerald-950 shadow-2xs">
+            <div>
+              <div className="font-extrabold text-[#166534] text-sm">
+                Portal Manajemen Kalender Visual
+              </div>
+              <p className="text-slate-600 mt-0.5">
+                Gunakan editor kalender interaktif untuk mengelola, menambah, mengubah, atau menghapus agenda dengan kalender bulanan dan tampilan 3-card.
+              </p>
+            </div>
+            <Link
+              to="/settings/calendar"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-[#166534] text-white hover:bg-[#0F3D20] shrink-0 transition-colors shadow-2xs"
+            >
+              <CalendarDays className="w-3.5 h-3.5" />
+              <span>Buka Kelola Kalender</span>
+            </Link>
+          </div>
+
           <SectionCard
             title="Kelola Agenda & Timeline Publik"
             subtitle="Agenda yang aktif akan langsung muncul pada bagian Timeline di landing page."
