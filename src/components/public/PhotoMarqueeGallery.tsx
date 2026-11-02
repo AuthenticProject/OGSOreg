@@ -19,7 +19,6 @@ export const PhotoMarqueeGallery: React.FC<PhotoMarqueeGalleryProps> = ({
   variant = 'light',
 }) => {
   const [isPlaying, setIsPlaying] = useState<boolean>(true)
-  const [isFast, setIsFast] = useState<boolean>(false)
 
   // Split photos into two balanced rows for the dual marquee
   const row1Photos = GALLERY_PHOTOS.slice(0, 12)
@@ -64,38 +63,31 @@ export const PhotoMarqueeGallery: React.FC<PhotoMarqueeGalleryProps> = ({
               </p>
             </div>
 
-            {/* Play/Pause & Speed Controls */}
-            <div className="flex items-center flex-wrap gap-2.5">
-              <div className="inline-flex items-center gap-1.5 p-1 rounded-xl bg-emerald-950/10 border border-emerald-900/10">
-                <button
-                  type="button"
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  title={isPlaying ? 'Jeda Gulir' : 'Lanjutkan Gulir'}
-                  className={cn(
-                    'p-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer',
-                    isPlaying
-                      ? 'bg-emerald-800 text-white shadow-sm'
-                      : 'bg-emerald-200 text-emerald-900'
-                  )}
-                >
-                  {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsFast(!isFast)}
-                  title={isFast ? 'Kecepatan Normal' : 'Kecepatan Cepat'}
-                  className={cn(
-                    'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer',
-                    isFast
-                      ? 'bg-amber-600 text-white shadow-sm'
-                      : isDark
-                      ? 'text-emerald-300 hover:text-white'
-                      : 'text-emerald-900 hover:bg-emerald-100/50'
-                  )}
-                >
-                  {isFast ? '2x Cepat' : '1x Normal'}
-                </button>
-              </div>
+            {/* Play/Pause Control */}
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setIsPlaying(!isPlaying)}
+                title={isPlaying ? 'Jeda Gulir' : 'Lanjutkan Gulir'}
+                className={cn(
+                  'inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm',
+                  isPlaying
+                    ? 'bg-emerald-800 text-white hover:bg-emerald-700'
+                    : 'bg-emerald-100 text-emerald-900 hover:bg-emerald-200'
+                )}
+              >
+                {isPlaying ? (
+                  <>
+                    <Pause className="w-3.5 h-3.5" />
+                    <span>Jeda</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-3.5 h-3.5" />
+                    <span>Putar</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         )}
@@ -122,10 +114,7 @@ export const PhotoMarqueeGallery: React.FC<PhotoMarqueeGalleryProps> = ({
         {/* ROW 1: Scrolling Left */}
         <div className="flex overflow-hidden">
           <div
-            className={cn(
-              'flex items-center gap-4 sm:gap-6 shrink-0',
-              isFast ? 'animate-marquee-left-fast' : 'animate-marquee-left'
-            )}
+            className="flex items-center gap-4 sm:gap-6 shrink-0 animate-marquee-left"
             style={{
               animationPlayState: isPlaying ? undefined : 'paused',
             }}
@@ -142,10 +131,7 @@ export const PhotoMarqueeGallery: React.FC<PhotoMarqueeGalleryProps> = ({
         {/* ROW 2: Scrolling Right (Opposite Direction) */}
         <div className="flex overflow-hidden">
           <div
-            className={cn(
-              'flex items-center gap-4 sm:gap-6 shrink-0',
-              isFast ? 'animate-marquee-right-fast' : 'animate-marquee-right'
-            )}
+            className="flex items-center gap-4 sm:gap-6 shrink-0 animate-marquee-right"
             style={{
               animationPlayState: isPlaying ? undefined : 'paused',
             }}
@@ -191,18 +177,6 @@ const PhotoCard: React.FC<PhotoCardProps> = ({ photo }) => {
         loading="lazy"
         className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
       />
-
-      {/* Ambient Gradient & Glass Caption on Hover */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3.5">
-        <div className="transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-          <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-emerald-300 bg-emerald-950/75 border border-emerald-500/40 px-2 py-0.5 rounded-md mb-1 backdrop-blur-sm">
-            OGSO Dokumentasi
-          </span>
-          <p className="text-xs font-bold text-white line-clamp-1 drop-shadow-sm">
-            {photo.title}
-          </p>
-        </div>
-      </div>
     </div>
   )
 }

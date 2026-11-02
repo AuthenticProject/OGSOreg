@@ -281,9 +281,6 @@ export const PublicNavbar: React.FC = () => {
                     <div className="space-y-0.5">
                       <div className="font-bold text-sm flex items-center gap-1.5">
                         <span>Hall of Fame</span>
-                        <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#D5C49A] text-[#0C241B]">
-                          Baru
-                        </span>
                       </div>
                       <div className="text-[11px] text-emerald-300/80 leading-snug">
                         Klasemen poin, medali & analitik 20 kampus

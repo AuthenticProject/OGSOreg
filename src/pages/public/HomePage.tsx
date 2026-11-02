@@ -30,6 +30,7 @@ import { hallOfFameService } from '../../services/hallOfFameService'
 import { materiService } from '../../services/materiService'
 import { PhotoMarqueeGallery } from '../../components/public/PhotoMarqueeGallery'
 import { MonthlyCalendarView } from '../../components/calendar/MonthlyCalendarView'
+import { ScrollReveal } from '../../components/ui/ScrollReveal'
 import { cn } from '../../lib/utils'
 import { getWhatsAppLink } from '../../lib/whatsapp'
 
@@ -240,49 +241,57 @@ export const HomePage: React.FC = () => {
 
             {/* Key Facts Highlights Strip (Elevated Interactive Glass Cards with Rich Icons) */}
             <div className="pt-10 grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4 max-w-4xl mx-auto">
-              <div className="p-4 sm:p-5 rounded-2xl luxury-card-dark glass-panel-dark border border-emerald-400/25 hover:border-[#A7F3D0]/80 transition-all duration-300 shimmer-sweep group cursor-default text-left relative overflow-hidden">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-3xl sm:text-4xl font-black text-white group-hover:text-[#A7F3D0] transition-colors">20</div>
-                  <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                    <School className="w-4 h-4" />
+              <ScrollReveal direction="up" delay={100}>
+                <div className="p-4 sm:p-5 rounded-2xl luxury-card-dark glass-panel-dark border border-emerald-400/25 hover:border-[#A7F3D0]/80 transition-all duration-300 shimmer-sweep group cursor-default text-left relative overflow-hidden h-full">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-3xl sm:text-4xl font-black text-white group-hover:text-[#A7F3D0] transition-colors">20</div>
+                    <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                      <School className="w-4 h-4" />
+                    </div>
                   </div>
+                  <div className="text-[11px] font-bold text-[#A7F3D0] uppercase tracking-wider">Kampus Cabang</div>
+                  <div className="text-[10px] text-emerald-300/80 mt-0.5">Delegasi se-Indonesia</div>
                 </div>
-                <div className="text-[11px] font-bold text-[#A7F3D0] uppercase tracking-wider">Kampus Cabang</div>
-                <div className="text-[10px] text-emerald-300/80 mt-0.5">Delegasi se-Indonesia</div>
-              </div>
+              </ScrollReveal>
 
-              <div className="p-4 sm:p-5 rounded-2xl luxury-card-dark glass-panel-dark border border-amber-400/25 hover:border-[#D5C49A]/80 transition-all duration-300 shimmer-sweep group cursor-default text-left relative overflow-hidden">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-3xl sm:text-4xl font-black text-white group-hover:text-[#D5C49A] transition-colors">5</div>
-                  <div className="p-2 rounded-xl bg-amber-500/15 text-[#D5C49A] border border-amber-400/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                    <GraduationCap className="w-4 h-4" />
+              <ScrollReveal direction="up" delay={200}>
+                <div className="p-4 sm:p-5 rounded-2xl luxury-card-dark glass-panel-dark border border-amber-400/25 hover:border-[#D5C49A]/80 transition-all duration-300 shimmer-sweep group cursor-default text-left relative overflow-hidden h-full">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-3xl sm:text-4xl font-black text-white group-hover:text-[#D5C49A] transition-colors">5</div>
+                    <div className="p-2 rounded-xl bg-amber-500/15 text-[#D5C49A] border border-amber-400/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                      <GraduationCap className="w-4 h-4" />
+                    </div>
                   </div>
+                  <div className="text-[11px] font-bold text-[#D5C49A] uppercase tracking-wider">Jenjang Tingkat</div>
+                  <div className="text-[10px] text-amber-200/80 mt-0.5">Kelas 1 hingga Kelas 5 KMI</div>
                 </div>
-                <div className="text-[11px] font-bold text-[#D5C49A] uppercase tracking-wider">Jenjang Tingkat</div>
-                <div className="text-[10px] text-amber-200/80 mt-0.5">Kelas 1 hingga Kelas 5 KMI</div>
-              </div>
+              </ScrollReveal>
 
-              <div className="p-4 sm:p-5 rounded-2xl luxury-card-dark glass-panel-dark border border-emerald-400/25 hover:border-[#A7F3D0]/80 transition-all duration-300 shimmer-sweep group cursor-default text-left relative overflow-hidden">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-3xl sm:text-4xl font-black text-white group-hover:text-[#A7F3D0] transition-colors">40</div>
-                  <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                    <FileText className="w-4 h-4" />
+              <ScrollReveal direction="up" delay={300}>
+                <div className="p-4 sm:p-5 rounded-2xl luxury-card-dark glass-panel-dark border border-emerald-400/25 hover:border-[#A7F3D0]/80 transition-all duration-300 shimmer-sweep group cursor-default text-left relative overflow-hidden h-full">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-3xl sm:text-4xl font-black text-white group-hover:text-[#A7F3D0] transition-colors">40</div>
+                    <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                      <FileText className="w-4 h-4" />
+                    </div>
                   </div>
+                  <div className="text-[11px] font-bold text-[#A7F3D0] uppercase tracking-wider">Soal Isian</div>
+                  <div className="text-[10px] text-emerald-300/80 mt-0.5">Short essay berbasis nalar</div>
                 </div>
-                <div className="text-[11px] font-bold text-[#A7F3D0] uppercase tracking-wider">Soal Isian</div>
-                <div className="text-[10px] text-emerald-300/80 mt-0.5">Short essay berbasis nalar</div>
-              </div>
+              </ScrollReveal>
 
-              <div className="p-4 sm:p-5 rounded-2xl luxury-card-dark glass-panel-dark border border-teal-400/25 hover:border-[#A7F3D0]/80 transition-all duration-300 shimmer-sweep group cursor-default text-left relative overflow-hidden">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-3xl sm:text-4xl font-black text-white group-hover:text-[#A7F3D0] transition-colors">90</div>
-                  <div className="p-2 rounded-xl bg-teal-500/15 text-teal-300 border border-teal-400/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                    <Clock className="w-4 h-4" />
+              <ScrollReveal direction="up" delay={400}>
+                <div className="p-4 sm:p-5 rounded-2xl luxury-card-dark glass-panel-dark border border-teal-400/25 hover:border-[#A7F3D0]/80 transition-all duration-300 shimmer-sweep group cursor-default text-left relative overflow-hidden h-full">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-3xl sm:text-4xl font-black text-white group-hover:text-[#A7F3D0] transition-colors">90</div>
+                    <div className="p-2 rounded-xl bg-teal-500/15 text-teal-300 border border-teal-400/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                      <Clock className="w-4 h-4" />
+                    </div>
                   </div>
+                  <div className="text-[11px] font-bold text-[#A7F3D0] uppercase tracking-wider">Menit Ujian</div>
+                  <div className="text-[10px] text-emerald-300/80 mt-0.5">CBT via Safe Exam Browser</div>
                 </div>
-                <div className="text-[11px] font-bold text-[#A7F3D0] uppercase tracking-wider">Menit Ujian</div>
-                <div className="text-[10px] text-emerald-300/80 mt-0.5">CBT via Safe Exam Browser</div>
-              </div>
+              </ScrollReveal>
             </div>
           </div>
         </div>
@@ -300,7 +309,7 @@ export const HomePage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Left Column: Heading & Philosophy */}
-            <div className="lg:col-span-6 space-y-6">
+            <ScrollReveal direction="left" delay={50} className="lg:col-span-6 space-y-6">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
                 <GraduationCap className="w-3.5 h-3.5 text-[#166534]" />
                 <span>Tentang Kompetisi</span>
@@ -336,49 +345,57 @@ export const HomePage: React.FC = () => {
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
                 </Link>
               </div>
-            </div>
+            </ScrollReveal>
 
             {/* Right Column: 4 Pillars of Excellence (Interactive Hover Cards) */}
             <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-4.5">
-              <div className="p-6 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 space-y-3.5 group">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#166534] flex items-center justify-center shadow-xs group-hover:scale-110 group-hover:bg-[#166534] group-hover:text-white transition-all duration-300">
-                  <Atom className="w-6 h-6" />
+              <ScrollReveal direction="right" delay={100}>
+                <div className="p-6 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 space-y-3.5 group h-full">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#166534] flex items-center justify-center shadow-xs group-hover:scale-110 group-hover:bg-[#166534] group-hover:text-white transition-all duration-300">
+                    <Atom className="w-6 h-6" />
+                  </div>
+                  <h3 className="font-bold text-base text-[#0C241B] group-hover:text-[#166534] transition-colors">Kecerdasan Saintifik</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Menumbuhkan kecintaan terhadap sains dan teknologi melalui penalaran logika dan problem-solving yang kokoh.
+                  </p>
                 </div>
-                <h3 className="font-bold text-base text-[#0C241B] group-hover:text-[#166534] transition-colors">Kecerdasan Saintifik</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Menumbuhkan kecintaan terhadap sains dan teknologi melalui penalaran logika dan problem-solving yang kokoh.
-                </p>
-              </div>
+              </ScrollReveal>
 
-              <div className="p-6 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 space-y-3.5 group">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#166534] flex items-center justify-center shadow-xs group-hover:scale-110 group-hover:bg-[#166534] group-hover:text-white transition-all duration-300">
-                  <ShieldCheck className="w-6 h-6" />
+              <ScrollReveal direction="right" delay={200}>
+                <div className="p-6 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 space-y-3.5 group h-full">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#166534] flex items-center justify-center shadow-xs group-hover:scale-110 group-hover:bg-[#166534] group-hover:text-white transition-all duration-300">
+                    <ShieldCheck className="w-6 h-6" />
+                  </div>
+                  <h3 className="font-bold text-base text-[#0C241B] group-hover:text-[#166534] transition-colors">Integritas & Kejujuran</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Pelaksanaan diawasi secara terpusat dengan Safe Exam Browser dan pemantauan kamera sudut luas via Zoom.
+                  </p>
                 </div>
-                <h3 className="font-bold text-base text-[#0C241B] group-hover:text-[#166534] transition-colors">Integritas & Kejujuran</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Pelaksanaan diawasi secara terpusat dengan Safe Exam Browser dan pemantauan kamera sudut luas via Zoom.
-                </p>
-              </div>
+              </ScrollReveal>
 
-              <div className="p-6 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 space-y-3.5 group">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#166534] flex items-center justify-center shadow-xs group-hover:scale-110 group-hover:bg-[#166534] group-hover:text-white transition-all duration-300">
-                  <School className="w-6 h-6" />
+              <ScrollReveal direction="right" delay={300}>
+                <div className="p-6 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 space-y-3.5 group h-full">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#166534] flex items-center justify-center shadow-xs group-hover:scale-110 group-hover:bg-[#166534] group-hover:text-white transition-all duration-300">
+                    <School className="w-6 h-6" />
+                  </div>
+                  <h3 className="font-bold text-base text-[#0C241B] group-hover:text-[#166534] transition-colors">Konektivitas 20 Kampus</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Menghubungkan 12 kampus putra dan 8 kampus putri dalam wadah kompetisi yang sportif dan penuh ukhuwah.
+                  </p>
                 </div>
-                <h3 className="font-bold text-base text-[#0C241B] group-hover:text-[#166534] transition-colors">Konektivitas 20 Kampus</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Menghubungkan 12 kampus putra dan 8 kampus putri dalam wadah kompetisi yang sportif dan penuh ukhuwah.
-                </p>
-              </div>
+              </ScrollReveal>
 
-              <div className="p-6 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 space-y-3.5 group">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#166534] flex items-center justify-center shadow-xs group-hover:scale-110 group-hover:bg-[#166534] group-hover:text-white transition-all duration-300">
-                  <BookOpen className="w-6 h-6" />
+              <ScrollReveal direction="right" delay={400}>
+                <div className="p-6 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 space-y-3.5 group h-full">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#166534] flex items-center justify-center shadow-xs group-hover:scale-110 group-hover:bg-[#166534] group-hover:text-white transition-all duration-300">
+                    <BookOpen className="w-6 h-6" />
+                  </div>
+                  <h3 className="font-bold text-base text-[#0C241B] group-hover:text-[#166534] transition-colors">Kurikulum KMI Terpadu</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Materi disusun relevan dengan kurikulum Kulliyatu-l-Mu’allimin Al-Islamiyah dan standar olimpiade nasional.
+                  </p>
                 </div>
-                <h3 className="font-bold text-base text-[#0C241B] group-hover:text-[#166534] transition-colors">Kurikulum KMI Terpadu</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Materi disusun relevan dengan kurikulum Kulliyatu-l-Mu’allimin Al-Islamiyah dan standar olimpiade nasional.
-                </p>
-              </div>
+              </ScrollReveal>
             </div>
           </div>
         </div>
@@ -389,175 +406,185 @@ export const HomePage: React.FC = () => {
       {/* ========================================================================= */}
       <section className="py-20 lg:py-28 bg-white border-b border-emerald-950/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto space-y-3 mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
-              <span>Bidang Keilmuan</span>
+          <ScrollReveal direction="up" delay={0}>
+            <div className="text-center max-w-3xl mx-auto space-y-3 mb-16">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
+                <span>Bidang Keilmuan</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0C241B]">
+                Eksplorasi Empat Pilar Sains (MAFIKIB)
+              </h2>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Materi olimpiade menguji pemahaman konseptual dan aplikasi analitis santri dalam empat bidang ilmu alam dan eksak.
+              </p>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0C241B]">
-              Eksplorasi Empat Pilar Sains (MAFIKIB)
-            </h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              Materi olimpiade menguji pemahaman konseptual dan aplikasi analitis santri dalam empat bidang ilmu alam dan eksak.
-            </p>
-          </div>
+          </ScrollReveal>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* 1. Matematika */}
-            <div className="relative overflow-hidden group p-7 rounded-3xl bg-white border border-slate-200 hover:border-indigo-400 hover:-translate-y-2 hover:shadow-xl hover:shadow-indigo-950/5 transition-all duration-300 flex flex-col justify-between">
-              {/* Background Watermark Icon */}
-              <Binary className="absolute -right-5 -top-5 w-32 h-32 text-indigo-500/10 group-hover:text-indigo-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 pointer-events-none" />
+            <ScrollReveal direction="up" delay={100}>
+              <div className="relative overflow-hidden group p-7 rounded-3xl bg-white border border-slate-200 hover:border-indigo-400 hover:-translate-y-2 hover:shadow-xl hover:shadow-indigo-950/5 transition-all duration-300 flex flex-col justify-between h-full">
+                {/* Background Watermark Icon */}
+                <Binary className="absolute -right-5 -top-5 w-32 h-32 text-indigo-500/10 group-hover:text-indigo-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 pointer-events-none" />
 
-              <div className="relative z-10">
-                {/* Header: Icon Box & Badge */}
-                <div className="flex items-center justify-between gap-3 mb-5">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-700 to-[#166534] text-white flex items-center justify-center shadow-md shadow-indigo-900/10 group-hover:scale-105 group-hover:shadow-indigo-600/25 transition-all duration-300 shrink-0">
-                    <Binary className="w-7 h-7 text-[#A7F3D0]" />
+                <div className="relative z-10">
+                  {/* Header: Icon Box & Badge */}
+                  <div className="flex items-center justify-between gap-3 mb-5">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-700 to-[#166534] text-white flex items-center justify-center shadow-md shadow-indigo-900/10 group-hover:scale-105 group-hover:shadow-indigo-600/25 transition-all duration-300 shrink-0">
+                      <Binary className="w-7 h-7 text-[#A7F3D0]" />
+                    </div>
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-indigo-800 bg-indigo-50 border border-indigo-200/70 shadow-2xs">
+                      Jenjang 1 – 5
+                    </span>
                   </div>
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-indigo-800 bg-indigo-50 border border-indigo-200/70 shadow-2xs">
-                    Jenjang 1 – 5
+
+                  <div className="space-y-2.5">
+                    <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-indigo-900 transition-colors">
+                      Matematika
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed min-h-[64px]">
+                      Aljabar, aritmetika, geometri, trigonometri, barisan dan deret, hingga kalkulus limit fungsi dan statistika analitik.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 mt-6 relative z-10 flex items-center justify-between gap-3">
+                  <Link
+                    to="/materi/silabus"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-800 hover:text-indigo-950 group-hover:underline"
+                  >
+                    <span>Lihat Silabus</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                  <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg">
+                    Kelas 1–5
                   </span>
                 </div>
-
-                <div className="space-y-2.5">
-                  <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-indigo-900 transition-colors">
-                    Matematika
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed min-h-[64px]">
-                    Aljabar, aritmetika, geometri, trigonometri, barisan dan deret, hingga kalkulus limit fungsi dan statistika analitik.
-                  </p>
-                </div>
               </div>
-
-              <div className="pt-4 border-t border-slate-100 mt-6 relative z-10 flex items-center justify-between gap-3">
-                <Link
-                  to="/materi/silabus"
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-800 hover:text-indigo-950 group-hover:underline"
-                >
-                  <span>Lihat Silabus</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg">
-                  Kelas 1–5
-                </span>
-              </div>
-            </div>
+            </ScrollReveal>
 
             {/* 2. Fisika */}
-            <div className="relative overflow-hidden group p-7 rounded-3xl bg-white border border-slate-200 hover:border-sky-400 hover:-translate-y-2 hover:shadow-xl hover:shadow-sky-950/5 transition-all duration-300 flex flex-col justify-between">
-              {/* Background Watermark Icon */}
-              <Atom className="absolute -right-5 -top-5 w-32 h-32 text-sky-500/10 group-hover:text-sky-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 pointer-events-none" />
+            <ScrollReveal direction="up" delay={200}>
+              <div className="relative overflow-hidden group p-7 rounded-3xl bg-white border border-slate-200 hover:border-sky-400 hover:-translate-y-2 hover:shadow-xl hover:shadow-sky-950/5 transition-all duration-300 flex flex-col justify-between h-full">
+                {/* Background Watermark Icon */}
+                <Atom className="absolute -right-5 -top-5 w-32 h-32 text-sky-500/10 group-hover:text-sky-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 pointer-events-none" />
 
-              <div className="relative z-10">
-                <div className="flex items-center justify-between gap-3 mb-5">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-700 to-[#166534] text-white flex items-center justify-center shadow-md shadow-sky-900/10 group-hover:scale-105 group-hover:shadow-sky-600/25 transition-all duration-300 shrink-0">
-                    <Atom className="w-7 h-7 text-[#A7F3D0]" />
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between gap-3 mb-5">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-700 to-[#166534] text-white flex items-center justify-center shadow-md shadow-sky-900/10 group-hover:scale-105 group-hover:shadow-sky-600/25 transition-all duration-300 shrink-0">
+                      <Atom className="w-7 h-7 text-[#A7F3D0]" />
+                    </div>
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-sky-800 bg-sky-50 border border-sky-200/70 shadow-2xs">
+                      Jenjang 1 – 5
+                    </span>
                   </div>
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-sky-800 bg-sky-50 border border-sky-200/70 shadow-2xs">
-                    Jenjang 1 – 5
+
+                  <div className="space-y-2.5">
+                    <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-sky-900 transition-colors">
+                      Fisika
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed min-h-[64px]">
+                      Pengukuran, mekanika Newton, getaran & gelombang, optika geometri, termodinamika kalor, hingga elektromagnetika modern.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 mt-6 relative z-10 flex items-center justify-between gap-3">
+                  <Link
+                    to="/materi/silabus"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-800 hover:text-sky-950 group-hover:underline"
+                  >
+                    <span>Lihat Silabus</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                  <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg">
+                    Kelas 1–5
                   </span>
                 </div>
-
-                <div className="space-y-2.5">
-                  <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-sky-900 transition-colors">
-                    Fisika
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed min-h-[64px]">
-                    Pengukuran, mekanika Newton, getaran & gelombang, optika geometri, termodinamika kalor, hingga elektromagnetika modern.
-                  </p>
-                </div>
               </div>
-
-              <div className="pt-4 border-t border-slate-100 mt-6 relative z-10 flex items-center justify-between gap-3">
-                <Link
-                  to="/materi/silabus"
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-800 hover:text-sky-950 group-hover:underline"
-                >
-                  <span>Lihat Silabus</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg">
-                  Kelas 1–5
-                </span>
-              </div>
-            </div>
+            </ScrollReveal>
 
             {/* 3. Biologi */}
-            <div className="relative overflow-hidden group p-7 rounded-3xl bg-white border border-slate-200 hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl hover:shadow-emerald-950/5 transition-all duration-300 flex flex-col justify-between">
-              {/* Background Watermark Icon */}
-              <Microscope className="absolute -right-5 -top-5 w-32 h-32 text-emerald-500/10 group-hover:text-emerald-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 pointer-events-none" />
+            <ScrollReveal direction="up" delay={300}>
+              <div className="relative overflow-hidden group p-7 rounded-3xl bg-white border border-slate-200 hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl hover:shadow-emerald-950/5 transition-all duration-300 flex flex-col justify-between h-full">
+                {/* Background Watermark Icon */}
+                <Microscope className="absolute -right-5 -top-5 w-32 h-32 text-emerald-500/10 group-hover:text-emerald-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 pointer-events-none" />
 
-              <div className="relative z-10">
-                <div className="flex items-center justify-between gap-3 mb-5">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#166534] to-[#0A2E1A] text-white flex items-center justify-center shadow-md shadow-emerald-900/10 group-hover:scale-105 group-hover:shadow-emerald-600/25 transition-all duration-300 shrink-0">
-                    <Microscope className="w-7 h-7 text-[#A7F3D0]" />
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between gap-3 mb-5">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#166534] to-[#0A2E1A] text-white flex items-center justify-center shadow-md shadow-emerald-900/10 group-hover:scale-105 group-hover:shadow-emerald-600/25 transition-all duration-300 shrink-0">
+                      <Microscope className="w-7 h-7 text-[#A7F3D0]" />
+                    </div>
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/70 shadow-2xs">
+                      Jenjang 1 – 5
+                    </span>
                   </div>
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/70 shadow-2xs">
-                    Jenjang 1 – 5
+
+                  <div className="space-y-2.5">
+                    <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-[#166534] transition-colors">
+                      Biologi
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed min-h-[64px]">
+                      Organisasi kehidupan, fisiologi sistem manusia, botani, pewarisan sifat genetika, ekologi ekosistem, dan bioteknologi.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 mt-6 relative z-10 flex items-center justify-between gap-3">
+                  <Link
+                    to="/materi/silabus"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#166534] hover:text-[#0C241B] group-hover:underline"
+                  >
+                    <span>Lihat Silabus</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                  <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg">
+                    Kelas 1–5
                   </span>
                 </div>
-
-                <div className="space-y-2.5">
-                  <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-[#166534] transition-colors">
-                    Biologi
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed min-h-[64px]">
-                    Organisasi kehidupan, fisiologi sistem manusia, botani, pewarisan sifat genetika, ekologi ekosistem, dan bioteknologi.
-                  </p>
-                </div>
               </div>
-
-              <div className="pt-4 border-t border-slate-100 mt-6 relative z-10 flex items-center justify-between gap-3">
-                <Link
-                  to="/materi/silabus"
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#166534] hover:text-[#0C241B] group-hover:underline"
-                >
-                  <span>Lihat Silabus</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg">
-                  Kelas 1–5
-                </span>
-              </div>
-            </div>
+            </ScrollReveal>
 
             {/* 4. Kimia (Khusus Jenjang 5) */}
-            <div className="relative overflow-hidden group p-7 rounded-3xl bg-white border border-amber-300/80 hover:border-amber-500 hover:-translate-y-2 hover:shadow-xl hover:shadow-amber-950/10 transition-all duration-300 flex flex-col justify-between">
-              {/* Background Watermark Icon */}
-              <FlaskConical className="absolute -right-5 -top-5 w-32 h-32 text-amber-500/10 group-hover:text-amber-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 pointer-events-none" />
+            <ScrollReveal direction="up" delay={400}>
+              <div className="relative overflow-hidden group p-7 rounded-3xl bg-white border border-amber-300/80 hover:border-amber-500 hover:-translate-y-2 hover:shadow-xl hover:shadow-amber-950/10 transition-all duration-300 flex flex-col justify-between h-full">
+                {/* Background Watermark Icon */}
+                <FlaskConical className="absolute -right-5 -top-5 w-32 h-32 text-amber-500/10 group-hover:text-amber-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 pointer-events-none" />
 
-              <div className="relative z-10">
-                <div className="flex items-center justify-between gap-3 mb-5">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-600 via-yellow-600 to-[#166534] text-white flex items-center justify-center shadow-md shadow-amber-900/10 group-hover:scale-105 group-hover:shadow-amber-600/25 transition-all duration-300 shrink-0">
-                    <FlaskConical className="w-7 h-7 text-amber-100" />
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between gap-3 mb-5">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-600 via-yellow-600 to-[#166534] text-white flex items-center justify-center shadow-md shadow-amber-900/10 group-hover:scale-105 group-hover:shadow-amber-600/25 transition-all duration-300 shrink-0">
+                      <FlaskConical className="w-7 h-7 text-amber-100" />
+                    </div>
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-100 to-amber-200 border border-amber-300 shadow-2xs">
+                      Khusus Jenjang 5
+                    </span>
                   </div>
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-100 to-amber-200 border border-amber-300 shadow-2xs">
-                    Khusus Jenjang 5
+
+                  <div className="space-y-2.5">
+                    <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-amber-900 transition-colors">
+                      Kimia
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed min-h-[64px]">
+                      Struktur atom, sistem periodik unsur, tata nama senyawa, persamaan reaksi, konsep mol, dan profil ilmuwan kimia Muslim.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 mt-6 relative z-10 flex items-center justify-between gap-3">
+                  <Link
+                    to="/materi/silabus"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 hover:text-amber-950 group-hover:underline"
+                  >
+                    <span>Lihat Silabus</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                  <span className="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg">
+                    Kelas 5 KMI
                   </span>
                 </div>
-
-                <div className="space-y-2.5">
-                  <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-amber-900 transition-colors">
-                    Kimia
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed min-h-[64px]">
-                    Struktur atom, sistem periodik unsur, tata nama senyawa, persamaan reaksi, konsep mol, dan profil ilmuwan kimia Muslim.
-                  </p>
-                </div>
               </div>
-
-              <div className="pt-4 border-t border-slate-100 mt-6 relative z-10 flex items-center justify-between gap-3">
-                <Link
-                  to="/materi/silabus"
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 hover:text-amber-950 group-hover:underline"
-                >
-                  <span>Lihat Silabus</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <span className="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg">
-                  Kelas 5 KMI
-                </span>
-              </div>
-            </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -567,151 +594,163 @@ export const HomePage: React.FC = () => {
       {/* ========================================================================= */}
       <section className="py-20 lg:py-28 bg-[#F5F8F4] border-b border-emerald-950/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto space-y-3 mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
-              <span>Struktur Kategori</span>
+          <ScrollReveal direction="up" delay={0}>
+            <div className="text-center max-w-3xl mx-auto space-y-3 mb-16">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
+                <span>Struktur Kategori</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0C241B]">
+                Lima Jenjang Kompetisi Santri
+              </h2>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Setiap kampus kontingen mendelegasikan tepat <strong>20 peserta</strong> (4 peserta pada masing-masing jenjang) sesuai pemetaan resmi KMI:
+              </p>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0C241B]">
-              Lima Jenjang Kompetisi Santri
-            </h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              Setiap kampus kontingen mendelegasikan tepat <strong>20 peserta</strong> (4 peserta pada masing-masing jenjang) sesuai pemetaan resmi KMI:
-            </p>
-          </div>
+          </ScrollReveal>
 
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4.5">
             {/* Jenjang 1 */}
-            <div className="group p-6 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
-              <div className="space-y-3.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-lg group-hover:bg-[#166534] group-hover:text-white transition-colors">
-                    Tingkat 1
-                  </span>
-                  <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/70 px-2.5 py-0.5 rounded-full">4 Peserta</span>
+            <ScrollReveal direction="up" delay={50}>
+              <div className="group p-6 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden h-full">
+                <div className="space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-lg group-hover:bg-[#166534] group-hover:text-white transition-colors">
+                      Tingkat 1
+                    </span>
+                    <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/70 px-2.5 py-0.5 rounded-full">4 Peserta</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-[#166534] transition-colors">Jenjang 1</h3>
+                  <div className="text-xs font-bold text-slate-800 bg-[#F5F8F4] p-3 rounded-xl border border-slate-200/60">
+                    Kelas 1 KMI
+                  </div>
+                  <div className="space-y-2 text-xs text-slate-600 pt-1">
+                    <div className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">Materi Ujian:</div>
+                    <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" /><span>Matematika</span></div>
+                    <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-sky-600 shrink-0" /><span>Fisika</span></div>
+                    <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" /><span>Biologi</span></div>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-[#166534] transition-colors">Jenjang 1</h3>
-                <div className="text-xs font-bold text-slate-800 bg-[#F5F8F4] p-3 rounded-xl border border-slate-200/60">
-                  Kelas 1 KMI
-                </div>
-                <div className="space-y-2 text-xs text-slate-600 pt-1">
-                  <div className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">Materi Ujian:</div>
-                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" /><span>Matematika</span></div>
-                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-sky-600 shrink-0" /><span>Fisika</span></div>
-                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" /><span>Biologi</span></div>
+                <div className="pt-3.5 border-t border-slate-100 mt-4 text-[11px] text-slate-400 font-medium">
+                  Pondok Modern Darussalam Gontor
                 </div>
               </div>
-              <div className="pt-3.5 border-t border-slate-100 mt-4 text-[11px] text-slate-400 font-medium">
-                Pondok Modern Darussalam Gontor
-              </div>
-            </div>
+            </ScrollReveal>
 
             {/* Jenjang 2 */}
-            <div className="group p-6 sm:p-7 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-lg group-hover:bg-[#166534] group-hover:text-white transition-colors">
-                    Tingkat 2
-                  </span>
-                  <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/70 px-2.5 py-0.5 rounded-full">4 Peserta</span>
+            <ScrollReveal direction="up" delay={100}>
+              <div className="group p-6 sm:p-7 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden h-full">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-lg group-hover:bg-[#166534] group-hover:text-white transition-colors">
+                      Tingkat 2
+                    </span>
+                    <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/70 px-2.5 py-0.5 rounded-full">4 Peserta</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-[#166534] transition-colors">Jenjang 2</h3>
+                  <div className="text-xs font-bold text-slate-800 bg-[#F5F8F4] p-3 rounded-xl border border-slate-200/60">
+                    Kelas 2 KMI
+                  </div>
+                  <div className="space-y-2 text-xs text-slate-600 pt-1">
+                    <div className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">Materi Ujian:</div>
+                    <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" /><span>Matematika</span></div>
+                    <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-sky-600 shrink-0" /><span>Fisika</span></div>
+                    <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" /><span>Biologi</span></div>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-[#166534] transition-colors">Jenjang 2</h3>
-                <div className="text-xs font-bold text-slate-800 bg-[#F5F8F4] p-3 rounded-xl border border-slate-200/60">
-                  Kelas 2 KMI
-                </div>
-                <div className="space-y-2 text-xs text-slate-600 pt-1">
-                  <div className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">Materi Ujian:</div>
-                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" /><span>Matematika</span></div>
-                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-sky-600 shrink-0" /><span>Fisika</span></div>
-                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" /><span>Biologi</span></div>
+                <div className="pt-3.5 border-t border-slate-100 mt-4 text-[11px] text-slate-400 font-medium">
+                  Pondok Modern Darussalam Gontor
                 </div>
               </div>
-              <div className="pt-3.5 border-t border-slate-100 mt-4 text-[11px] text-slate-400 font-medium">
-                Pondok Modern Darussalam Gontor
-              </div>
-            </div>
+            </ScrollReveal>
 
             {/* Jenjang 3 */}
-            <div className="group p-6 sm:p-7 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-lg group-hover:bg-[#166534] group-hover:text-white transition-colors">
-                    Tingkat 3
-                  </span>
-                  <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/70 px-2.5 py-0.5 rounded-full">4 Peserta</span>
+            <ScrollReveal direction="up" delay={150}>
+              <div className="group p-6 sm:p-7 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden h-full">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-lg group-hover:bg-[#166534] group-hover:text-white transition-colors">
+                      Tingkat 3
+                    </span>
+                    <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/70 px-2.5 py-0.5 rounded-full">4 Peserta</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-[#166534] transition-colors">Jenjang 3</h3>
+                  <div className="text-xs font-bold text-slate-800 bg-[#F5F8F4] p-3 rounded-xl border border-slate-200/60">
+                    Kelas 1 Int & 3 KMI
+                  </div>
+                  <div className="space-y-2 text-xs text-slate-600 pt-1">
+                    <div className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">Materi Ujian:</div>
+                    <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" /><span>Matematika</span></div>
+                    <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-sky-600 shrink-0" /><span>Fisika</span></div>
+                    <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" /><span>Biologi</span></div>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-[#166534] transition-colors">Jenjang 3</h3>
-                <div className="text-xs font-bold text-slate-800 bg-[#F5F8F4] p-3 rounded-xl border border-slate-200/60">
-                  Kelas 1 Int & 3 KMI
-                </div>
-                <div className="space-y-2 text-xs text-slate-600 pt-1">
-                  <div className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">Materi Ujian:</div>
-                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" /><span>Matematika</span></div>
-                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-sky-600 shrink-0" /><span>Fisika</span></div>
-                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" /><span>Biologi</span></div>
+                <div className="pt-3.5 border-t border-slate-100 mt-4 text-[11px] text-slate-400 font-medium">
+                  Pondok Modern Darussalam Gontor
                 </div>
               </div>
-              <div className="pt-3.5 border-t border-slate-100 mt-4 text-[11px] text-slate-400 font-medium">
-                Pondok Modern Darussalam Gontor
-              </div>
-            </div>
+            </ScrollReveal>
 
             {/* Jenjang 4 */}
-            <div className="group p-6 sm:p-7 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-lg group-hover:bg-[#166534] group-hover:text-white transition-colors">
-                    Tingkat 4
-                  </span>
-                  <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/70 px-2.5 py-0.5 rounded-full">4 Peserta</span>
+            <ScrollReveal direction="up" delay={200}>
+              <div className="group p-6 sm:p-7 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden h-full">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-lg group-hover:bg-[#166534] group-hover:text-white transition-colors">
+                      Tingkat 4
+                    </span>
+                    <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/70 px-2.5 py-0.5 rounded-full">4 Peserta</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-[#166534] transition-colors">Jenjang 4</h3>
+                  <div className="text-xs font-bold text-slate-800 bg-[#F5F8F4] p-3 rounded-xl border border-slate-200/60">
+                    Kelas 3 Int & 4 KMI
+                  </div>
+                  <div className="space-y-2 text-xs text-slate-600 pt-1">
+                    <div className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">Materi Ujian:</div>
+                    <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" /><span>Matematika</span></div>
+                    <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-sky-600 shrink-0" /><span>Fisika</span></div>
+                    <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" /><span>Biologi</span></div>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-[#0C241B] group-hover:text-[#166534] transition-colors">Jenjang 4</h3>
-                <div className="text-xs font-bold text-slate-800 bg-[#F5F8F4] p-3 rounded-xl border border-slate-200/60">
-                  Kelas 3 Int & 4 KMI
-                </div>
-                <div className="space-y-2 text-xs text-slate-600 pt-1">
-                  <div className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">Materi Ujian:</div>
-                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" /><span>Matematika</span></div>
-                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-sky-600 shrink-0" /><span>Fisika</span></div>
-                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" /><span>Biologi</span></div>
+                <div className="pt-3.5 border-t border-slate-100 mt-4 text-[11px] text-slate-400 font-medium">
+                  Pondok Modern Darussalam Gontor
                 </div>
               </div>
-              <div className="pt-3.5 border-t border-slate-100 mt-4 text-[11px] text-slate-400 font-medium">
-                Pondok Modern Darussalam Gontor
-              </div>
-            </div>
+            </ScrollReveal>
 
             {/* Jenjang 5 (Special Card with Emerald & Gold Glow) */}
-            <div className="group p-6 sm:p-7 rounded-3xl bg-gradient-to-b from-emerald-50/70 via-white to-white border-2 border-[#166534] shadow-md hover:border-emerald-600 hover:-translate-y-2.5 hover:shadow-2xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#A7F3D0]/40 to-transparent pointer-events-none rounded-bl-full" />
+            <ScrollReveal direction="up" delay={250}>
+              <div className="group p-6 sm:p-7 rounded-3xl bg-gradient-to-b from-emerald-50/70 via-white to-white border-2 border-[#166534] shadow-md hover:border-emerald-600 hover:-translate-y-2.5 hover:shadow-2xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden h-full">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#A7F3D0]/40 to-transparent pointer-events-none rounded-bl-full" />
 
-              <div className="space-y-4 relative z-10">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-white bg-[#166534] px-3 py-1 rounded-lg shadow-xs group-hover:bg-emerald-700 transition-colors">
-                    Tingkat 5
-                  </span>
-                  <span className="text-[11px] font-bold text-white bg-emerald-800 px-3 py-0.5 rounded-full shadow-xs">4 Peserta</span>
+                <div className="space-y-4 relative z-10">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-white bg-[#166534] px-3 py-1 rounded-lg shadow-xs group-hover:bg-emerald-700 transition-colors">
+                      Tingkat 5
+                    </span>
+                    <span className="text-[11px] font-bold text-white bg-emerald-800 px-3 py-0.5 rounded-full shadow-xs">4 Peserta</span>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-[#0C241B]">Jenjang 5</h3>
+                    <span className="text-[10px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full inline-block mt-1">
+                      Materi Lengkap + Kimia
+                    </span>
+                  </div>
+                  <div className="text-xs font-bold text-emerald-950 bg-emerald-100/70 p-3 rounded-xl border border-emerald-300/80">
+                    Kelas 5 KMI
+                  </div>
+                  <div className="space-y-2 text-xs text-slate-700 pt-1">
+                    <div className="font-bold text-emerald-900 text-[11px] uppercase tracking-wider">Materi Terpadu:</div>
+                    <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" /><span>Matematika</span></div>
+                    <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-sky-600 shrink-0" /><span>Fisika</span></div>
+                    <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" /><span>Biologi</span></div>
+                    <div className="flex items-center gap-2.5 font-bold text-[#166534]"><span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" /><span>Kimia Khusus</span></div>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-xl font-black text-[#0C241B]">Jenjang 5</h3>
-                  <span className="text-[10px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full inline-block mt-1">
-                    Materi Lengkap + Kimia
-                  </span>
-                </div>
-                <div className="text-xs font-bold text-emerald-950 bg-emerald-100/70 p-3 rounded-xl border border-emerald-300/80">
-                  Kelas 5 KMI
-                </div>
-                <div className="space-y-2 text-xs text-slate-700 pt-1">
-                  <div className="font-bold text-emerald-900 text-[11px] uppercase tracking-wider">Materi Terpadu:</div>
-                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" /><span>Matematika</span></div>
-                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-sky-600 shrink-0" /><span>Fisika</span></div>
-                  <div className="flex items-center gap-2.5 font-medium text-slate-700"><span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" /><span>Biologi</span></div>
-                  <div className="flex items-center gap-2.5 font-bold text-[#166534]"><span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" /><span>Kimia Khusus</span></div>
+                <div className="pt-3 border-t border-emerald-200 mt-4 text-[10px] text-[#166534] font-bold relative z-10">
+                  Tingkat Tertinggi KMI
                 </div>
               </div>
-              <div className="pt-3 border-t border-emerald-200 mt-4 text-[10px] text-[#166534] font-bold relative z-10">
-                Tingkat Tertinggi KMI
-              </div>
-            </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -722,34 +761,38 @@ export const HomePage: React.FC = () => {
       <section id="jadwal" className="py-16 lg:py-24 bg-[#F5F8F4] border-y border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
           {/* Section Header */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2 border-b border-slate-200">
-            <div className="space-y-3 max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
-                <Calendar className="w-3.5 h-3.5 text-[#166534]" />
-                <span>Kalender Inter-Campus OGSO 1448/2026</span>
+          <ScrollReveal direction="up" delay={0}>
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2 border-b border-slate-200">
+              <div className="space-y-3 max-w-2xl">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
+                  <Calendar className="w-3.5 h-3.5 text-[#166534]" />
+                  <span>Kalender Inter-Campus OGSO 1448/2026</span>
+                </div>
+                <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0C241B] tracking-tight">
+                  Jadwal & Agenda Pelaksanaan
+                </h2>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  Rangkaian kegiatan resmi terjadwal secara terpadu antar-kampus
+                  Pondok Modern Darussalam Gontor di seluruh Indonesia.
+                </p>
               </div>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0C241B] tracking-tight">
-                Jadwal & Agenda Pelaksanaan
-              </h2>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                Rangkaian kegiatan resmi terjadwal secara terpadu antar-kampus
-                Pondok Modern Darussalam Gontor di seluruh Indonesia.
-              </p>
-            </div>
 
-            <div className="flex items-center gap-2">
-              <Link
-                to="/jadwal"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#166534] hover:bg-[#0F3D20] transition-colors shadow-xs"
-              >
-                <span>Halaman Kalender Penuh</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/jadwal"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#166534] hover:bg-[#0F3D20] transition-colors shadow-xs"
+                >
+                  <span>Halaman Kalender Penuh</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
+              </div>
             </div>
-          </div>
+          </ScrollReveal>
 
           {/* Google Calendar-Style Monthly View */}
-          <MonthlyCalendarView />
+          <ScrollReveal direction="up" delay={100}>
+            <MonthlyCalendarView />
+          </ScrollReveal>
         </div>
       </section>
 
@@ -758,23 +801,25 @@ export const HomePage: React.FC = () => {
       {/* ========================================================================= */}
       <section className="py-20 lg:py-28 bg-[#0C241B] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto space-y-3 mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950 border border-emerald-600/40 text-[#A7F3D0] text-xs font-bold uppercase tracking-wider">
-              <Trophy className="w-3.5 h-3.5 text-[#D5C49A]" />
-              <span>Apresiasi & Penghargaan</span>
+          <ScrollReveal direction="up" delay={0}>
+            <div className="text-center max-w-3xl mx-auto space-y-3 mb-16">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950 border border-emerald-600/40 text-[#A7F3D0] text-xs font-bold uppercase tracking-wider">
+                <Trophy className="w-3.5 h-3.5 text-[#D5C49A]" />
+                <span>Apresiasi & Penghargaan</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-white">
+                Apresiasi Prestasi Santri Saintis
+              </h2>
+              <p className="text-sm text-emerald-200/80 leading-relaxed">
+                Penghargaan resmi yang dianugerahkan kepada para finalis berprestasi dan kontingen kampus terbaik pada Babak Final OGSO 1448/2026.
+              </p>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-white">
-              Apresiasi Prestasi Santri Saintis
-            </h2>
-            <p className="text-sm text-emerald-200/80 leading-relaxed">
-              Penghargaan resmi yang dianugerahkan kepada para finalis berprestasi dan kontingen kampus terbaik pada Babak Final OGSO 1448/2026.
-            </p>
-          </div>
+          </ScrollReveal>
 
           {/* ========================================================================= */}
           {/* BARIS 1: PIALA JUARA UMUM KAMPUS (SUPREME HIGHLIGHT - HOLOGRAPHIC THEME) */}
           {/* ========================================================================= */}
-          <div className="mb-10 sm:mb-12">
+          <ScrollReveal direction="zoom" delay={100} className="mb-10 sm:mb-12">
             <div className="relative rounded-3xl p-[2px] holographic-border-flow holographic-glow group hover:scale-[1.01] transition-all duration-500">
               <div className="relative p-6 sm:p-10 rounded-[22px] bg-gradient-to-r from-[#0a1128]/95 via-[#0f172a]/95 to-[#1e1138]/95 overflow-hidden shimmer-sweep">
                 {/* Iridescent Holographic Overlay & Dynamic Ambient Glows */}
@@ -829,68 +874,74 @@ export const HomePage: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </ScrollReveal>
 
           {/* ========================================================================= */}
-          {/* BARIS 2: JUARA 1, 2, 3 (MEDALI EMAS, PERAK, PERUNGGU) */}
+          {/* BARIS 2: JUARA 1, 2, 3 (OLYMPIC LAYOUT: JUARA 2 KIRI, JUARA 1 TENGAH, JUARA 3 KANAN) */}
           {/* ========================================================================= */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {/* Juara 1 — Emas */}
-            <div className="p-8 rounded-3xl bg-gradient-to-b from-amber-950/50 via-emerald-950/40 to-black/60 border-2 border-amber-400/80 shadow-2xl shadow-amber-500/10 text-center space-y-5 hover:-translate-y-3 hover:shadow-amber-400/25 transition-all duration-300 shimmer-sweep group relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl from-amber-400/20 to-transparent pointer-events-none rounded-bl-full" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-end pt-4">
+            {/* Juara 2 — Perak (KIRI di desktop) */}
+            <ScrollReveal direction="up" delay={100} className="order-2 md:order-1">
+              <div className="p-8 rounded-3xl bg-gradient-to-b from-slate-900/60 via-emerald-950/50 to-black/70 border-2 border-slate-300/80 shadow-2xl shadow-slate-400/10 text-center space-y-5 hover:-translate-y-3 hover:shadow-slate-300/25 transition-all duration-300 shimmer-sweep group relative overflow-hidden h-full">
+                <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl from-slate-300/20 to-transparent pointer-events-none rounded-bl-full" />
 
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-600 text-emerald-950 mx-auto flex items-center justify-center font-black shadow-xl shadow-amber-500/30 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-                <Trophy className="w-10 h-10 text-amber-950" />
+                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-slate-100 via-slate-300 to-slate-400 text-slate-900 mx-auto flex items-center justify-center font-black shadow-xl shadow-slate-400/30 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
+                  <Award className="w-10 h-10 text-slate-900" />
+                </div>
+                <div className="relative z-10">
+                  <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-300 px-3 py-1 rounded-full bg-slate-900/80 border border-slate-400/40 inline-block">
+                    Peringkat II
+                  </span>
+                  <h3 className="text-3xl font-black text-white mt-2">Juara 2</h3>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-black/40 border border-slate-400/30 text-xs text-slate-200 space-y-1 relative z-10">
+                  <div className="font-extrabold text-white text-sm">Medali Perak</div>
+                  <div className="text-slate-300/80 font-medium">+ Piagam Penghargaan Resmi</div>
+                </div>
               </div>
-              <div className="relative z-10">
-                <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#D5C49A] px-3 py-1 rounded-full bg-amber-950/80 border border-amber-400/40 inline-block">
-                  Peringkat I
-                </span>
-                <h3 className="text-3xl font-black text-white mt-2">Juara 1</h3>
-              </div>
-              <div className="p-3.5 rounded-2xl bg-black/40 border border-amber-400/30 text-xs text-amber-200 space-y-1 relative z-10">
-                <div className="font-extrabold text-white text-sm">Medali Emas</div>
-                <div className="text-amber-300/80 font-medium">+ Piagam Penghargaan Resmi</div>
-              </div>
-            </div>
+            </ScrollReveal>
 
-            {/* Juara 2 — Perak */}
-            <div className="p-8 rounded-3xl bg-gradient-to-b from-slate-900/50 via-emerald-950/40 to-black/60 border-2 border-slate-300/80 shadow-2xl shadow-slate-400/10 text-center space-y-5 hover:-translate-y-3 hover:shadow-slate-300/25 transition-all duration-300 shimmer-sweep group relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl from-slate-300/20 to-transparent pointer-events-none rounded-bl-full" />
+            {/* Juara 1 — Emas (TENGAH di desktop, elevated & crowned) */}
+            <ScrollReveal direction="up" delay={0} className="order-1 md:order-2 md:-mt-6 md:scale-105 z-10">
+              <div className="p-8 rounded-3xl bg-gradient-to-b from-amber-950/60 via-emerald-950/60 to-black/80 border-2 border-amber-400 shadow-2xl shadow-amber-500/25 text-center space-y-5 hover:-translate-y-3 hover:shadow-amber-400/40 transition-all duration-300 shimmer-sweep group relative overflow-hidden h-full">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-radial from-amber-400/30 to-transparent pointer-events-none rounded-bl-full animate-glow-pulse" />
 
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-slate-100 via-slate-300 to-slate-400 text-slate-900 mx-auto flex items-center justify-center font-black shadow-xl shadow-slate-400/30 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
-                <Award className="w-10 h-10 text-slate-900" />
+                <div className="w-22 h-22 rounded-3xl bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-600 text-emerald-950 mx-auto flex items-center justify-center font-black shadow-2xl shadow-amber-500/40 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                  <Trophy className="w-11 h-11 text-amber-950" />
+                </div>
+                <div className="relative z-10">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-amber-950 px-3.5 py-1 rounded-full bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-md inline-flex items-center gap-1.5 animate-pulse">
+                    👑 Peringkat I
+                  </span>
+                  <h3 className="text-3xl sm:text-4xl font-black text-white mt-2">Juara 1</h3>
+                </div>
+                <div className="p-4 rounded-2xl bg-black/50 border border-amber-400/40 text-xs text-amber-200 space-y-1 relative z-10">
+                  <div className="font-black text-amber-300 text-base">Medali Emas Utama</div>
+                  <div className="text-amber-200/90 font-medium">+ Piagam Penghargaan Kehormatan</div>
+                </div>
               </div>
-              <div className="relative z-10">
-                <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-300 px-3 py-1 rounded-full bg-slate-900/80 border border-slate-400/40 inline-block">
-                  Peringkat II
-                </span>
-                <h3 className="text-3xl font-black text-white mt-2">Juara 2</h3>
-              </div>
-              <div className="p-3.5 rounded-2xl bg-black/40 border border-slate-400/30 text-xs text-slate-200 space-y-1 relative z-10">
-                <div className="font-extrabold text-white text-sm">Medali Perak</div>
-                <div className="text-slate-300/80 font-medium">+ Piagam Penghargaan Resmi</div>
-              </div>
-            </div>
+            </ScrollReveal>
 
-            {/* Juara 3 — Perunggu */}
-            <div className="p-8 rounded-3xl bg-gradient-to-b from-amber-950/40 via-emerald-950/40 to-black/60 border-2 border-amber-600/80 shadow-2xl shadow-amber-700/10 text-center space-y-5 hover:-translate-y-3 hover:shadow-amber-600/25 transition-all duration-300 shimmer-sweep group relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl from-amber-600/20 to-transparent pointer-events-none rounded-bl-full" />
+            {/* Juara 3 — Perunggu (KANAN di desktop) */}
+            <ScrollReveal direction="up" delay={200} className="order-3 md:order-3">
+              <div className="p-8 rounded-3xl bg-gradient-to-b from-amber-950/50 via-emerald-950/50 to-black/70 border-2 border-amber-600/80 shadow-2xl shadow-amber-700/10 text-center space-y-5 hover:-translate-y-3 hover:shadow-amber-600/25 transition-all duration-300 shimmer-sweep group relative overflow-hidden h-full">
+                <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl from-amber-600/20 to-transparent pointer-events-none rounded-bl-full" />
 
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-600 via-amber-700 to-amber-900 text-amber-100 mx-auto flex items-center justify-center font-black shadow-xl shadow-amber-800/30 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-                <Award className="w-10 h-10 text-amber-100" />
+                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-600 via-amber-700 to-amber-900 text-amber-100 mx-auto flex items-center justify-center font-black shadow-xl shadow-amber-800/30 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                  <Award className="w-10 h-10 text-amber-100" />
+                </div>
+                <div className="relative z-10">
+                  <span className="text-[11px] font-extrabold uppercase tracking-widest text-amber-300 px-3 py-1 rounded-full bg-amber-950/80 border border-amber-600/40 inline-block">
+                    Peringkat III
+                  </span>
+                  <h3 className="text-3xl font-black text-white mt-2">Juara 3</h3>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-black/40 border border-amber-600/30 text-xs text-amber-200 space-y-1 relative z-10">
+                  <div className="font-extrabold text-white text-sm">Medali Perunggu</div>
+                  <div className="text-amber-300/80 font-medium">+ Piagam Penghargaan Resmi</div>
+                </div>
               </div>
-              <div className="relative z-10">
-                <span className="text-[11px] font-extrabold uppercase tracking-widest text-amber-300 px-3 py-1 rounded-full bg-amber-950/80 border border-amber-600/40 inline-block">
-                  Peringkat III
-                </span>
-                <h3 className="text-3xl font-black text-white mt-2">Juara 3</h3>
-              </div>
-              <div className="p-3.5 rounded-2xl bg-black/40 border border-amber-600/30 text-xs text-amber-200 space-y-1 relative z-10">
-                <div className="font-extrabold text-white text-sm">Medali Perunggu</div>
-                <div className="text-amber-300/80 font-medium">+ Piagam Penghargaan Resmi</div>
-              </div>
-            </div>
+            </ScrollReveal>
           </div>
 
           {/* ========================================================================= */}
@@ -898,46 +949,50 @@ export const HomePage: React.FC = () => {
           {/* ========================================================================= */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Juara Harapan 1 & 2 */}
-            <div className="p-6 sm:p-7 rounded-3xl glass-panel-dark hover:-translate-y-1.5 hover:border-[#A7F3D0]/50 hover:shadow-xl transition-all duration-300 group border border-emerald-500/20 flex flex-col justify-between space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-[#A7F3D0] text-xs font-bold">
-                    <Sparkles className="w-3.5 h-3.5 text-[#A7F3D0] group-hover:rotate-12 transition-transform" />
-                    <span>Apresiasi Finalis</span>
+            <ScrollReveal direction="up" delay={100}>
+              <div className="p-6 sm:p-7 rounded-3xl glass-panel-dark hover:-translate-y-1.5 hover:border-[#A7F3D0]/50 hover:shadow-xl transition-all duration-300 group border border-emerald-500/20 flex flex-col justify-between space-y-4 h-full">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-[#A7F3D0] text-xs font-bold">
+                      <Sparkles className="w-3.5 h-3.5 text-[#A7F3D0] group-hover:rotate-12 transition-transform" />
+                      <span>Apresiasi Finalis</span>
+                    </div>
+                    <span className="text-xs text-emerald-300/70 font-semibold">Babak Final</span>
                   </div>
-                  <span className="text-xs text-emerald-300/70 font-semibold">Babak Final</span>
+                  <h3 className="text-xl sm:text-2xl font-black text-white">Juara Harapan 1 & 2</h3>
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    Mendapatkan <strong>Medali Akrilik</strong> serta Piagam Penghargaan resmi dari Panitia Pusat OGSO.
+                  </p>
                 </div>
-                <h3 className="text-xl sm:text-2xl font-black text-white">Juara Harapan 1 & 2</h3>
-                <p className="text-sm text-slate-300 leading-relaxed">
-                  Mendapatkan <strong>Medali Akrilik</strong> serta Piagam Penghargaan resmi dari Panitia Pusat OGSO.
-                </p>
+                <div className="pt-3 border-t border-emerald-900/40 flex items-center gap-2 text-xs text-[#A7F3D0] font-medium">
+                  <Award className="w-4 h-4 text-[#A7F3D0] shrink-0" />
+                  <span>Medali Akrilik Eksklusif + Piagam Penghargaan</span>
+                </div>
               </div>
-              <div className="pt-3 border-t border-emerald-900/40 flex items-center gap-2 text-xs text-[#A7F3D0] font-medium">
-                <Award className="w-4 h-4 text-[#A7F3D0] shrink-0" />
-                <span>Medali Akrilik Eksklusif + Piagam Penghargaan</span>
-              </div>
-            </div>
+            </ScrollReveal>
 
             {/* E-Certificate Seluruh Peserta */}
-            <div className="p-6 sm:p-7 rounded-3xl glass-panel-dark hover:-translate-y-1.5 hover:border-emerald-400/50 hover:shadow-xl transition-all duration-300 group border border-emerald-500/20 flex flex-col justify-between space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-emerald-300 text-xs font-bold">
-                    <FileText className="w-3.5 h-3.5 text-emerald-300 group-hover:scale-110 transition-transform" />
-                    <span>Seluruh Peserta</span>
+            <ScrollReveal direction="up" delay={200}>
+              <div className="p-6 sm:p-7 rounded-3xl glass-panel-dark hover:-translate-y-1.5 hover:border-emerald-400/50 hover:shadow-xl transition-all duration-300 group border border-emerald-500/20 flex flex-col justify-between space-y-4 h-full">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-emerald-300 text-xs font-bold">
+                      <FileText className="w-3.5 h-3.5 text-emerald-300 group-hover:scale-110 transition-transform" />
+                      <span>Seluruh Peserta</span>
+                    </div>
+                    <span className="text-xs text-emerald-300/70 font-semibold">Semua Babak</span>
                   </div>
-                  <span className="text-xs text-emerald-300/70 font-semibold">Semua Babak</span>
+                  <h3 className="text-xl sm:text-2xl font-black text-white">E-Certificate Seluruh Peserta</h3>
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    Setiap santri peserta resmi mendapatkan <strong>e-certificate keikutsertaan</strong> yang didistribusikan melalui pembimbing kampus.
+                  </p>
                 </div>
-                <h3 className="text-xl sm:text-2xl font-black text-white">E-Certificate Seluruh Peserta</h3>
-                <p className="text-sm text-slate-300 leading-relaxed">
-                  Setiap santri peserta resmi mendapatkan <strong>e-certificate keikutsertaan</strong> yang didistribusikan melalui pembimbing kampus.
-                </p>
+                <div className="pt-3 border-t border-emerald-900/40 flex items-center gap-2 text-xs text-emerald-300 font-medium">
+                  <ShieldCheck className="w-4 h-4 text-emerald-300 shrink-0" />
+                  <span>Sertifikat Digital Resmi dengan Verifikasi Keabsahan</span>
+                </div>
               </div>
-              <div className="pt-3 border-t border-emerald-900/40 flex items-center gap-2 text-xs text-emerald-300 font-medium">
-                <ShieldCheck className="w-4 h-4 text-emerald-300 shrink-0" />
-                <span>Sertifikat Digital Resmi dengan Verifikasi Keabsahan</span>
-              </div>
-            </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -950,86 +1005,122 @@ export const HomePage: React.FC = () => {
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-10">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-xs font-bold text-[#A7F3D0]">
-                <Trophy className="w-3.5 h-3.5 text-[#D5C49A]" />
-                <span>
-                  OGSO Hall of Fame • Secara Keseluruhan
-                </span>
+          <ScrollReveal direction="up" delay={0}>
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-xs font-bold text-[#A7F3D0]">
+                  <Trophy className="w-3.5 h-3.5 text-[#D5C49A]" />
+                  <span>
+                    OGSO Hall of Fame • Secara Keseluruhan
+                  </span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-sans">
+                  Klasemen Prestasi Antar-Kampus Sepanjang Masa
+                </h2>
+                <p className="text-xs sm:text-sm text-emerald-100/80 max-w-xl leading-relaxed">
+                  Rekapitulasi resmi perolehan medali dan poin olimpiade sains Kulliyatu-l-Mu’allimin Al-Islamiyah seluruh pondok cabang Gontor.
+                </p>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-sans">
-                Klasemen Prestasi Antar-Kampus Sepanjang Masa
-              </h2>
-              <p className="text-xs sm:text-sm text-emerald-100/80 max-w-xl leading-relaxed">
-                Rekapitulasi resmi perolehan medali dan poin olimpiade sains Kulliyatu-l-Mu’allimin Al-Islamiyah seluruh pondok cabang Gontor.
-              </p>
+
+              <Link
+                to="/hall-of-fame"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs text-[#0C241B] bg-gradient-to-r from-[#A7F3D0] to-[#86EFAC] hover:opacity-90 transition-all self-start sm:self-auto shrink-0 shadow-md cursor-pointer"
+              >
+                <span>Jelajahi Hall of Fame</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
+          </ScrollReveal>
 
-            <Link
-              to="/hall-of-fame"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs text-[#0C241B] bg-gradient-to-r from-[#A7F3D0] to-[#86EFAC] hover:opacity-90 transition-all self-start sm:self-auto shrink-0 shadow-md cursor-pointer"
-            >
-              <span>Jelajahi Hall of Fame</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-
-          {/* Top 3 Campuses Podiums / Verified Empty State */}
+          {/* Top 3 Campuses Podiums (Olympic Layout: Juara 2 Kiri, Juara 1 Tengah Elevated, Juara 3 Kanan) */}
           {hofOverview.topThreeCampuses.length > 0 &&
             hofOverview.topThreeCampuses.some((c) => c.total_points > 0) ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {hofOverview.topThreeCampuses.map((c, i) => (
-                <Link
-                  key={c.campus}
-                  to={`/hall-of-fame/kampus/${c.campusSlug}`}
-                  className={cn(
-                    'group p-6 sm:p-7 rounded-2xl luxury-card-dark transition-all duration-300 border flex flex-col justify-between space-y-4 cursor-pointer relative overflow-hidden shimmer-sweep',
-                    i === 0
-                      ? 'bg-gradient-to-b from-amber-950/40 via-emerald-950/90 to-[#0C241B] border-[#D5C49A] shadow-xl shadow-amber-500/10 hover:shadow-amber-400/25'
-                      : i === 1
-                        ? 'bg-gradient-to-b from-slate-900/60 via-emerald-950/70 to-[#0C241B] border-slate-300/60 shadow-lg hover:border-slate-200'
-                        : 'bg-gradient-to-b from-amber-950/30 via-emerald-950/60 to-[#0C241B] border-amber-600/50 shadow-lg hover:border-amber-400/70'
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={cn(
-                        'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1.5',
-                        i === 0
-                          ? 'bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 text-amber-950 shadow-amber-500/25'
-                          : i === 1
-                            ? 'bg-gradient-to-r from-slate-100 to-slate-300 text-slate-800'
-                            : 'bg-gradient-to-r from-amber-200 to-amber-400 text-amber-950'
-                      )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end pt-4">
+              {(() => {
+                const first = hofOverview.topThreeCampuses[0]
+                const second = hofOverview.topThreeCampuses[1]
+                const third = hofOverview.topThreeCampuses[2]
+
+                const podiumList = [
+                  { campus: second, rank: 2, label: '🥈 Peringkat #2', subtitle: 'Runner-Up 1', orderClass: 'order-2 md:order-1', delay: 100 },
+                  { campus: first, rank: 1, label: '👑 Peringkat #1', subtitle: 'Juara Umum Kontingen', orderClass: 'order-1 md:order-2 md:-mt-8 md:scale-105 z-10', delay: 0 },
+                  { campus: third, rank: 3, label: '🥉 Peringkat #3', subtitle: 'Runner-Up 2', orderClass: 'order-3 md:order-3', delay: 200 },
+                ].filter((p): p is { campus: NonNullable<typeof p.campus>; rank: number; label: string; subtitle: string; orderClass: string; delay: number } => Boolean(p.campus))
+
+                return podiumList.map((p) => {
+                  const c = p.campus
+                  const isGold = p.rank === 1
+                  const isSilver = p.rank === 2
+
+                  return (
+                    <ScrollReveal
+                      key={c.campus}
+                      direction="up"
+                      delay={p.delay}
+                      className={p.orderClass}
                     >
-                      {i === 0 ? '👑 Peringkat #1' : i === 1 ? '🥈 Peringkat #2' : '🥉 Peringkat #3'}
-                    </span>
-                    <span className="text-xs font-mono text-emerald-300 font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/30">
-                      {c.total_points} Poin
-                    </span>
-                  </div>
+                      <Link
+                        to={`/hall-of-fame/kampus/${c.campusSlug}`}
+                        className={cn(
+                          'group p-6 sm:p-7 rounded-3xl luxury-card-dark transition-all duration-500 border flex flex-col justify-between space-y-5 cursor-pointer relative overflow-hidden shimmer-sweep h-full',
+                          isGold
+                            ? 'bg-gradient-to-b from-amber-950/60 via-emerald-950/95 to-[#071711] border-2 border-amber-400 shadow-2xl shadow-amber-500/25 hover:shadow-amber-400/40 hover:-translate-y-2'
+                            : isSilver
+                              ? 'bg-gradient-to-b from-slate-900/70 via-emerald-950/80 to-[#0A1E17] border border-slate-300/70 shadow-xl hover:border-slate-200 hover:-translate-y-1.5'
+                              : 'bg-gradient-to-b from-amber-950/40 via-emerald-950/70 to-[#0A1E17] border border-amber-600/60 shadow-xl hover:border-amber-400/80 hover:-translate-y-1.5'
+                        )}
+                      >
+                        {isGold && (
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-radial from-amber-400/30 to-transparent pointer-events-none rounded-bl-full animate-glow-pulse" />
+                        )}
 
-                  <div>
-                    <h3 className="font-extrabold text-lg sm:text-xl text-white group-hover:text-[#A7F3D0] transition-colors flex items-center gap-2">
-                      <span>{c.campus}</span>
-                    </h3>
-                    <div className="text-xs text-emerald-200/80 mt-2.5 flex items-center gap-2 font-medium bg-emerald-950/50 px-3 py-1.5 rounded-xl border border-emerald-800/30">
-                      <span>🥇 {c.gold}</span>
-                      <span>🥈 {c.silver}</span>
-                      <span>🥉 {c.bronze}</span>
-                      <span className="text-emerald-500/40">|</span>
-                      <span>H1: {c.honorable_1}</span>
-                      <span>H2: {c.honorable_2}</span>
-                    </div>
-                  </div>
+                        <div className="flex items-center justify-between">
+                          <span
+                            className={cn(
+                              'px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md flex items-center gap-1.5',
+                              isGold
+                                ? 'bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 text-amber-950 shadow-amber-500/30 animate-pulse'
+                                : isSilver
+                                  ? 'bg-gradient-to-r from-slate-100 to-slate-300 text-slate-800'
+                                  : 'bg-gradient-to-r from-amber-200 to-amber-400 text-amber-950'
+                            )}
+                          >
+                            {p.label}
+                          </span>
+                          <span className="text-xs font-mono text-emerald-300 font-extrabold px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/40 shadow-inner">
+                            {c.total_points} Poin
+                          </span>
+                        </div>
 
-                  <div className="pt-3 border-t border-emerald-900/50 flex items-center justify-between text-xs font-bold text-[#A7F3D0] group-hover:text-emerald-300">
-                    <span>Buka Profil Kontingen</span>
-                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1.5" />
-                  </div>
-                </Link>
-              ))}
+                        <div className="space-y-3">
+                          <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-400/80">
+                            {p.subtitle}
+                          </div>
+                          <h3 className={cn(
+                            'font-black text-white group-hover:text-[#A7F3D0] transition-colors leading-tight',
+                            isGold ? 'text-2xl sm:text-3xl' : 'text-xl sm:text-2xl'
+                          )}>
+                            {c.campus}
+                          </h3>
+                          <div className="text-xs text-emerald-200/90 mt-2.5 flex items-center gap-2 font-medium bg-emerald-950/60 px-3.5 py-2 rounded-2xl border border-emerald-800/40">
+                            <span>🥇 {c.gold}</span>
+                            <span>🥈 {c.silver}</span>
+                            <span>🥉 {c.bronze}</span>
+                            <span className="text-emerald-500/40">|</span>
+                            <span>H1: {c.honorable_1}</span>
+                            <span>H2: {c.honorable_2}</span>
+                          </div>
+                        </div>
+
+                        <div className="pt-3.5 border-t border-emerald-900/60 flex items-center justify-between text-xs font-bold text-[#A7F3D0] group-hover:text-emerald-300">
+                          <span>Buka Profil Kontingen</span>
+                          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1.5" />
+                        </div>
+                      </Link>
+                    </ScrollReveal>
+                  )
+                })
+              })()}
             </div>
           ) : (
             <div className="p-8 rounded-2xl bg-emerald-950/30 border border-emerald-800/40 text-center space-y-2">
@@ -1050,127 +1141,133 @@ export const HomePage: React.FC = () => {
       {/* ========================================================================= */}
       <section className="py-20 lg:py-28 bg-[#F5F8F4] border-b border-emerald-950/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto space-y-3 mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
-              <BookOpen className="w-3.5 h-3.5 text-[#166534]" />
-              <span>Sumber Pembelajaran</span>
+          <ScrollReveal direction="up" delay={0}>
+            <div className="text-center max-w-3xl mx-auto space-y-3 mb-16">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
+                <BookOpen className="w-3.5 h-3.5 text-[#166534]" />
+                <span>Sumber Pembelajaran</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0C241B]">
+                Silabus Resmi & Bank Soal Kompetisi
+              </h2>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Pelajari silabus pembelajaran Kulliyatu-l-Mu’allimin Al-Islamiyah dan unduh arsip soal latihan untuk mempersiapkan santri kontingen secara optimal.
+              </p>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0C241B]">
-              Silabus Resmi & Bank Soal Kompetisi
-            </h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              Pelajari silabus pembelajaran Kulliyatu-l-Mu’allimin Al-Islamiyah dan unduh arsip soal latihan untuk mempersiapkan santri kontingen secara optimal.
-            </p>
-          </div>
+          </ScrollReveal>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Card 1: Silabus */}
-            <div className="p-8 sm:p-10 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 flex flex-col justify-between space-y-6 shimmer-sweep group relative overflow-hidden">
-              <BookOpen className="absolute -right-6 -bottom-6 w-44 h-44 text-emerald-600/5 group-hover:text-emerald-600/15 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 pointer-events-none" />
+            <ScrollReveal direction="left" delay={100}>
+              <div className="p-8 sm:p-10 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-emerald-500 hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 flex flex-col justify-between space-y-6 shimmer-sweep group relative overflow-hidden h-full">
+                <BookOpen className="absolute -right-6 -bottom-6 w-44 h-44 text-emerald-600/5 group-hover:text-emerald-600/15 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 pointer-events-none" />
 
-              <div className="space-y-4 relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-[#166534] flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-[#166534] group-hover:text-white transition-all duration-300">
-                  <BookOpen className="w-7 h-7" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-[#0C241B] group-hover:text-[#166534] transition-colors">Silabus Resmi Jenjang 1–5</h3>
-                  <p className="text-xs text-slate-500 mt-1 font-medium">
-                    Cakupan kurikulum Matematika, Fisika, Biologi, dan Kimia
+                <div className="space-y-4 relative z-10">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-[#166534] flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-[#166534] group-hover:text-white transition-all duration-300">
+                    <BookOpen className="w-7 h-7" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-[#0C241B] group-hover:text-[#166534] transition-colors">Silabus Resmi Jenjang 1–5</h3>
+                    <p className="text-xs text-slate-500 mt-1 font-medium">
+                      Cakupan kurikulum Matematika, Fisika, Biologi, dan Kimia
+                    </p>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Disusun terstruktur per jenjang kelas santri dengan rincian topik inti per bidang studi. Dilengkapi dokumen silabus resmi format Excel & PDF untuk memudahkan pembimbing kontingen.
                   </p>
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Disusun terstruktur per jenjang kelas santri dengan rincian topik inti per bidang studi. Dilengkapi dokumen silabus resmi format Excel & PDF untuk memudahkan pembimbing kontingen.
-                </p>
 
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <span className="text-[11px] font-semibold bg-[#F5F8F4] text-slate-700 px-2.5 py-1 rounded-md border border-slate-200">
-                    Jenjang 1 (Kelas 1)
-                  </span>
-                  <span className="text-[11px] font-semibold bg-[#F5F8F4] text-slate-700 px-2.5 py-1 rounded-md border border-slate-200">
-                    Jenjang 2 (Kelas 2)
-                  </span>
-                  <span className="text-[11px] font-semibold bg-[#F5F8F4] text-slate-700 px-2.5 py-1 rounded-md border border-slate-200">
-                    Jenjang 3 (1 Int & 3)
-                  </span>
-                  <span className="text-[11px] font-semibold bg-[#F5F8F4] text-slate-700 px-2.5 py-1 rounded-md border border-slate-200">
-                    Jenjang 4 (3 Int & 4)
-                  </span>
-                  <span className="text-[11px] font-semibold bg-emerald-50 text-emerald-900 px-2.5 py-1 rounded-md border border-emerald-200">
-                    Jenjang 5 (Kelas 5 + Kimia)
-                  </span>
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    <span className="text-[11px] font-semibold bg-[#F5F8F4] text-slate-700 px-2.5 py-1 rounded-md border border-slate-200">
+                      Jenjang 1 (Kelas 1)
+                    </span>
+                    <span className="text-[11px] font-semibold bg-[#F5F8F4] text-slate-700 px-2.5 py-1 rounded-md border border-slate-200">
+                      Jenjang 2 (Kelas 2)
+                    </span>
+                    <span className="text-[11px] font-semibold bg-[#F5F8F4] text-slate-700 px-2.5 py-1 rounded-md border border-slate-200">
+                      Jenjang 3 (1 Int & 3)
+                    </span>
+                    <span className="text-[11px] font-semibold bg-[#F5F8F4] text-slate-700 px-2.5 py-1 rounded-md border border-slate-200">
+                      Jenjang 4 (3 Int & 4)
+                    </span>
+                    <span className="text-[11px] font-semibold bg-emerald-50 text-emerald-900 px-2.5 py-1 rounded-md border border-emerald-200">
+                      Jenjang 5 (Kelas 5 + Kimia)
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-5 border-t border-slate-100 flex items-center justify-between relative z-10">
+                  <Link
+                    to="/materi/silabus"
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-xs text-white bg-[#166534] hover:bg-[#14532D] shadow-md hover:shadow-lg transition-all group"
+                  >
+                    <span>Buka Silabus Interaktif</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                  <a
+                    href="/documents/Silabus_OGSO_2026.pdf"
+                    download="Silabus_OGSO_2026.pdf"
+                    className="text-xs font-bold text-[#166534] hover:underline flex items-center gap-1.5 p-2 rounded-lg hover:bg-emerald-50 transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>Unduh PDF</span>
+                  </a>
                 </div>
               </div>
-
-              <div className="pt-5 border-t border-slate-100 flex items-center justify-between relative z-10">
-                <Link
-                  to="/materi/silabus"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-xs text-white bg-[#166534] hover:bg-[#14532D] shadow-md hover:shadow-lg transition-all group"
-                >
-                  <span>Buka Silabus Interaktif</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <a
-                  href="/documents/Silabus_OGSO_2026.pdf"
-                  download="Silabus_OGSO_2026.pdf"
-                  className="text-xs font-bold text-[#166534] hover:underline flex items-center gap-1.5 p-2 rounded-lg hover:bg-emerald-50 transition-colors"
-                >
-                  <Download className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>Unduh PDF</span>
-                </a>
-              </div>
-            </div>
+            </ScrollReveal>
 
             {/* Card 2: Bank Soal */}
-            <div className="p-8 sm:p-10 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-amber-500 hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 flex flex-col justify-between space-y-6 shimmer-sweep group relative overflow-hidden">
-              <Archive className="absolute -right-6 -bottom-6 w-44 h-44 text-amber-600/5 group-hover:text-amber-600/15 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 pointer-events-none" />
+            <ScrollReveal direction="right" delay={200}>
+              <div className="p-8 sm:p-10 rounded-3xl bg-white border border-emerald-900/10 shadow-xs hover:border-amber-500 hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 flex flex-col justify-between space-y-6 shimmer-sweep group relative overflow-hidden h-full">
+                <Archive className="absolute -right-6 -bottom-6 w-44 h-44 text-amber-600/5 group-hover:text-amber-600/15 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 pointer-events-none" />
 
-              <div className="space-y-4 relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-900 flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-amber-700 group-hover:text-white transition-all duration-300">
-                  <Archive className="w-7 h-7" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-[#0C241B] group-hover:text-amber-950 transition-colors">Bank Soal Babak Penyisihan & Final</h3>
-                  <p className="text-xs text-slate-500 mt-1 font-medium">
-                    Koleksi arsip naskah soal latihan tahunan resmi
+                <div className="space-y-4 relative z-10">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-900 flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-amber-700 group-hover:text-white transition-all duration-300">
+                    <Archive className="w-7 h-7" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-[#0C241B] group-hover:text-amber-950 transition-colors">Bank Soal Babak Penyisihan & Final</h3>
+                    <p className="text-xs text-slate-500 mt-1 font-medium">
+                      Koleksi arsip naskah soal latihan tahunan resmi
+                    </p>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Kumpulan soal olimpiade terverifikasi dari periode-periode kompetisi sebelumnya. Tersedia untuk Babak Penyisihan dan Babak Final pada masing-masing tingkatan jenjang.
                   </p>
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Kumpulan soal olimpiade terverifikasi dari periode-periode kompetisi sebelumnya. Tersedia untuk Babak Penyisihan dan Babak Final pada masing-masing tingkatan jenjang.
-                </p>
 
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <span className="text-[11px] font-semibold bg-amber-50 text-amber-900 px-2.5 py-1 rounded-md border border-amber-200">
-                    Soal Isian Singkat
-                  </span>
-                  <span className="text-[11px] font-semibold bg-emerald-50 text-emerald-900 px-2.5 py-1 rounded-md border border-emerald-200">
-                    Babak Penyisihan
-                  </span>
-                  <span className="text-[11px] font-semibold bg-emerald-50 text-emerald-900 px-2.5 py-1 rounded-md border border-emerald-200">
-                    Babak Final
-                  </span>
-                  <span className="text-[11px] font-semibold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md">
-                    Format Dokumen Resmi
-                  </span>
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    <span className="text-[11px] font-semibold bg-amber-50 text-amber-900 px-2.5 py-1 rounded-md border border-amber-200">
+                      Soal Isian Singkat
+                    </span>
+                    <span className="text-[11px] font-semibold bg-emerald-50 text-emerald-900 px-2.5 py-1 rounded-md border border-emerald-200">
+                      Babak Penyisihan
+                    </span>
+                    <span className="text-[11px] font-semibold bg-emerald-50 text-emerald-900 px-2.5 py-1 rounded-md border border-emerald-200">
+                      Babak Final
+                    </span>
+                    <span className="text-[11px] font-semibold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md">
+                      Format Dokumen Resmi
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-5 border-t border-slate-100 flex items-center justify-between relative z-10">
+                  <Link
+                    to="/materi/bank-soal"
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-xs text-white bg-[#166534] hover:bg-[#14532D] shadow-md hover:shadow-lg transition-all group"
+                  >
+                    <span>Akses Bank Soal</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                  <Link
+                    to="/participant"
+                    className="text-xs font-bold text-slate-700 hover:text-[#166534] flex items-center gap-1.5 p-2 rounded-lg hover:bg-slate-50 transition-colors"
+                  >
+                    <Trophy className="w-3.5 h-3.5 text-[#D5C49A]" />
+                    <span>Daftar Pemenang</span>
+                  </Link>
                 </div>
               </div>
-
-              <div className="pt-5 border-t border-slate-100 flex items-center justify-between relative z-10">
-                <Link
-                  to="/materi/bank-soal"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-xs text-white bg-[#166534] hover:bg-[#14532D] shadow-md hover:shadow-lg transition-all group"
-                >
-                  <span>Akses Bank Soal</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <Link
-                  to="/participant"
-                  className="text-xs font-bold text-slate-700 hover:text-[#166534] flex items-center gap-1.5 p-2 rounded-lg hover:bg-slate-50 transition-colors"
-                >
-                  <Trophy className="w-3.5 h-3.5 text-[#D5C49A]" />
-                  <span>Daftar Pemenang</span>
-                </Link>
-              </div>
-            </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -1180,17 +1277,19 @@ export const HomePage: React.FC = () => {
       {/* ========================================================================= */}
       <section className="py-20 lg:py-28 bg-white border-b border-emerald-950/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto space-y-3 mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
-              <span>Alur Administrasi</span>
+          <ScrollReveal direction="up" delay={0}>
+            <div className="text-center max-w-3xl mx-auto space-y-3 mb-16">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
+                <span>Alur Administrasi</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0C241B]">
+                Mekanisme Pendaftaran Kolektif Kontingen
+              </h2>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Pendaftaran peserta dilakukan <strong>secara eksklusif dan kolektif</strong> oleh Admin Kampus resmi melalui portal administrasi OGSOreg.
+              </p>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0C241B]">
-              Mekanisme Pendaftaran Kolektif Kontingen
-            </h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              Pendaftaran peserta dilakukan <strong>secara eksklusif dan kolektif</strong> oleh Admin Kampus resmi melalui portal administrasi OGSOreg.
-            </p>
-          </div>
+          </ScrollReveal>
 
           <div className="relative mb-12">
             {/* Desktop Connector Line */}
@@ -1198,82 +1297,94 @@ export const HomePage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4.5 relative z-10">
               {/* Step 1 */}
-              <div className="p-6 rounded-3xl bg-[#F5F8F4] border border-emerald-900/10 hover:border-emerald-500 hover:bg-white hover:-translate-y-2 hover:shadow-xl transition-all duration-300 space-y-3.5 relative group overflow-hidden">
-                <div className="w-10 h-10 rounded-2xl bg-[#166534] text-white font-black text-sm flex items-center justify-center shadow-md group-hover:scale-110 group-hover:bg-emerald-600 transition-all duration-300">
-                  01
+              <ScrollReveal direction="up" delay={50}>
+                <div className="p-6 rounded-3xl bg-[#F5F8F4] border border-emerald-900/10 hover:border-emerald-500 hover:bg-white hover:-translate-y-2 hover:shadow-xl transition-all duration-300 space-y-3.5 relative group overflow-hidden h-full">
+                  <div className="w-10 h-10 rounded-2xl bg-[#166534] text-white font-black text-sm flex items-center justify-center shadow-md group-hover:scale-110 group-hover:bg-emerald-600 transition-all duration-300">
+                    01
+                  </div>
+                  <h3 className="font-bold text-base text-[#0C241B] group-hover:text-[#166534] transition-colors">Seleksi Internal Kampus</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Pimpinan dan pembimbing kampus menyeleksi 20 santri terbaik (tepat 4 santri per jenjang 1 s/d 5).
+                  </p>
                 </div>
-                <h3 className="font-bold text-base text-[#0C241B] group-hover:text-[#166534] transition-colors">Seleksi Internal Kampus</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Pimpinan dan pembimbing kampus menyeleksi 20 santri terbaik (tepat 4 santri per jenjang 1 s/d 5).
-                </p>
-              </div>
+              </ScrollReveal>
 
               {/* Step 2 */}
-              <div className="p-6 rounded-3xl bg-[#F5F8F4] border border-emerald-900/10 hover:border-emerald-500 hover:bg-white hover:-translate-y-2 hover:shadow-xl transition-all duration-300 space-y-3.5 relative group overflow-hidden">
-                <div className="w-10 h-10 rounded-2xl bg-[#166534] text-white font-black text-sm flex items-center justify-center shadow-md group-hover:scale-110 group-hover:bg-emerald-600 transition-all duration-300">
-                  02
+              <ScrollReveal direction="up" delay={100}>
+                <div className="p-6 rounded-3xl bg-[#F5F8F4] border border-emerald-900/10 hover:border-emerald-500 hover:bg-white hover:-translate-y-2 hover:shadow-xl transition-all duration-300 space-y-3.5 relative group overflow-hidden h-full">
+                  <div className="w-10 h-10 rounded-2xl bg-[#166534] text-white font-black text-sm flex items-center justify-center shadow-md group-hover:scale-110 group-hover:bg-emerald-600 transition-all duration-300">
+                    02
+                  </div>
+                  <h3 className="font-bold text-base text-[#0C241B] group-hover:text-[#166534] transition-colors">Login Admin Kampus</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Admin Kampus login ke portal OGSOreg menggunakan akun resmi terverifikasi kampus masing-masing.
+                  </p>
                 </div>
-                <h3 className="font-bold text-base text-[#0C241B] group-hover:text-[#166534] transition-colors">Login Admin Kampus</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Admin Kampus login ke portal OGSOreg menggunakan akun resmi terverifikasi kampus masing-masing.
-                </p>
-              </div>
+              </ScrollReveal>
 
               {/* Step 3 */}
-              <div className="p-6 rounded-3xl bg-[#F5F8F4] border border-emerald-900/10 hover:border-emerald-500 hover:bg-white hover:-translate-y-2 hover:shadow-xl transition-all duration-300 space-y-3.5 relative group overflow-hidden">
-                <div className="w-10 h-10 rounded-2xl bg-[#166534] text-white font-black text-sm flex items-center justify-center shadow-md group-hover:scale-110 group-hover:bg-emerald-600 transition-all duration-300">
-                  03
+              <ScrollReveal direction="up" delay={150}>
+                <div className="p-6 rounded-3xl bg-[#F5F8F4] border border-emerald-900/10 hover:border-emerald-500 hover:bg-white hover:-translate-y-2 hover:shadow-xl transition-all duration-300 space-y-3.5 relative group overflow-hidden h-full">
+                  <div className="w-10 h-10 rounded-2xl bg-[#166534] text-white font-black text-sm flex items-center justify-center shadow-md group-hover:scale-110 group-hover:bg-emerald-600 transition-all duration-300">
+                    03
+                  </div>
+                  <h3 className="font-bold text-base text-[#0C241B] group-hover:text-[#166534] transition-colors">Input / Impor Data</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Admin mengunggah berkas Excel data delegasi atau menginput langsung santri peserta ke sistem.
+                  </p>
                 </div>
-                <h3 className="font-bold text-base text-[#0C241B] group-hover:text-[#166534] transition-colors">Input / Impor Data</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Admin mengunggah berkas Excel data delegasi atau menginput langsung santri peserta ke sistem.
-                </p>
-              </div>
+              </ScrollReveal>
 
               {/* Step 4 */}
-              <div className="p-6 rounded-3xl bg-[#F5F8F4] border border-emerald-900/10 hover:border-emerald-500 hover:bg-white hover:-translate-y-2 hover:shadow-xl transition-all duration-300 space-y-3.5 relative group overflow-hidden">
-                <div className="w-10 h-10 rounded-2xl bg-[#166534] text-white font-black text-sm flex items-center justify-center shadow-md group-hover:scale-110 group-hover:bg-emerald-600 transition-all duration-300">
-                  04
+              <ScrollReveal direction="up" delay={200}>
+                <div className="p-6 rounded-3xl bg-[#F5F8F4] border border-emerald-900/10 hover:border-emerald-500 hover:bg-white hover:-translate-y-2 hover:shadow-xl transition-all duration-300 space-y-3.5 relative group overflow-hidden h-full">
+                  <div className="w-10 h-10 rounded-2xl bg-[#166534] text-white font-black text-sm flex items-center justify-center shadow-md group-hover:scale-110 group-hover:bg-emerald-600 transition-all duration-300">
+                    04
+                  </div>
+                  <h3 className="font-bold text-base text-[#0C241B] group-hover:text-[#166534] transition-colors">Validasi & Kirim</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Sistem memvalidasi kecocokan jenjang dan kelas, kuota kampus, lalu Admin mengirimkan pendaftaran.
+                  </p>
                 </div>
-                <h3 className="font-bold text-base text-[#0C241B] group-hover:text-[#166534] transition-colors">Validasi & Kirim</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Sistem memvalidasi kecocokan jenjang dan kelas, kuota kampus, lalu Admin mengirimkan pendaftaran.
-                </p>
-              </div>
+              </ScrollReveal>
 
               {/* Step 5 */}
-              <div className="p-6 rounded-3xl bg-[#F5F8F4] border border-emerald-900/10 hover:border-emerald-500 hover:bg-white hover:-translate-y-2 hover:shadow-xl transition-all duration-300 space-y-3.5 relative group overflow-hidden">
-                <div className="w-10 h-10 rounded-2xl bg-[#166534] text-white font-black text-sm flex items-center justify-center shadow-md group-hover:scale-110 group-hover:bg-emerald-600 transition-all duration-300">
-                  05
+              <ScrollReveal direction="up" delay={250}>
+                <div className="p-6 rounded-3xl bg-[#F5F8F4] border border-emerald-900/10 hover:border-emerald-500 hover:bg-white hover:-translate-y-2 hover:shadow-xl transition-all duration-300 space-y-3.5 relative group overflow-hidden h-full">
+                  <div className="w-10 h-10 rounded-2xl bg-[#166534] text-white font-black text-sm flex items-center justify-center shadow-md group-hover:scale-110 group-hover:bg-emerald-600 transition-all duration-300">
+                    05
+                  </div>
+                  <h3 className="font-bold text-base text-[#0C241B] group-hover:text-[#166534] transition-colors">Sinkronisasi Moodle</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Panitia Pusat memverifikasi dan memproses akun CBT Moodle LMS untuk pelaksanaan olimpiade.
+                  </p>
                 </div>
-                <h3 className="font-bold text-base text-[#0C241B] group-hover:text-[#166534] transition-colors">Sinkronisasi Moodle</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Panitia Pusat memverifikasi dan memproses akun CBT Moodle LMS untuk pelaksanaan olimpiade.
-                </p>
-              </div>
+              </ScrollReveal>
             </div>
           </div>
 
           {/* Important Notice & CTA (Elevated Card) */}
-          <div className="p-8 sm:p-10 rounded-3xl bg-gradient-to-br from-[#0C241B] via-[#0E3527] to-[#0A1E17] text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl hover:shadow-2xl transition-all duration-300 shimmer-sweep">
-            <div className="space-y-2 text-center md:text-left max-w-2xl">
-              <div className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-widest text-[#A7F3D0]">
-                <ShieldCheck className="w-4 h-4 text-[#A7F3D0]" />
-                <span>Pemberitahuan Penting untuk Santri & Wali Santri:</span>
+          <ScrollReveal direction="zoom" delay={150}>
+            <div className="p-8 sm:p-10 rounded-3xl bg-gradient-to-br from-[#0C241B] via-[#0E3527] to-[#0A1E17] text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl hover:shadow-2xl transition-all duration-300 shimmer-sweep">
+              <div className="space-y-2 text-center md:text-left max-w-2xl">
+                <div className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-widest text-[#A7F3D0]">
+                  <ShieldCheck className="w-4 h-4 text-[#A7F3D0]" />
+                  <span>Pemberitahuan Penting untuk Santri & Wali Santri:</span>
+                </div>
+                <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
+                  Tidak tersedia formulir pendaftaran perorangan secara publik. Semua santri peserta wajib dikoordinasikan langsung melalui pembimbing/Admin Kampus Pondok Modern Darussalam Gontor di kampus masing-masing.
+                </p>
               </div>
-              <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
-                Tidak tersedia formulir pendaftaran perorangan secara publik. Semua santri peserta wajib dikoordinasikan langsung melalui pembimbing/Admin Kampus Pondok Modern Darussalam Gontor di kampus masing-masing.
-              </p>
-            </div>
 
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-2.5 px-7 py-4 rounded-xl font-bold text-xs text-[#0C241B] bg-gradient-to-r from-[#A7F3D0] via-[#86EFAC] to-[#4ADE80] hover:from-[#86EFAC] hover:to-[#22C55E] shrink-0 shadow-lg shadow-emerald-950/60 hover:-translate-y-0.5 transition-all duration-300"
-            >
-              <LogIn className="w-4 h-4" />
-              <span>Login Admin Kampus</span>
-            </Link>
-          </div>
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-2.5 px-7 py-4 rounded-xl font-bold text-xs text-[#0C241B] bg-gradient-to-r from-[#A7F3D0] via-[#86EFAC] to-[#4ADE80] hover:from-[#86EFAC] hover:to-[#22C55E] shrink-0 shadow-lg shadow-emerald-950/60 hover:-translate-y-0.5 transition-all duration-300"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Login Admin Kampus</span>
+              </Link>
+            </div>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -1282,77 +1393,82 @@ export const HomePage: React.FC = () => {
       {/* ========================================================================= */}
       <section className="py-20 lg:py-28 bg-[#F5F8F4] border-b border-emerald-950/10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center space-y-3 mb-12">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
-              <HelpCircle className="w-3.5 h-3.5 text-[#166534]" />
-              <span>Tanya Jawab</span>
+          <ScrollReveal direction="up" delay={0}>
+            <div className="text-center space-y-3 mb-12">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-[#166534] text-xs font-bold uppercase tracking-wider">
+                <HelpCircle className="w-3.5 h-3.5 text-[#166534]" />
+                <span>Tanya Jawab</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0C241B]">
+                Pertanyaan yang Sering Diajukan (FAQ)
+              </h2>
+              <p className="text-sm text-slate-600">
+                Jawaban resmi seputar ketentuan pelaksanaan, teknis olimpiade, dan partisipasi santri.
+              </p>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0C241B]">
-              Pertanyaan yang Sering Diajukan (FAQ)
-            </h2>
-            <p className="text-sm text-slate-600">
-              Jawaban resmi seputar ketentuan pelaksanaan, teknis olimpiade, dan partisipasi santri.
-            </p>
-          </div>
+          </ScrollReveal>
 
           <div className="space-y-3.5">
             {content.faq.map((item, idx) => {
               const isOpen = openFaqIndex === idx
               return (
-                <div
-                  key={idx}
-                  className={cn(
-                    'rounded-2xl bg-white border transition-all duration-300 overflow-hidden',
-                    isOpen
-                      ? 'border-[#166534] border-l-4 shadow-md bg-emerald-50/15'
-                      : 'border-emerald-900/10 shadow-xs hover:border-emerald-400/50 hover:shadow-sm'
-                  )}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
-                    className="w-full p-5 text-left flex items-center justify-between gap-4 focus:outline-none"
-                    aria-expanded={isOpen}
+                <ScrollReveal key={idx} direction="up" delay={idx * 30}>
+                  <div
+                    className={cn(
+                      'rounded-2xl bg-white border transition-all duration-300 overflow-hidden',
+                      isOpen
+                        ? 'border-[#166534] border-l-4 shadow-md bg-emerald-50/15'
+                        : 'border-emerald-900/10 shadow-xs hover:border-emerald-400/50 hover:shadow-sm'
+                    )}
                   >
-                    <span className={cn('font-bold text-sm sm:text-base transition-colors', isOpen ? 'text-[#166534]' : 'text-[#0C241B]')}>
-                      {item.question}
-                    </span>
-                    <div
-                      className={cn(
-                        'w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300',
-                        isOpen ? 'rotate-180 bg-[#166534] text-white shadow-sm' : 'bg-[#F5F8F4] text-slate-500'
-                      )}
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
+                      className="w-full p-5 text-left flex items-center justify-between gap-4 focus:outline-none cursor-pointer"
+                      aria-expanded={isOpen}
                     >
-                      <ChevronDown
-                        className={cn('w-4 h-4', isOpen ? 'text-white' : 'text-slate-600')}
-                      />
-                    </div>
-                  </button>
+                      <span className={cn('font-bold text-sm sm:text-base transition-colors', isOpen ? 'text-[#166534]' : 'text-[#0C241B]')}>
+                        {item.question}
+                      </span>
+                      <div
+                        className={cn(
+                          'w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300',
+                          isOpen ? 'rotate-180 bg-[#166534] text-white shadow-sm' : 'bg-[#F5F8F4] text-slate-500'
+                        )}
+                      >
+                        <ChevronDown
+                          className={cn('w-4 h-4', isOpen ? 'text-white' : 'text-slate-600')}
+                        />
+                      </div>
+                    </button>
 
-                  {isOpen && (
-                    <div className="px-5 pb-5 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3.5 animate-in fade-in duration-200">
-                      {item.answer}
-                    </div>
-                  )}
-                </div>
+                    {isOpen && (
+                      <div className="px-5 pb-5 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3.5 animate-in fade-in duration-200">
+                        {item.answer}
+                      </div>
+                    )}
+                  </div>
+                </ScrollReveal>
               )
             })}
           </div>
 
-          <div className="mt-10 p-6 rounded-2xl bg-emerald-950/10 border border-emerald-900/10 text-center space-y-2">
-            <div className="text-xs font-bold text-[#166534]">Memiliki pertanyaan lebih lanjut?</div>
-            <p className="text-xs text-slate-600">
-              Silakan hubungi Narahubung Panitia Pelaksana OGSO 1448/2026 melalui WhatsApp:{' '}
-              <a
-                href={getWhatsAppLink('6282332914996')}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-bold text-[#166534] underline"
-              >
-                +62 823-3291-4996 (Ust. Sigap Dwi Aminullah, S.Ag.)
-              </a>
-            </p>
-          </div>
+          <ScrollReveal direction="up" delay={150}>
+            <div className="mt-10 p-6 rounded-2xl bg-emerald-950/10 border border-emerald-900/10 text-center space-y-2">
+              <div className="text-xs font-bold text-[#166534]">Memiliki pertanyaan lebih lanjut?</div>
+              <p className="text-xs text-slate-600">
+                Silakan hubungi Narahubung Panitia Pelaksana OGSO 1448/2026 melalui WhatsApp:{' '}
+                <a
+                  href={getWhatsAppLink('6282332914996')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-[#166534] underline"
+                >
+                  +62 823-3291-4996 (Ust. Sigap Dwi Aminullah, S.Ag.)
+                </a>
+              </p>
+            </div>
+          </ScrollReveal>
         </div>
       </section>
     </div>
