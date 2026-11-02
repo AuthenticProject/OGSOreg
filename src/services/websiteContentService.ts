@@ -379,10 +379,12 @@ export const websiteContentService = {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (!raw) return DEFAULT_WEBSITE_CONTENT
+      const parsed = JSON.parse(raw) as Partial<WebsiteContentConfig>
       const hero = { ...DEFAULT_WEBSITE_CONTENT.hero, ...(parsed.hero || {}) }
       if (
-        hero.displayHeadline === 'Be Scientist, Be Closer To Allah' ||
-        hero.displayHeadline === 'Be A Scientist, Get Closer To Allah'
+        !hero.displayHeadline ||
+        hero.displayHeadline.toLowerCase().includes('be scientist') ||
+        hero.displayHeadline.toLowerCase().includes('get closer')
       ) {
         hero.displayHeadline = 'Be A Scientist, Be Closer To Allah'
       }
@@ -415,8 +417,16 @@ export const websiteContentService = {
         .maybeSingle()
 
       if (!dbErr && dbData) {
+        const hero = { ...DEFAULT_WEBSITE_CONTENT.hero, ...(dbData.hero || {}) }
+        if (
+          !hero.displayHeadline ||
+          hero.displayHeadline.toLowerCase().includes('be scientist') ||
+          hero.displayHeadline.toLowerCase().includes('get closer')
+        ) {
+          hero.displayHeadline = 'Be A Scientist, Be Closer To Allah'
+        }
         const cloudContent: WebsiteContentConfig = {
-          hero: { ...DEFAULT_WEBSITE_CONTENT.hero, ...(dbData.hero || {}) },
+          hero,
           competitionInfo: { ...DEFAULT_WEBSITE_CONTENT.competitionInfo, ...(dbData.competition_info || {}) },
           timeline: Array.isArray(dbData.timeline) && dbData.timeline.length > 0 ? dbData.timeline : DEFAULT_WEBSITE_CONTENT.timeline,
           faq: Array.isArray(dbData.faq) && dbData.faq.length > 0 ? dbData.faq : DEFAULT_WEBSITE_CONTENT.faq,
@@ -435,6 +445,14 @@ export const websiteContentService = {
       // 2. Fallback to app_settings cloud store
       const cloudSetting = await cloudSyncService.getCloudSetting<WebsiteContentConfig | null>('website_content', null)
       if (cloudSetting) {
+        if (
+          !cloudSetting.hero?.displayHeadline ||
+          cloudSetting.hero.displayHeadline.toLowerCase().includes('be scientist') ||
+          cloudSetting.hero.displayHeadline.toLowerCase().includes('get closer')
+        ) {
+          if (!cloudSetting.hero) cloudSetting.hero = { ...DEFAULT_WEBSITE_CONTENT.hero }
+          cloudSetting.hero.displayHeadline = 'Be A Scientist, Be Closer To Allah'
+        }
         if (typeof window !== 'undefined') {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudSetting))
           window.dispatchEvent(new Event('ogsoreg_website_content_updated'))

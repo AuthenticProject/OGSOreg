@@ -136,35 +136,36 @@ export const HomePage: React.FC = () => {
             </div>
 
             {/* Creative Display Headline */}
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-tight font-sans drop-shadow-md">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-tight font-sans drop-shadow-md">
               {(() => {
-                const headline = content.hero.displayHeadline || 'Be A Scientist, Be Closer To Allah'
+                let headline = content.hero.displayHeadline || 'Be A Scientist, Be Closer To Allah'
+                if (
+                  headline.toLowerCase().includes('scientist') &&
+                  headline.toLowerCase().includes('closer')
+                ) {
+                  headline = 'Be A Scientist, Be Closer To Allah'
+                }
+
+                let line1 = 'Be A Scientist,'
+                let line2 = 'Be Closer To Allah'
+
                 if (headline.includes('\n')) {
-                  const [first, ...rest] = headline.split('\n')
-                  return (
-                    <>
-                      <span className="block">{first}</span>
-                      <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#A7F3D0] via-[#86EFAC] to-[#D5C49A] drop-shadow-sm mt-1 sm:mt-2">
-                        {rest.join(' ').trim()}
-                      </span>
-                    </>
-                  )
+                  const parts = headline.split('\n')
+                  line1 = parts[0].trim()
+                  line2 = parts.slice(1).join(' ').trim()
+                } else if (headline.includes(',')) {
+                  const parts = headline.split(',')
+                  line1 = parts[0].trim() + (parts[0].trim().endsWith(',') ? '' : ',')
+                  line2 = parts.slice(1).join(',').trim()
                 }
-                if (headline.includes(',')) {
-                  const [first, ...rest] = headline.split(',')
-                  return (
-                    <>
-                      <span className="block">{first.trim()},</span>
-                      <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#A7F3D0] via-[#86EFAC] to-[#D5C49A] drop-shadow-sm mt-1 sm:mt-2">
-                        {rest.join(',').trim()}
-                      </span>
-                    </>
-                  )
-                }
+
                 return (
-                  <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#A7F3D0] via-[#86EFAC] to-[#D5C49A] drop-shadow-sm">
-                    {headline}
-                  </span>
+                  <>
+                    <span className="block">{line1}</span>
+                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#A7F3D0] via-[#86EFAC] to-[#D5C49A] drop-shadow-sm mt-1 sm:mt-2">
+                      {line2}
+                    </span>
+                  </>
                 )
               })()}
             </h1>
