@@ -25,11 +25,9 @@ import {
   Globe,
   ExternalLink,
 } from 'lucide-react'
-import {
-  websiteContentService,
-  type WebsiteContentConfig,
-} from '../../services/websiteContentService'
+import { websiteContentService, type WebsiteContentConfig } from '../../services/websiteContentService'
 import { hallOfFameService } from '../../services/hallOfFameService'
+import { materiService } from '../../services/materiService'
 import { PhotoMarqueeGallery } from '../../components/public/PhotoMarqueeGallery'
 import { MonthlyCalendarView } from '../../components/calendar/MonthlyCalendarView'
 import { cn } from '../../lib/utils'
@@ -39,15 +37,32 @@ export const HomePage: React.FC = () => {
   const [content, setContent] = useState<WebsiteContentConfig>(() =>
     websiteContentService.getContent()
   )
-  const [hofOverview] = useState(() => hallOfFameService.getHallOfFameOverview())
+  const [hofOverview, setHofOverview] = useState(() => hallOfFameService.getHallOfFameOverview())
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0)
 
   useEffect(() => {
+    // 1. Initial Cloud Sync on mount for multi-device cross-platform reliability
+    websiteContentService.syncFromCloud().catch(() => {})
+    hallOfFameService.syncFromCloud().catch(() => {})
+    materiService.syncFromCloud().catch(() => {})
+
+    // 2. Realtime Event Listeners
     const handleUpdate = () => {
       setContent(websiteContentService.getContent())
     }
+    const handleUpdateHof = () => {
+      setHofOverview(hallOfFameService.getHallOfFameOverview())
+    }
+
     window.addEventListener('ogsoreg_website_content_updated', handleUpdate)
-    return () => window.removeEventListener('ogsoreg_website_content_updated', handleUpdate)
+    window.addEventListener('ogsoreg_hof_settings_updated', handleUpdateHof)
+    window.addEventListener('ogsoreg_hof_aggregates_updated', handleUpdateHof)
+
+    return () => {
+      window.removeEventListener('ogsoreg_website_content_updated', handleUpdate)
+      window.removeEventListener('ogsoreg_hof_settings_updated', handleUpdateHof)
+      window.removeEventListener('ogsoreg_hof_aggregates_updated', handleUpdateHof)
+    }
   }, [])
 
   return (
@@ -225,10 +240,10 @@ export const HomePage: React.FC = () => {
 
             {/* Key Facts Highlights Strip (Elevated Interactive Glass Cards with Rich Icons) */}
             <div className="pt-10 grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4 max-w-4xl mx-auto">
-              <div className="p-4 sm:p-5 rounded-2xl glass-panel-dark border border-emerald-400/20 hover:-translate-y-2 hover:border-[#A7F3D0]/60 hover:shadow-[0_0_25px_rgba(167,243,208,0.2)] transition-all duration-300 shimmer-sweep group cursor-default text-left relative overflow-hidden">
+              <div className="p-4 sm:p-5 rounded-2xl luxury-card-dark glass-panel-dark border border-emerald-400/25 hover:border-[#A7F3D0]/80 transition-all duration-300 shimmer-sweep group cursor-default text-left relative overflow-hidden">
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-3xl sm:text-4xl font-black text-white group-hover:text-[#A7F3D0] transition-colors">20</div>
-                  <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
                     <School className="w-4 h-4" />
                   </div>
                 </div>
@@ -236,10 +251,10 @@ export const HomePage: React.FC = () => {
                 <div className="text-[10px] text-emerald-300/80 mt-0.5">Delegasi se-Indonesia</div>
               </div>
 
-              <div className="p-4 sm:p-5 rounded-2xl glass-panel-dark border border-amber-400/20 hover:-translate-y-2 hover:border-[#D5C49A]/60 hover:shadow-[0_0_25px_rgba(213,196,154,0.2)] transition-all duration-300 shimmer-sweep group cursor-default text-left relative overflow-hidden">
+              <div className="p-4 sm:p-5 rounded-2xl luxury-card-dark glass-panel-dark border border-amber-400/25 hover:border-[#D5C49A]/80 transition-all duration-300 shimmer-sweep group cursor-default text-left relative overflow-hidden">
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-3xl sm:text-4xl font-black text-white group-hover:text-[#D5C49A] transition-colors">5</div>
-                  <div className="p-1.5 rounded-lg bg-amber-500/10 text-[#D5C49A] border border-amber-500/20">
+                  <div className="p-2 rounded-xl bg-amber-500/15 text-[#D5C49A] border border-amber-400/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
                     <GraduationCap className="w-4 h-4" />
                   </div>
                 </div>
@@ -247,10 +262,10 @@ export const HomePage: React.FC = () => {
                 <div className="text-[10px] text-amber-200/80 mt-0.5">Kelas 1 hingga Kelas 5 KMI</div>
               </div>
 
-              <div className="p-4 sm:p-5 rounded-2xl glass-panel-dark border border-emerald-400/20 hover:-translate-y-2 hover:border-[#A7F3D0]/60 hover:shadow-[0_0_25px_rgba(167,243,208,0.2)] transition-all duration-300 shimmer-sweep group cursor-default text-left relative overflow-hidden">
+              <div className="p-4 sm:p-5 rounded-2xl luxury-card-dark glass-panel-dark border border-emerald-400/25 hover:border-[#A7F3D0]/80 transition-all duration-300 shimmer-sweep group cursor-default text-left relative overflow-hidden">
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-3xl sm:text-4xl font-black text-white group-hover:text-[#A7F3D0] transition-colors">40</div>
-                  <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
                     <FileText className="w-4 h-4" />
                   </div>
                 </div>
@@ -258,10 +273,10 @@ export const HomePage: React.FC = () => {
                 <div className="text-[10px] text-emerald-300/80 mt-0.5">Short essay berbasis nalar</div>
               </div>
 
-              <div className="p-4 sm:p-5 rounded-2xl glass-panel-dark border border-teal-400/20 hover:-translate-y-2 hover:border-[#A7F3D0]/60 hover:shadow-[0_0_25px_rgba(45,212,191,0.2)] transition-all duration-300 shimmer-sweep group cursor-default text-left relative overflow-hidden">
+              <div className="p-4 sm:p-5 rounded-2xl luxury-card-dark glass-panel-dark border border-teal-400/25 hover:border-[#A7F3D0]/80 transition-all duration-300 shimmer-sweep group cursor-default text-left relative overflow-hidden">
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-3xl sm:text-4xl font-black text-white group-hover:text-[#A7F3D0] transition-colors">90</div>
-                  <div className="p-1.5 rounded-lg bg-teal-500/10 text-teal-300 border border-teal-500/20">
+                  <div className="p-2 rounded-xl bg-teal-500/15 text-teal-300 border border-teal-400/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
                     <Clock className="w-4 h-4" />
                   </div>
                 </div>
@@ -969,46 +984,49 @@ export const HomePage: React.FC = () => {
                   key={c.campus}
                   to={`/hall-of-fame/kampus/${c.campusSlug}`}
                   className={cn(
-                    'group p-6 rounded-2xl transition-all duration-200 border flex flex-col justify-between space-y-4 cursor-pointer',
+                    'group p-6 sm:p-7 rounded-2xl luxury-card-dark transition-all duration-300 border flex flex-col justify-between space-y-4 cursor-pointer relative overflow-hidden shimmer-sweep',
                     i === 0
-                      ? 'bg-gradient-to-b from-emerald-950/90 to-[#0C241B] border-[#D5C49A]/60 shadow-lg hover:border-[#D5C49A]'
-                      : 'bg-emerald-950/40 border-emerald-800/40 hover:border-emerald-500/50'
+                      ? 'bg-gradient-to-b from-amber-950/40 via-emerald-950/90 to-[#0C241B] border-[#D5C49A] shadow-xl shadow-amber-500/10 hover:shadow-amber-400/25'
+                      : i === 1
+                        ? 'bg-gradient-to-b from-slate-900/60 via-emerald-950/70 to-[#0C241B] border-slate-300/60 shadow-lg hover:border-slate-200'
+                        : 'bg-gradient-to-b from-amber-950/30 via-emerald-950/60 to-[#0C241B] border-amber-600/50 shadow-lg hover:border-amber-400/70'
                   )}
                 >
                   <div className="flex items-center justify-between">
                     <span
                       className={cn(
-                        'px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider',
+                        'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1.5',
                         i === 0
-                          ? 'bg-[#D5C49A] text-[#0C241B]'
+                          ? 'bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 text-amber-950 shadow-amber-500/25'
                           : i === 1
-                            ? 'bg-slate-200 text-slate-800'
-                            : 'bg-amber-100 text-amber-900'
+                            ? 'bg-gradient-to-r from-slate-100 to-slate-300 text-slate-800'
+                            : 'bg-gradient-to-r from-amber-200 to-amber-400 text-amber-950'
                       )}
                     >
-                      Peringkat #{i + 1}
+                      {i === 0 ? '👑 Peringkat #1' : i === 1 ? '🥈 Peringkat #2' : '🥉 Peringkat #3'}
                     </span>
-                    <span className="text-[11px] font-mono text-emerald-300 font-bold">
+                    <span className="text-xs font-mono text-emerald-300 font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/30">
                       {c.total_points} Poin
                     </span>
                   </div>
 
                   <div>
-                    <h3 className="font-extrabold text-lg text-white group-hover:text-[#A7F3D0] transition-colors">
-                      {c.campus}
+                    <h3 className="font-extrabold text-lg sm:text-xl text-white group-hover:text-[#A7F3D0] transition-colors flex items-center gap-2">
+                      <span>{c.campus}</span>
                     </h3>
-                    <div className="text-xs text-emerald-200/70 mt-1 flex items-center gap-2">
+                    <div className="text-xs text-emerald-200/80 mt-2.5 flex items-center gap-2 font-medium bg-emerald-950/50 px-3 py-1.5 rounded-xl border border-emerald-800/30">
                       <span>🥇 {c.gold}</span>
                       <span>🥈 {c.silver}</span>
                       <span>🥉 {c.bronze}</span>
+                      <span className="text-emerald-500/40">|</span>
                       <span>H1: {c.honorable_1}</span>
                       <span>H2: {c.honorable_2}</span>
                     </div>
                   </div>
 
-                  <div className="pt-3 border-t border-emerald-900/40 flex items-center justify-between text-[11px] font-semibold text-[#A7F3D0]">
+                  <div className="pt-3 border-t border-emerald-900/50 flex items-center justify-between text-xs font-bold text-[#A7F3D0] group-hover:text-emerald-300">
                     <span>Buka Profil Kontingen</span>
-                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1.5" />
                   </div>
                 </Link>
               ))}

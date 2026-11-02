@@ -179,9 +179,9 @@ interface PhotoCardProps {
 const PhotoCard: React.FC<PhotoCardProps> = ({ photo }) => {
   return (
     <div
-      className="group relative shrink-0 rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 hover:scale-[1.03] border border-emerald-950/10 bg-white"
+      className="group relative shrink-0 rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 hover:scale-[1.04] hover:-translate-y-1 border border-emerald-950/15 bg-white cursor-pointer"
       style={{
-        width: photo.width > photo.height ? '280px' : '200px',
+        width: photo.width > photo.height ? '280px' : '205px',
         height: '190px',
       }}
     >
@@ -189,11 +189,20 @@ const PhotoCard: React.FC<PhotoCardProps> = ({ photo }) => {
         src={photo.url}
         alt={photo.title}
         loading="lazy"
-        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
       />
 
-      {/* Subtle shimmer overlay on hover — no text */}
-      <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      {/* Ambient Gradient & Glass Caption on Hover */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3.5">
+        <div className="transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+          <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-emerald-300 bg-emerald-950/75 border border-emerald-500/40 px-2 py-0.5 rounded-md mb-1 backdrop-blur-sm">
+            OGSO Dokumentasi
+          </span>
+          <p className="text-xs font-bold text-white line-clamp-1 drop-shadow-sm">
+            {photo.title}
+          </p>
+        </div>
+      </div>
     </div>
   )
 }

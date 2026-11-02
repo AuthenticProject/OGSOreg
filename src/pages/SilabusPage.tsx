@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import {
   BookOpen,
   Download,
-  FileSpreadsheet,
   Plus,
   Edit2,
   Trash2,
@@ -489,8 +488,8 @@ export const SilabusPage: React.FC = () => {
                 onClick={() => handleDownload(activeSyllabus)}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 hover:border-emerald-600 text-slate-800 text-xs font-bold shadow-xs hover:shadow-sm transition-all"
               >
-                <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
-                <span>Unduh Excel</span>
+                <FileText className="w-4 h-4 text-emerald-700" />
+                <span>Unduh PDF Silabus</span>
               </button>
 
               {isSuperAdmin && (
