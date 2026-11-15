@@ -327,11 +327,11 @@ const STORAGE_KEY = 'ogsoreg_public_website_content_v1'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { cloudSyncService } from './supabase/cloudSyncService'
 import { cloudCircuitBreaker } from './supabase/cloudCircuitBreaker'
+import { cloudSyncCoordinator } from './supabase/cloudSyncCoordinator'
+import { realtimeSubscriptionManager } from './supabase/realtimeSubscriptionManager'
 
 let isCloudSyncInitialized = false
-let lastWebsiteFocusSyncTime = 0
 let lastWebsiteCloudSyncTime = 0
-const FOCUS_SYNC_COOLDOWN_MS = 10 * 60 * 1000 // 10 minutes throttle
 const FULL_SYNC_COOLDOWN_MS = 5 * 60 * 1000 // 5 minutes throttle
 
 function initRealtimeWebsiteSync() {
@@ -345,46 +345,31 @@ function initRealtimeWebsiteSync() {
     }
   }, 500)
 
-  // Throttled auto re-sync on window focus & online
-  const throttledWebsiteSync = () => {
-    const now = Date.now()
-    if (
-      now - lastWebsiteFocusSyncTime > FOCUS_SYNC_COOLDOWN_MS &&
-      cloudCircuitBreaker.canExecuteQuery()
-    ) {
-      lastWebsiteFocusSyncTime = now
-      websiteContentService.syncFromCloud().catch(() => {})
-    }
-  }
+  // Register with centralized sync coordinator
+  cloudSyncCoordinator.registerHandler('website_content', 6, async () => {
+    await websiteContentService.syncFromCloud()
+  })
 
-  window.addEventListener('focus', throttledWebsiteSync)
-  window.addEventListener('online', throttledWebsiteSync)
-
-  // Realtime channel
-  if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
-    try {
-      supabase
-        .channel('realtime:website_content')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'website_content' },
-          () => {
-            if (cloudCircuitBreaker.canExecuteQuery()) {
-              websiteContentService.syncFromCloud().catch(() => {})
-            }
+  // Realtime channel via centralized manager
+  if (isSupabaseConfigured()) {
+    realtimeSubscriptionManager.registerChannel('realtime:website_content', (channel) => {
+      channel.on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'website_content' },
+        () => {
+          if (cloudCircuitBreaker.canExecuteQuery()) {
+            websiteContentService.syncFromCloud().catch(() => {})
           }
-        )
-        .subscribe()
-
-      cloudSyncService.subscribeCloudSetting<WebsiteContentConfig>('website_content', (remote) => {
-        if (remote) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(remote))
-          window.dispatchEvent(new Event('ogsoreg_website_content_updated'))
         }
-      })
-    } catch {
-      // Ignore
-    }
+      )
+    })
+
+    cloudSyncService.subscribeCloudSetting<WebsiteContentConfig>('website_content', (remote) => {
+      if (remote) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(remote))
+        window.dispatchEvent(new Event('ogsoreg_website_content_updated'))
+      }
+    })
   }
 }
 

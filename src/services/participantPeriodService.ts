@@ -2,6 +2,8 @@ import type { StudentJenjang } from '../types/student'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { cloudSyncService } from './supabase/cloudSyncService'
 import { cloudCircuitBreaker } from './supabase/cloudCircuitBreaker'
+import { cloudSyncCoordinator } from './supabase/cloudSyncCoordinator'
+import { realtimeSubscriptionManager } from './supabase/realtimeSubscriptionManager'
 
 export const LEGACY_LOMBA_OPTIONS = [
   'IPA Shigor',
@@ -453,9 +455,7 @@ class ParticipantPeriodService {
     this.initCloudSync()
   }
 
-  private lastFocusSyncTime: number = 0
   private lastCloudSyncTime: number = 0
-  private readonly FOCUS_SYNC_COOLDOWN_MS = 10 * 60 * 1000 // 10 minutes throttle
   private readonly FULL_SYNC_COOLDOWN_MS = 5 * 60 * 1000 // 5 minutes throttle
 
   private initCloudSync() {
@@ -468,24 +468,13 @@ class ParticipantPeriodService {
       }
     }, 500)
 
-    const throttledFocusSync = () => {
-      const now = Date.now()
-      if (
-        now - this.lastFocusSyncTime > this.FOCUS_SYNC_COOLDOWN_MS &&
-        cloudCircuitBreaker.canExecuteQuery()
-      ) {
-        this.lastFocusSyncTime = now
-        this.syncFromCloud().catch(() => {})
-      }
-    }
+    // Centralized sync coordinator handler
+    cloudSyncCoordinator.registerHandler('periods_winners', 3, (force) => this.syncFromCloud(force))
 
-    window.addEventListener('focus', throttledFocusSync)
-    window.addEventListener('online', throttledFocusSync)
-
-    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
-      try {
-        supabase
-          .channel('realtime:periods_winners')
+    // Centralized realtime subscription
+    if (isSupabaseConfigured()) {
+      realtimeSubscriptionManager.registerChannel('realtime:periods_winners', (channel) => {
+        channel
           .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_periods' }, () => {
             if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
           })
@@ -495,20 +484,17 @@ class ParticipantPeriodService {
           .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_certificates' }, () => {
             if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
           })
-          .subscribe()
+      })
 
-        cloudSyncService.subscribeCloudSetting('competition_periods', () => {
-          if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
-        })
-        cloudSyncService.subscribeCloudSetting('competition_winners', () => {
-          if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
-        })
-        cloudSyncService.subscribeCloudSetting('competition_certificates', () => {
-          if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
-        })
-      } catch {
-        // Ignore
-      }
+      cloudSyncService.subscribeCloudSetting('competition_periods', () => {
+        if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
+      })
+      cloudSyncService.subscribeCloudSetting('competition_winners', () => {
+        if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
+      })
+      cloudSyncService.subscribeCloudSetting('competition_certificates', () => {
+        if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
+      })
     }
   }
 

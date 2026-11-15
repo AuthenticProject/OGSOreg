@@ -21,6 +21,8 @@ import {
 import { cloudSyncService } from './supabase/cloudSyncService'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { cloudCircuitBreaker } from './supabase/cloudCircuitBreaker'
+import { cloudSyncCoordinator } from './supabase/cloudSyncCoordinator'
+import { realtimeSubscriptionManager } from './supabase/realtimeSubscriptionManager'
 
 const HOF_SETTINGS_KEY = 'ogsoreg_hall_of_fame_settings_v1'
 const HOF_HISTORICAL_AGGREGATES_KEY = 'ogsoreg_hof_historical_aggregates_v1'
@@ -256,9 +258,7 @@ class HallOfFameService {
     this.initCloudSync()
   }
 
-  private lastFocusSyncTime: number = 0
   private lastCloudSyncTime: number = 0
-  private readonly FOCUS_SYNC_COOLDOWN_MS = 10 * 60 * 1000 // 10 minutes throttle
   private readonly FULL_SYNC_COOLDOWN_MS = 5 * 60 * 1000 // 5 minutes throttle
 
   private initCloudSync() {
@@ -271,24 +271,13 @@ class HallOfFameService {
       }
     }, 500)
 
-    const throttledFocusSync = () => {
-      const now = Date.now()
-      if (
-        now - this.lastFocusSyncTime > this.FOCUS_SYNC_COOLDOWN_MS &&
-        cloudCircuitBreaker.canExecuteQuery()
-      ) {
-        this.lastFocusSyncTime = now
-        this.syncFromCloud().catch(() => {})
-      }
-    }
+    // Centralized sync coordinator handler
+    cloudSyncCoordinator.registerHandler('hall_of_fame', 4, (force) => this.syncFromCloud(force))
 
-    window.addEventListener('focus', throttledFocusSync)
-    window.addEventListener('online', throttledFocusSync)
-
-    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
-      try {
-        supabase
-          .channel('realtime:hall_of_fame_data')
+    // Centralized realtime subscription
+    if (isSupabaseConfigured()) {
+      realtimeSubscriptionManager.registerChannel('realtime:hall_of_fame_data', (channel) => {
+        channel
           .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_winners' }, () => {
             if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
           })
@@ -298,21 +287,20 @@ class HallOfFameService {
           .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_historical_aggregates' }, () => {
             if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
           })
-          .subscribe()
+      })
 
-        cloudSyncService.subscribeCloudSetting('hall_of_fame_settings', (remote) => {
-          if (remote) {
-            localStorage.setItem(HOF_SETTINGS_KEY, JSON.stringify(remote))
-            window.dispatchEvent(new CustomEvent('ogsoreg_hof_settings_updated'))
-          }
-        })
-        cloudSyncService.subscribeCloudSetting('hall_of_fame_historical_aggregates', (remote) => {
-          if (remote && Array.isArray(remote)) {
-            localStorage.setItem(HOF_HISTORICAL_AGGREGATES_KEY, JSON.stringify(remote))
-            window.dispatchEvent(new CustomEvent('ogsoreg_hof_aggregates_updated'))
-          }
-        })
-      } catch {}
+      cloudSyncService.subscribeCloudSetting('hall_of_fame_settings', (remote) => {
+        if (remote) {
+          localStorage.setItem(HOF_SETTINGS_KEY, JSON.stringify(remote))
+          window.dispatchEvent(new CustomEvent('ogsoreg_hof_settings_updated'))
+        }
+      })
+      cloudSyncService.subscribeCloudSetting('hall_of_fame_historical_aggregates', (remote) => {
+        if (remote && Array.isArray(remote)) {
+          localStorage.setItem(HOF_HISTORICAL_AGGREGATES_KEY, JSON.stringify(remote))
+          window.dispatchEvent(new CustomEvent('ogsoreg_hof_aggregates_updated'))
+        }
+      })
     }
   }
 

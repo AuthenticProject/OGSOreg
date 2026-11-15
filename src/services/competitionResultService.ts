@@ -1,6 +1,8 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { cloudSyncService } from './supabase/cloudSyncService'
 import { cloudCircuitBreaker } from './supabase/cloudCircuitBreaker'
+import { cloudSyncCoordinator } from './supabase/cloudSyncCoordinator'
+import { realtimeSubscriptionManager } from './supabase/realtimeSubscriptionManager'
 import { studentRepository, CANONICAL_INSTITUTION_ID } from './studentRepository'
 import { participantPeriodService, getAwardRank, type PeriodWinner } from './participantPeriodService'
 import type {
@@ -89,9 +91,7 @@ class CompetitionResultService {
     }
   }
 
-  private lastFocusSyncTime: number = 0
   private lastCloudSyncTime: number = 0
-  private readonly FOCUS_SYNC_COOLDOWN_MS = 10 * 60 * 1000 // 10 minutes throttle
   private readonly FULL_SYNC_COOLDOWN_MS = 5 * 60 * 1000 // 5 minutes throttle
 
   private initCloudSync() {
@@ -104,38 +104,24 @@ class CompetitionResultService {
       }
     }, 500)
 
-    const throttledFocusSync = () => {
-      const now = Date.now()
-      if (
-        now - this.lastFocusSyncTime > this.FOCUS_SYNC_COOLDOWN_MS &&
-        cloudCircuitBreaker.canExecuteQuery()
-      ) {
-        this.lastFocusSyncTime = now
-        this.syncFromCloud().catch(() => {})
-      }
-    }
+    // Centralized sync coordinator handler
+    cloudSyncCoordinator.registerHandler('competition_results', 2, (force) => this.syncFromCloud(force))
 
-    window.addEventListener('focus', throttledFocusSync)
-    window.addEventListener('online', throttledFocusSync)
-
-    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
-      try {
-        supabase
-          .channel('realtime:competition_results')
+    // Centralized realtime subscription
+    if (isSupabaseConfigured()) {
+      realtimeSubscriptionManager.registerChannel('realtime:competition_results', (channel) => {
+        channel
           .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_results' }, () => {
             if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_winners' }, () => {
             if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
           })
-          .subscribe()
+      })
 
-        cloudSyncService.subscribeCloudSetting('competition_results', () => {
-          if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
-        })
-      } catch {
-        // Ignore
-      }
+      cloudSyncService.subscribeCloudSetting('competition_results', () => {
+        if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
+      })
     }
   }
 

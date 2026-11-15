@@ -13,6 +13,8 @@ import type {
 import { normalizeJenjang } from './dataNormalizer'
 import { cloudSyncService } from './supabase/cloudSyncService'
 import { cloudCircuitBreaker } from './supabase/cloudCircuitBreaker'
+import { cloudSyncCoordinator } from './supabase/cloudSyncCoordinator'
+import { realtimeSubscriptionManager } from './supabase/realtimeSubscriptionManager'
 
 export const CANONICAL_INSTITUTION_ID = 'a0000000-0000-0000-0000-000000000001'
 const LOCAL_STORAGE_KEY = 'ogsoreg_students_directory_v1'
@@ -190,9 +192,7 @@ class StudentRepository {
     this.initRealtimeAndAutoSync()
   }
 
-  private lastFocusSyncTime: number = 0
   private lastFullSyncTime: number = 0
-  private readonly FOCUS_SYNC_COOLDOWN_MS = 10 * 60 * 1000 // 10 minutes throttle
   private readonly FULL_SYNC_COOLDOWN_MS = 5 * 60 * 1000 // 5 minutes throttle
 
   private initRealtimeAndAutoSync() {
@@ -204,39 +204,22 @@ class StudentRepository {
         }
       }, 500)
 
-      // 2. Throttled re-sync on focus & online
-      const throttledSync = () => {
-        const now = Date.now()
-        if (
-          now - this.lastFocusSyncTime > this.FOCUS_SYNC_COOLDOWN_MS &&
-          cloudCircuitBreaker.canExecuteQuery()
-        ) {
-          this.lastFocusSyncTime = now
-          this.syncWithSupabase().catch(() => {})
-        }
-      }
+      // 2. Register with centralized sync coordinator
+      cloudSyncCoordinator.registerHandler('students', 1, () => this.syncWithSupabase())
 
-      window.addEventListener('focus', throttledSync)
-      window.addEventListener('online', throttledSync)
-
-      // 3. Supabase Realtime channel for instant cross-device updates (only if circuit breaker allows)
-      if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
-        try {
-          supabase
-            .channel('realtime:students')
-            .on(
-              'postgres_changes',
-              { event: '*', schema: 'public', table: 'students' },
-              () => {
-                if (cloudCircuitBreaker.canExecuteQuery()) {
-                  this.syncWithSupabase().catch(() => {})
-                }
+      // 3. Register with centralized Realtime manager
+      if (isSupabaseConfigured()) {
+        realtimeSubscriptionManager.registerChannel('realtime:students', (channel) => {
+          channel.on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'students' },
+            () => {
+              if (cloudCircuitBreaker.canExecuteQuery()) {
+                this.syncWithSupabase().catch(() => {})
               }
-            )
-            .subscribe()
-        } catch {
-          // Ignore realtime subscription errors
-        }
+            }
+          )
+        })
       }
     }
   }

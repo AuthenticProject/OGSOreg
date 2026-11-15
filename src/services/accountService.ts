@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { cloudSyncService } from './supabase/cloudSyncService'
 import { cloudCircuitBreaker } from './supabase/cloudCircuitBreaker'
+import { cloudSyncCoordinator } from './supabase/cloudSyncCoordinator'
 import {
   INITIAL_ACCOUNT_ROSTER,
   SHARED_CAMPUS_ADMIN_INITIAL_PASSWORD,
@@ -67,9 +68,7 @@ class AccountService {
     this.initCloudSync()
   }
 
-  private lastFocusSyncTime: number = 0
   private lastCloudSyncTime: number = 0
-  private readonly FOCUS_SYNC_COOLDOWN_MS = 10 * 60 * 1000 // 10 minutes throttle
   private readonly FULL_SYNC_COOLDOWN_MS = 5 * 60 * 1000 // 5 minutes throttle
 
   private initCloudSync() {
@@ -82,19 +81,8 @@ class AccountService {
       }
     }, 500)
 
-    const throttledFocusSync = () => {
-      const now = Date.now()
-      if (
-        now - this.lastFocusSyncTime > this.FOCUS_SYNC_COOLDOWN_MS &&
-        cloudCircuitBreaker.canExecuteQuery()
-      ) {
-        this.lastFocusSyncTime = now
-        this.syncFromCloud().catch(() => {})
-      }
-    }
-
-    window.addEventListener('focus', throttledFocusSync)
-    window.addEventListener('online', throttledFocusSync)
+    // Centralized sync coordinator handler
+    cloudSyncCoordinator.registerHandler('account_profiles', 7, (force) => this.syncFromCloud(force))
 
     if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
       cloudSyncService.subscribeCloudSetting<{ profiles: AppUserProfile[]; passwords: Record<string, string> }>(

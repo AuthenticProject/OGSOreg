@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../../lib/supabase'
 import { cloudCircuitBreaker } from './cloudCircuitBreaker'
+import { realtimeSubscriptionManager } from './realtimeSubscriptionManager'
 
 export type CloudSyncState = 'idle' | 'syncing' | 'synced' | 'error'
 
@@ -225,48 +226,35 @@ class CloudSyncService {
   }
 
   /**
-   * Subscribes to real-time changes on a specific app_settings key
+   * Subscribes to real-time changes on a specific app_settings key via RealtimeSubscriptionManager
    */
   public subscribeCloudSetting<T>(key: string, onUpdate: (value: T) => void): () => void {
-    if (!isSupabaseConfigured() || !cloudCircuitBreaker.canExecuteQuery()) return () => {}
+    if (!isSupabaseConfigured()) return () => {}
 
-    try {
-      const channel = supabase
-        .channel(`sync-key-${key}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'app_settings',
-            filter: `key=eq.${key}`,
-          },
-          (payload: any) => {
-            if (payload.new && payload.new.value !== undefined) {
-              const newVal = payload.new.value as T
-              if (typeof window !== 'undefined' && window.localStorage) {
-                try {
-                  window.localStorage.setItem(key, JSON.stringify(newVal))
-                } catch {
-                  // Ignore
-                }
+    return realtimeSubscriptionManager.registerChannel(`sync-app-settings-${key}`, (channel) => {
+      channel.on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'app_settings',
+          filter: `key=eq.${key}`,
+        },
+        (payload: any) => {
+          if (payload.new && payload.new.value !== undefined) {
+            const newVal = payload.new.value as T
+            if (typeof window !== 'undefined' && window.localStorage) {
+              try {
+                window.localStorage.setItem(key, JSON.stringify(newVal))
+              } catch {
+                // Ignore
               }
-              onUpdate(newVal)
             }
+            onUpdate(newVal)
           }
-        )
-        .subscribe()
-
-      return () => {
-        try {
-          supabase.removeChannel(channel)
-        } catch {
-          // Ignore
         }
-      }
-    } catch {
-      return () => {}
-    }
+      )
+    })
   }
 }
 
