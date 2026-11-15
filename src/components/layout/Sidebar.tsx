@@ -140,11 +140,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       icon: Award,
       subItems: [
         {
-          title: 'Hasil & Juara',
-          href: '/participant/results',
-          icon: Award,
-        },
-        {
           title: 'Periode',
           href: '/participant/periode',
           icon: Calendar,

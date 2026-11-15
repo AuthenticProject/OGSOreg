@@ -24,6 +24,7 @@ import { GalleryPage } from './pages/public/GalleryPage'
 import { HallOfFamePage } from './pages/public/HallOfFamePage'
 import { HallOfFameManagementPage } from './pages/HallOfFameManagementPage'
 import { CalendarPage } from './pages/public/CalendarPage'
+import { OfficialFinalistsPage } from './pages/public/OfficialFinalistsPage'
 
 // Existing Dashboard Pages
 import { DashboardPage } from './pages/DashboardPage'
@@ -44,7 +45,6 @@ import { CalendarManagementPage } from './pages/CalendarManagementPage'
 import { IncomingRegistrationsPage } from './pages/IncomingRegistrationsPage'
 import { PeriodListPage } from './pages/PeriodListPage'
 import { PeriodDetailPage } from './pages/PeriodDetailPage'
-import { CompetitionResultsPage } from './pages/CompetitionResultsPage'
 import { SilabusPage } from './pages/SilabusPage'
 import { BankSoalPage } from './pages/BankSoalPage'
 import { AccountSettingsPage } from './pages/AccountSettingsPage'
@@ -95,6 +95,11 @@ export function App() {
             <Route path="/jadwal" element={<CalendarPage />} />
             <Route path="/kalender" element={<Navigate to="/jadwal" replace />} />
             <Route path="/calendar" element={<Navigate to="/jadwal" replace />} />
+
+            {/* Public Finalists Announcement (Official 2026 Dataset) */}
+            <Route path="/finalis" element={<OfficialFinalistsPage />} />
+            <Route path="/finalist" element={<Navigate to="/finalis" replace />} />
+            <Route path="/results" element={<Navigate to="/finalis" replace />} />
 
             {/* Public Competition Periods & Published Winners */}
             <Route path="/participant" element={<PublicParticipantPage />} />
@@ -173,8 +178,7 @@ export function App() {
             <Route path="/participants" element={<Navigate to="/students" replace />} />
 
             {/* 2. PARTICIPANT MANAGEMENT (ADMIN DASHBOARD) */}
-            <Route path="/participant/results" element={<CompetitionResultsPage />} />
-            <Route path="/results" element={<Navigate to="/participant/results" replace />} />
+            <Route path="/participant/results" element={<Navigate to="/finalis" replace />} />
             <Route path="/participant/periode" element={<PeriodListPage />} />
             <Route path="/participant/hall-of-fame" element={<HallOfFameManagementPage />} />
             <Route

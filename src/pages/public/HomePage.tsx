@@ -30,7 +30,7 @@ import { hallOfFameService } from '../../services/hallOfFameService'
 import { materiService } from '../../services/materiService'
 import { PhotoMarqueeGallery } from '../../components/public/PhotoMarqueeGallery'
 import { MonthlyCalendarView } from '../../components/calendar/MonthlyCalendarView'
-import { EditorialResultsShowcase } from '../../components/public/EditorialResultsShowcase'
+import { OfficialFinalistsTable } from '../../components/public/OfficialFinalistsTable'
 import { ScrollReveal } from '../../components/ui/ScrollReveal'
 import { ScrollToTopButton } from '../../components/ui/ScrollToTopButton'
 import { cn } from '../../lib/utils'
@@ -1036,9 +1036,9 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* SECTION 06.2 — OFFICIAL FINALISTS ANNOUNCEMENT & HALL OF FAME (EDITORIAL) */}
+      {/* SECTION 06.2 — OFFICIAL FINALISTS ANNOUNCEMENT (INDEX 1 HTML DATASET) */}
       {/* ========================================================================= */}
-      <EditorialResultsShowcase />
+      <OfficialFinalistsTable />
 
       {/* ========================================================================= */}
       {/* SECTION 06.5 — HALL OF FAME PREVIEW (Compact Executive Standings)         */}
