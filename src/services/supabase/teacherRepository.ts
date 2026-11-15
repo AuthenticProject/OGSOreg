@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../../lib/supabase'
+import { cloudCircuitBreaker } from './cloudCircuitBreaker'
 import type { TeacherEntity } from '../../types/database'
 import { mockTeachers } from '../../lib/mockData'
 
@@ -12,7 +13,7 @@ export interface UpsertTeacherInput {
 
 export const teacherRepository = {
   async getTeachers(institutionId?: string): Promise<TeacherEntity[]> {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !cloudCircuitBreaker.canExecuteQuery()) {
       return mockTeachers.map((t) => ({
         id: t.id,
         institution_id: institutionId || 'a0000000-0000-0000-0000-000000000001',
@@ -39,7 +40,7 @@ export const teacherRepository = {
     institutionId: string,
     teachers: UpsertTeacherInput[]
   ): Promise<TeacherEntity[]> {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !cloudCircuitBreaker.canExecuteQuery()) {
       // Local development simulation
       return teachers.map((t, idx) => ({
         id: `local-tch-${Date.now()}-${idx}`,

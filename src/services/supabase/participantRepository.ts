@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../../lib/supabase'
+import { cloudCircuitBreaker } from './cloudCircuitBreaker'
 import type { ParticipantEntity } from '../../types/database'
 import { mockParticipants } from '../../lib/mockData'
 
@@ -45,8 +46,8 @@ export const participantRepository = {
       pageSize = 25,
     } = options
 
-    if (!isSupabaseConfigured()) {
-      // Return filtered mock data in development mode
+    if (!isSupabaseConfigured() || !cloudCircuitBreaker.canExecuteQuery()) {
+      // Return filtered mock data in development mode or offline mode
       let filtered = mockParticipants.map((p) => ({
         id: p.id,
         institution_id: institutionId || 'a0000000-0000-0000-0000-000000000001',

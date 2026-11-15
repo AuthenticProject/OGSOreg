@@ -46,8 +46,8 @@ export function getDeletedStudentKeys(): Set<string> {
     // Tombstones strictly track physical record IDs, NEVER student usernames or emails
     const valid = Array.isArray(parsed)
       ? parsed
-          .map((k) => String(k).toLowerCase().trim())
-          .filter((k) => isStudentRecordId(k))
+        .map((k) => String(k).toLowerCase().trim())
+        .filter((k) => isStudentRecordId(k))
       : []
     const set = new Set(valid)
     inMemoryDeletedKeys.forEach((k) => set.add(k))
@@ -77,9 +77,9 @@ export function addDeletedStudentKeys(keys: string[]): void {
     if (typeof window !== 'undefined' && window.localStorage) {
       try {
         window.localStorage.setItem(DELETED_STUDENTS_KEY, JSON.stringify(Array.from(current)))
-      } catch {}
+      } catch { }
     }
-    cloudSyncService.saveCloudSetting('deleted_students', Array.from(current)).catch(() => {})
+    cloudSyncService.saveCloudSetting('deleted_students', Array.from(current)).catch(() => { })
   }
 }
 
@@ -99,9 +99,9 @@ export function removeDeletedStudentKeys(keys: string[]): void {
     if (typeof window !== 'undefined' && window.localStorage) {
       try {
         window.localStorage.setItem(DELETED_STUDENTS_KEY, JSON.stringify(Array.from(current)))
-      } catch {}
+      } catch { }
     }
-    cloudSyncService.saveCloudSetting('deleted_students', Array.from(current)).catch(() => {})
+    cloudSyncService.saveCloudSetting('deleted_students', Array.from(current)).catch(() => { })
   }
 }
 
@@ -200,7 +200,7 @@ class StudentRepository {
       // 1. Initial sync in background (only if circuit breaker allows)
       setTimeout(() => {
         if (cloudCircuitBreaker.canExecuteQuery()) {
-          this.syncWithSupabase().catch(() => {})
+          this.syncWithSupabase().catch(() => { })
         }
       }, 500)
 
@@ -215,7 +215,7 @@ class StudentRepository {
             { event: '*', schema: 'public', table: 'students' },
             () => {
               if (cloudCircuitBreaker.canExecuteQuery()) {
-                this.syncWithSupabase().catch(() => {})
+                this.syncWithSupabase().catch(() => { })
               }
             }
           )
@@ -235,7 +235,7 @@ class StudentRepository {
 
           // 1. Gather all students across any legacy institution keys (e.g. general-inst, Gontor 1, etc.)
           Object.entries(parsed).forEach(([, students]) => {
-            ;(students || []).forEach((s) => {
+            ; (students || []).forEach((s) => {
               if (s && s.id && !s.id.startsWith('std-demo-')) {
                 const sId = (s.id || '').toLowerCase().trim()
                 if (deletedKeys.has(sId)) {
@@ -458,10 +458,10 @@ class StudentRepository {
           addDeletedStudentKeys(validTombstones)
           if (validTombstones.length !== cloudTombstones.length) {
             // Clean up any historical usernames saved into cloud setting
-            cloudSyncService.saveCloudSetting('deleted_students', validTombstones).catch(() => {})
+            cloudSyncService.saveCloudSetting('deleted_students', validTombstones).catch(() => { })
           }
         }
-      } catch {}
+      } catch { }
 
       const deletedKeys = getDeletedStudentKeys()
 
@@ -481,37 +481,37 @@ class StudentRepository {
       const lingeringCloudIds: string[] = []
 
       const cloudMap = new Map<string, Student>()
-      ;(cloudStudents || []).forEach((raw: any) => {
-        const sId = (raw.id || '').toLowerCase().trim()
+        ; (cloudStudents || []).forEach((raw: any) => {
+          const sId = (raw.id || '').toLowerCase().trim()
 
-        if (deletedKeys.has(sId)) {
-          if (raw.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw.id)) {
-            lingeringCloudIds.push(raw.id)
+          if (deletedKeys.has(sId)) {
+            if (raw.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw.id)) {
+              lingeringCloudIds.push(raw.id)
+            }
+            return // Exclude from cloudMap
           }
-          return // Exclude from cloudMap
-        }
 
-        let jenjang = normalizeJenjang(raw.jenjang) as StudentJenjang
-        let kelas = raw.kelas as StudentKelas | undefined
-        if (!kelas) {
-          const rawJ = String(raw.jenjang || '')
-          if (rawJ === 'Kelas 1' || jenjang === 'Jenjang 1') kelas = 'Kelas 1'
-          else if (rawJ === 'Kelas 2' || jenjang === 'Jenjang 2') kelas = 'Kelas 2'
-          else if (rawJ === 'Kelas 3' || jenjang === 'Jenjang 3') kelas = 'Kelas 3'
-          else if (rawJ === 'Kelas 4' || jenjang === 'Jenjang 4') kelas = 'Kelas 4'
-          else if (rawJ === 'Kelas 5' || jenjang === 'Jenjang 5') kelas = 'Kelas 5'
-        }
-        const s: Student = {
-          ...raw,
-          jenjang,
-          kelas,
-        }
-        cloudMap.set((s.username || s.id).toLowerCase().trim(), s)
-      })
+          let jenjang = normalizeJenjang(raw.jenjang) as StudentJenjang
+          let kelas = raw.kelas as StudentKelas | undefined
+          if (!kelas) {
+            const rawJ = String(raw.jenjang || '')
+            if (rawJ === 'Kelas 1' || jenjang === 'Jenjang 1') kelas = 'Kelas 1'
+            else if (rawJ === 'Kelas 2' || jenjang === 'Jenjang 2') kelas = 'Kelas 2'
+            else if (rawJ === 'Kelas 3' || jenjang === 'Jenjang 3') kelas = 'Kelas 3'
+            else if (rawJ === 'Kelas 4' || jenjang === 'Jenjang 4') kelas = 'Kelas 4'
+            else if (rawJ === 'Kelas 5' || jenjang === 'Jenjang 5') kelas = 'Kelas 5'
+          }
+          const s: Student = {
+            ...raw,
+            jenjang,
+            kelas,
+          }
+          cloudMap.set((s.username || s.id).toLowerCase().trim(), s)
+        })
 
       // Clean up lingering deleted records from Supabase Cloud
       if (lingeringCloudIds.length > 0) {
-        supabase.from('students').delete().in('id', lingeringCloudIds).then(() => {})
+        supabase.from('students').delete().in('id', lingeringCloudIds).then(() => { })
       }
 
       // Cek siswa lokal yang belum ada di Supabase Cloud (dan BUKAN data yang sudah dihapus!)
@@ -558,7 +558,19 @@ class StudentRepository {
         const sId = (cloudS.id || '').toLowerCase().trim()
         if (!deletedKeys.has(sId)) {
           const existing = mergedMap.get(key)
-          mergedMap.set(key, { ...existing, ...cloudS })
+          if (!existing) {
+            mergedMap.set(key, cloudS)
+          } else {
+            // Protect local edits: only accept cloud fields if cloud record is genuinely newer
+            const existingTime = existing.updated_at ? new Date(existing.updated_at).getTime() : 0
+            const cloudTime = cloudS.updated_at ? new Date(cloudS.updated_at).getTime() : 0
+            if (cloudTime >= existingTime) {
+              mergedMap.set(key, { ...existing, ...cloudS })
+            } else {
+              // Local is newer! Preserve local edits
+              mergedMap.set(key, { ...cloudS, ...existing })
+            }
+          }
         }
       })
 
@@ -720,23 +732,23 @@ class StudentRepository {
     institutionIdOrParams:
       | string
       | {
-          institutionId?: string
-          search?: string
-          searchTerm?: string
-          jenjang?: string
-          kelas?: string
-          kampus?: string
-          assignedCampus?: string | null
-          accessControl?: { userRole?: string; assignedCampus?: string | null }
-          sync_status?: string
-          syncStatus?: string
-          source?: string
-          sortBy?: 'name' | 'created_at' | 'date'
-          sortOrder?: 'asc' | 'desc'
-          sortDirection?: 'asc' | 'desc'
-          page?: number
-          pageSize?: number
-        },
+        institutionId?: string
+        search?: string
+        searchTerm?: string
+        jenjang?: string
+        kelas?: string
+        kampus?: string
+        assignedCampus?: string | null
+        accessControl?: { userRole?: string; assignedCampus?: string | null }
+        sync_status?: string
+        syncStatus?: string
+        source?: string
+        sortBy?: 'name' | 'created_at' | 'date'
+        sortOrder?: 'asc' | 'desc'
+        sortDirection?: 'asc' | 'desc'
+        page?: number
+        pageSize?: number
+      },
     optionalParams?: StudentFilterParams
   ): Promise<{
     data: Student[]
@@ -1271,11 +1283,11 @@ class StudentRepository {
     if (target?.id && isStudentRecordId(target.id) && target.id !== id) tombstoneKeys.push(target.id)
     if (tombstoneKeys.length > 0) {
       addDeletedStudentKeys(tombstoneKeys)
-      await cloudSyncService.saveCloudSetting('deleted_students', Array.from(getDeletedStudentKeys())).catch(() => {})
+      await cloudSyncService.saveCloudSetting('deleted_students', Array.from(getDeletedStudentKeys())).catch(() => { })
     }
 
-    // 2. Delete directly from Supabase Cloud (physical delete)
-    if (isSupabaseConfigured()) {
+    // 2. Delete directly from Supabase Cloud (physical delete if cloud available)
+    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
       try {
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
         if (isUuid) {
@@ -1291,6 +1303,9 @@ class StudentRepository {
             .ilike('username', targetUsername)
         }
       } catch (err) {
+        if (cloudCircuitBreaker.isQuotaRestrictionError(err)) {
+          cloudCircuitBreaker.recordError(err)
+        }
         console.warn('[StudentRepository] Cloud delete warning:', err)
       }
     }
@@ -1346,10 +1361,10 @@ class StudentRepository {
     })
     if (tombstoneKeys.length > 0) {
       addDeletedStudentKeys(tombstoneKeys)
-      await cloudSyncService.saveCloudSetting('deleted_students', Array.from(getDeletedStudentKeys())).catch(() => {})
+      await cloudSyncService.saveCloudSetting('deleted_students', Array.from(getDeletedStudentKeys())).catch(() => { })
     }
 
-    if (isSupabaseConfigured()) {
+    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
       try {
         const uuidIds = eligibleIds.filter((id) =>
           /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
@@ -1366,6 +1381,9 @@ class StudentRepository {
             .in('username', usernames)
         }
       } catch (err) {
+        if (cloudCircuitBreaker.isQuotaRestrictionError(err)) {
+          cloudCircuitBreaker.recordError(err)
+        }
         console.warn('[StudentRepository] Cloud bulk delete warning:', err)
       }
     }
@@ -1686,7 +1704,7 @@ class StudentRepository {
 
     this.setRawStore(institutionId, updated)
 
-    if (isSupabaseConfigured() && count > 0) {
+    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery() && count > 0) {
       try {
         const payload: Record<string, any> = {
           sync_status: isUploaded ? 'synced' : 'local_only',
@@ -1699,8 +1717,10 @@ class StudentRepository {
         if (affectedUsernames.length > 0) {
           await supabase.from('students').update(payload).in('username', affectedUsernames)
         }
-      } catch {
-        // Fallback to local
+      } catch (err) {
+        if (cloudCircuitBreaker.isQuotaRestrictionError(err)) {
+          cloudCircuitBreaker.recordError(err)
+        }
       }
     }
 

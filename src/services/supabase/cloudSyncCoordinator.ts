@@ -186,6 +186,9 @@ class CloudSyncCoordinator {
     return this.activeSyncPromise
   }
 
+  private lastRecoveryCheckTime = 0
+  private readonly RECOVERY_COOLDOWN_MS = 15 * 1000 // 15s cooldown against check spam
+
   /**
    * Controlled admin recovery test to check if Supabase egress restrictions have been lifted.
    */
@@ -194,26 +197,41 @@ class CloudSyncCoordinator {
       return { success: false, message: 'Supabase tidak terkonfigurasi (Local Mode).' }
     }
 
+    const now = Date.now()
+    if (now - this.lastRecoveryCheckTime < this.RECOVERY_COOLDOWN_MS) {
+      return {
+        success: false,
+        message: 'Pemeriksaan koneksi baru saja dilakukan. Harap tunggu beberapa detik.',
+      }
+    }
+    this.lastRecoveryCheckTime = now
+
     this.setState('Recovery Checking')
     try {
-      // Temporarily allow this one test probe
-      cloudCircuitBreaker.reset()
-
-      // Probe lightweight health check
+      // Temporarily test one lightweight probe query
       const { error } = await supabase.from('app_settings').select('key').limit(1)
 
-      if (error && cloudCircuitBreaker.isQuotaRestrictionError(error)) {
-        cloudCircuitBreaker.trip(error.message)
-        this.setState('Cloud Restricted', error.message)
+      if (error) {
+        if (cloudCircuitBreaker.isQuotaRestrictionError(error)) {
+          cloudCircuitBreaker.trip(error.message)
+          this.setState('Cloud Restricted', error.message)
+          return {
+            success: false,
+            message: 'Layanan Supabase masih dalam status pembatasan kuota (HTTP 402). Sinkronisasi tetap dijeda.',
+          }
+        }
+
+        // Other network/server error: stay in Local Mode, do NOT mark Connected
+        this.setState('Local Mode', error.message)
         return {
           success: false,
-          message: 'Layanan Supabase masih dalam status pembatasan kuota (HTTP 402). Sinkronisasi tetap dijeda.',
+          message: `Gagal menghubungkan ke Supabase (${error.message || 'Network error'}). Mode lokal tetap aktif.`,
         }
       }
 
-      // If probe succeeded or table just didn't exist without quota error
+      // If probe succeeded without quota or network errors
+      cloudCircuitBreaker.reset()
       this.setState('Connected')
-      // Resume channels
       realtimeSubscriptionManager.resumeAll()
 
       // Trigger fresh sync
@@ -228,7 +246,7 @@ class CloudSyncCoordinator {
         cloudCircuitBreaker.trip(err.message)
         this.setState('Cloud Restricted', err.message)
       } else {
-        this.setState('Connected')
+        this.setState('Local Mode', err?.message)
       }
       return {
         success: false,

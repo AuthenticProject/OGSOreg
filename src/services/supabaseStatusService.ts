@@ -27,6 +27,18 @@ export async function checkSupabaseHealth(): Promise<SupabaseHealthStatus> {
     }
   }
 
+  if (!cloudCircuitBreaker.canExecuteQuery()) {
+    return {
+      isConfigured: true,
+      url: supabaseUrl,
+      connectionOk: false,
+      tablesExist: false,
+      missingTables: [],
+      details:
+        'Layanan cloud Supabase mencapai batas kuota egress (HTTP 402 exceed_egress_quota). Sistem OGSOreg secara otomatis berjalan penuh dalam mode penyimpanan lokal yang aman.',
+    }
+  }
+
   try {
     const { error: studentErr } = await supabase.from('students').select('id').limit(1)
 

@@ -4,6 +4,7 @@
  */
 
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { cloudCircuitBreaker } from './supabase/cloudCircuitBreaker'
 
 export type OperationType =
   | 'import_excel'
@@ -124,7 +125,7 @@ class OperationHistoryService {
       timestamp: new Date().toISOString(),
     }
 
-    if (isSupabaseConfigured()) {
+    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
       try {
         await supabase.from('operation_logs').insert({
           institution_id: record.institution_id,
@@ -138,8 +139,10 @@ class OperationHistoryService {
           details: record.details,
           created_at: record.timestamp,
         })
-      } catch {
-        // Fall back
+      } catch (err) {
+        if (cloudCircuitBreaker.isQuotaRestrictionError(err)) {
+          cloudCircuitBreaker.recordError(err)
+        }
       }
     }
 

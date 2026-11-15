@@ -84,7 +84,7 @@ export function getDeletedSilabusIds(): Set<string> {
       const parsed = JSON.parse(raw)
       if (Array.isArray(parsed)) return new Set(parsed)
     }
-  } catch {}
+  } catch { }
   return new Set()
 }
 
@@ -94,7 +94,7 @@ export function addDeletedSilabusIds(ids: string[]): void {
     const set = getDeletedSilabusIds()
     ids.forEach((id) => set.add(id))
     localStorage.setItem(DELETED_SILABUS_KEY, JSON.stringify(Array.from(set)))
-  } catch {}
+  } catch { }
 }
 
 export function getDeletedBankSoalIds(): Set<string> {
@@ -105,7 +105,7 @@ export function getDeletedBankSoalIds(): Set<string> {
       const parsed = JSON.parse(raw)
       if (Array.isArray(parsed)) return new Set(parsed)
     }
-  } catch {}
+  } catch { }
   return new Set()
 }
 
@@ -115,7 +115,7 @@ export function addDeletedBankSoalIds(ids: string[]): void {
     const set = getDeletedBankSoalIds()
     ids.forEach((id) => set.add(id))
     localStorage.setItem(DELETED_BANK_SOAL_KEY, JSON.stringify(Array.from(set)))
-  } catch {}
+  } catch { }
 }
 
 // Official syllabuses for Jenjang 1–5 extracted from Silabus_OGSO_2026.xlsx
@@ -731,7 +731,7 @@ class MateriService {
 
     setTimeout(() => {
       if (cloudCircuitBreaker.canExecuteQuery()) {
-        this.syncFromCloud().catch(() => {})
+        this.syncFromCloud().catch(() => { })
       }
     }, 500)
 
@@ -743,18 +743,18 @@ class MateriService {
       realtimeSubscriptionManager.registerChannel('realtime:materi', (channel) => {
         channel
           .on('postgres_changes', { event: '*', schema: 'public', table: 'syllabuses' }, () => {
-            if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
+            if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => { })
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'bank_soal' }, () => {
-            if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
+            if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => { })
           })
       })
 
       cloudSyncService.subscribeCloudSetting('materi_silabus', () => {
-        if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
+        if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => { })
       })
       cloudSyncService.subscribeCloudSetting('materi_bank_soal', () => {
-        if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
+        if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => { })
       })
     }
   }
@@ -774,7 +774,7 @@ class MateriService {
         if (Array.isArray(cloudDeletedSilabus) && cloudDeletedSilabus.length > 0) {
           addDeletedSilabusIds(cloudDeletedSilabus)
         }
-      } catch {}
+      } catch { }
 
       const deletedSilabusSet = getDeletedSilabusIds()
       let cloudSilabus = await cloudSyncService.getCloudSetting<SyllabusItem[] | null>('materi_silabus', null)
@@ -803,7 +803,7 @@ class MateriService {
         if (Array.isArray(cloudDeletedBankSoal) && cloudDeletedBankSoal.length > 0) {
           addDeletedBankSoalIds(cloudDeletedBankSoal)
         }
-      } catch {}
+      } catch { }
 
       const deletedBankSoalSet = getDeletedBankSoalIds()
       let cloudBankSoal = await cloudSyncService.getCloudSetting<BankSoalCollection[] | null>('materi_bank_soal', null)
@@ -928,15 +928,15 @@ class MateriService {
 
   deleteSyllabus(id: string): boolean {
     addDeletedSilabusIds([id])
-    cloudSyncService.saveCloudSetting('deleted_silabus_ids', Array.from(getDeletedSilabusIds())).catch(() => {})
+    cloudSyncService.saveCloudSetting('deleted_silabus_ids', Array.from(getDeletedSilabusIds())).catch(() => { })
     const list = this.getSyllabuses().filter((s) => s.id !== id)
     if (typeof window !== 'undefined') {
       localStorage.setItem(SILABUS_STORAGE_KEY, JSON.stringify(list))
       window.dispatchEvent(new CustomEvent('ogsoreg_silabus_updated'))
     }
     cloudSyncService.saveCloudSetting('materi_silabus', list)
-    if (isSupabaseConfigured()) {
-      supabase.from('syllabuses').delete().eq('id', id).then(() => {})
+    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
+      supabase.from('syllabuses').delete().eq('id', id).then(() => { })
     }
     return true
   }
@@ -1064,7 +1064,7 @@ class MateriService {
 
   deleteDocument(collectionId: string, docId: string): boolean {
     addDeletedBankSoalIds([docId])
-    cloudSyncService.saveCloudSetting('deleted_bank_soal_ids', Array.from(getDeletedBankSoalIds())).catch(() => {})
+    cloudSyncService.saveCloudSetting('deleted_bank_soal_ids', Array.from(getDeletedBankSoalIds())).catch(() => { })
 
     const list = this.getBankSoalCollections()
     const col = list.find((c) => c.id === collectionId)
@@ -1077,15 +1077,15 @@ class MateriService {
       window.dispatchEvent(new CustomEvent('ogsoreg_bank_soal_updated'))
     }
     cloudSyncService.saveCloudSetting('materi_bank_soal', list)
-    if (isSupabaseConfigured()) {
-      supabase.from('bank_soal').delete().eq('id', docId).then(() => {})
+    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
+      supabase.from('bank_soal').delete().eq('id', docId).then(() => { })
     }
     return true
   }
 
   deleteCollection(collectionId: string): boolean {
     addDeletedBankSoalIds([collectionId])
-    cloudSyncService.saveCloudSetting('deleted_bank_soal_ids', Array.from(getDeletedBankSoalIds())).catch(() => {})
+    cloudSyncService.saveCloudSetting('deleted_bank_soal_ids', Array.from(getDeletedBankSoalIds())).catch(() => { })
 
     const list = this.getBankSoalCollections().filter((c) => c.id !== collectionId)
     if (typeof window !== 'undefined') {

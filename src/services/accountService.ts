@@ -77,7 +77,7 @@ class AccountService {
 
     setTimeout(() => {
       if (cloudCircuitBreaker.canExecuteQuery()) {
-        this.syncFromCloud().catch(() => {})
+        this.syncFromCloud().catch(() => { })
       }
     }, 500)
 
@@ -395,7 +395,7 @@ class AccountService {
 
     // Always fetch latest cloud credentials before validating login
     if (isSupabaseConfigured()) {
-      await this.syncFromCloud().catch(() => {})
+      await this.syncFromCloud().catch(() => { })
     }
 
     // 2. Try Supabase Auth if configured
@@ -484,14 +484,17 @@ class AccountService {
     const cleanUsername = username.trim().toLowerCase()
     let profile = this.inMemoryProfiles.find((p) => p.username.toLowerCase() === cleanUsername)
 
-    // Also check live Supabase user_profiles if available to sync status
-    if (isSupabaseConfigured()) {
+    // Also check live Supabase user_profiles if available and allowed by circuit breaker to sync status
+    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
       try {
-        const { data: dbProfile } = await supabase
+        const { data: dbProfile, error: profErr } = await supabase
           .from('user_profiles')
           .select('*')
           .ilike('username', cleanUsername)
           .maybeSingle()
+        if (profErr && cloudCircuitBreaker.isQuotaRestrictionError(profErr)) {
+          cloudCircuitBreaker.recordError(profErr)
+        }
         if (dbProfile) {
           const sp = dbProfile as AppUserProfile
           const idx = this.inMemoryProfiles.findIndex((p) => p.username.toLowerCase() === cleanUsername)

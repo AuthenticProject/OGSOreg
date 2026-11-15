@@ -163,7 +163,7 @@ class CustomFieldService {
             this.isLoaded = true
             this.notify()
             return [...this.cache]
-          } else if (this.cache.length > 0) {
+          } else if (this.cache.length > 0 && cloudCircuitBreaker.canExecuteQuery()) {
             // Seed Supabase with initial fields
             for (const field of this.cache) {
               await supabase.from('custom_field_definitions').insert({
@@ -307,7 +307,7 @@ class CustomFieldService {
     }
 
     // Save to Supabase Cloud if available
-    if (isSupabaseConfigured()) {
+    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
       try {
         const payload = {
           key: fieldData.key,
@@ -377,7 +377,7 @@ class CustomFieldService {
     const target = this.cache.find((f) => f.id === id)
     if (!target) return false
 
-    if (isSupabaseConfigured() && !id.startsWith('cf-')) {
+    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery() && !id.startsWith('cf-')) {
       try {
         await supabase.from('custom_field_definitions').delete().eq('id', id)
       } catch {

@@ -29,12 +29,22 @@ class CloudCircuitBreaker {
 
   constructor() {
     this.restoreState()
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', (e) => {
+        if (e.key === STORAGE_KEY) {
+          this.restoreState()
+          if (this.isRestricted && this.realtimeTeardownCallback) {
+            try { this.realtimeTeardownCallback() } catch {}
+          }
+        }
+      })
+    }
   }
 
   private restoreState() {
     if (typeof window === 'undefined') return
     try {
-      const raw = window.sessionStorage.getItem(STORAGE_KEY)
+      const raw = window.localStorage?.getItem(STORAGE_KEY) || window.sessionStorage?.getItem(STORAGE_KEY)
       if (raw) {
         const parsed = JSON.parse(raw)
         if (parsed.isRestricted && parsed.restrictedUntil && Date.now() < parsed.restrictedUntil) {
@@ -42,6 +52,11 @@ class CloudCircuitBreaker {
           this.reason = parsed.reason || 'Layanan cloud dibatasi sementara.'
           this.restrictedSince = parsed.restrictedSince || new Date().toISOString()
           this.restrictedUntil = parsed.restrictedUntil
+        } else if (parsed.isRestricted === false) {
+          this.isRestricted = false
+          this.reason = null
+          this.restrictedSince = null
+          this.restrictedUntil = null
         }
       }
     } catch {
@@ -52,15 +67,14 @@ class CloudCircuitBreaker {
   private persistState() {
     if (typeof window === 'undefined') return
     try {
-      window.sessionStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          isRestricted: this.isRestricted,
-          reason: this.reason,
-          restrictedSince: this.restrictedSince,
-          restrictedUntil: this.restrictedUntil,
-        })
-      )
+      const payload = JSON.stringify({
+        isRestricted: this.isRestricted,
+        reason: this.reason,
+        restrictedSince: this.restrictedSince,
+        restrictedUntil: this.restrictedUntil,
+      })
+      window.localStorage?.setItem(STORAGE_KEY, payload)
+      window.sessionStorage?.setItem(STORAGE_KEY, payload)
     } catch {
       // Ignore
     }

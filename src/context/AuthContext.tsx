@@ -177,15 +177,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session)
         setUser(session?.user ?? null)
         if (session?.user) {
-          const { data, error } = await supabase
-            .from('user_profiles')
-            .select('*')
-            .eq('auth_user_id', session.user.id)
-            .single()
-          if (!error && data) {
-            setAppProfile(data as AppUserProfile)
-          } else {
-            setAppProfile(null)
+          try {
+            const { data, error } = await supabase
+              .from('user_profiles')
+              .select('*')
+              .eq('auth_user_id', session.user.id)
+              .single()
+            if (!error && data) {
+              setAppProfile(data as AppUserProfile)
+            } else {
+              // Fallback to local session profile if cloud request fails (e.g. 402 restriction or offline)
+              const localFallback =
+                initialSessionProfile ||
+                accountService.getUserById(session.user.id) ||
+                null
+              setAppProfile(localFallback)
+            }
+          } catch {
+            const localFallback = initialSessionProfile || null
+            setAppProfile(localFallback)
           }
         } else {
           setAppProfile(null)

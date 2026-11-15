@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../../lib/supabase'
+import { cloudCircuitBreaker } from './cloudCircuitBreaker'
 import type { RegistrationBatchEntity } from '../../types/database'
 import { studentRepository, CANONICAL_INSTITUTION_ID } from '../studentRepository'
 import { cloudSyncService } from './cloudSyncService'
@@ -48,7 +49,7 @@ export const batchRepository = {
     const localMap = getLocalBatchesMap()
 
     // 1. Try fetching from Supabase if configured, without throwing if table doesn't exist
-    if (isSupabaseConfigured()) {
+    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
       try {
         let query = supabase
           .from('registration_batches')

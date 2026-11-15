@@ -145,7 +145,7 @@ export function getDeletedPeriodIds(): Set<string> {
       const parsed = JSON.parse(raw)
       if (Array.isArray(parsed)) return new Set(parsed)
     }
-  } catch {}
+  } catch { }
   return new Set()
 }
 
@@ -157,7 +157,7 @@ export function addDeletedPeriodIds(ids: string[]): void {
       if (id) set.add(id)
     })
     localStorage.setItem(DELETED_PERIODS_KEY, JSON.stringify(Array.from(set)))
-  } catch {}
+  } catch { }
 }
 
 export function removeDeletedPeriodId(id: string): void {
@@ -168,7 +168,7 @@ export function removeDeletedPeriodId(id: string): void {
       set.delete(id)
       localStorage.setItem(DELETED_PERIODS_KEY, JSON.stringify(Array.from(set)))
     }
-  } catch {}
+  } catch { }
 }
 
 export function getDeletedWinnerIds(): Set<string> {
@@ -179,7 +179,7 @@ export function getDeletedWinnerIds(): Set<string> {
       const parsed = JSON.parse(raw)
       if (Array.isArray(parsed)) return new Set(parsed)
     }
-  } catch {}
+  } catch { }
   return new Set()
 }
 
@@ -189,7 +189,7 @@ export function addDeletedWinnerIds(ids: string[]): void {
     const set = getDeletedWinnerIds()
     ids.forEach((id) => set.add(id))
     localStorage.setItem(DELETED_WINNERS_KEY, JSON.stringify(Array.from(set)))
-  } catch {}
+  } catch { }
 }
 
 export function removeDeletedWinnerId(id: string): void {
@@ -200,7 +200,7 @@ export function removeDeletedWinnerId(id: string): void {
       set.delete(id)
       localStorage.setItem(DELETED_WINNERS_KEY, JSON.stringify(Array.from(set)))
     }
-  } catch {}
+  } catch { }
 }
 
 export function getDeletedCertIds(): Set<string> {
@@ -211,7 +211,7 @@ export function getDeletedCertIds(): Set<string> {
       const parsed = JSON.parse(raw)
       if (Array.isArray(parsed)) return new Set(parsed)
     }
-  } catch {}
+  } catch { }
   return new Set()
 }
 
@@ -221,7 +221,7 @@ export function addDeletedCertIds(ids: string[]): void {
     const set = getDeletedCertIds()
     ids.forEach((id) => set.add(id))
     localStorage.setItem(DELETED_CERTS_KEY, JSON.stringify(Array.from(set)))
-  } catch {}
+  } catch { }
 }
 
 // Helper to sort competition periods from newest to oldest:
@@ -294,7 +294,7 @@ export function isPeriodLegacyYear(periodId?: string, periodName?: string): bool
           }
         }
       }
-    } catch {}
+    } catch { }
   }
 
   const init = INITIAL_PERIODS.find(
@@ -464,7 +464,7 @@ class ParticipantPeriodService {
 
     setTimeout(() => {
       if (cloudCircuitBreaker.canExecuteQuery()) {
-        this.syncFromCloud().catch(() => {})
+        this.syncFromCloud().catch(() => { })
       }
     }, 500)
 
@@ -476,24 +476,24 @@ class ParticipantPeriodService {
       realtimeSubscriptionManager.registerChannel('realtime:periods_winners', (channel) => {
         channel
           .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_periods' }, () => {
-            if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
+            if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => { })
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_winners' }, () => {
-            if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
+            if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => { })
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_certificates' }, () => {
-            if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
+            if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => { })
           })
       })
 
       cloudSyncService.subscribeCloudSetting('competition_periods', () => {
-        if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
+        if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => { })
       })
       cloudSyncService.subscribeCloudSetting('competition_winners', () => {
-        if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
+        if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => { })
       })
       cloudSyncService.subscribeCloudSetting('competition_certificates', () => {
-        if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
+        if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => { })
       })
     }
   }
@@ -513,7 +513,7 @@ class ParticipantPeriodService {
         if (Array.isArray(cloudDeletedPeriods) && cloudDeletedPeriods.length > 0) {
           addDeletedPeriodIds(cloudDeletedPeriods)
         }
-      } catch {}
+      } catch { }
 
       const deletedPeriodSet = getDeletedPeriodIds()
 
@@ -524,7 +524,7 @@ class ParticipantPeriodService {
           if (dbPeriods && Array.isArray(dbPeriods) && dbPeriods.length > 0) {
             cloudPeriods = dbPeriods as CompetitionPeriod[]
           }
-        } catch {}
+        } catch { }
       }
       const appSettingsPeriods = await cloudSyncService.getCloudSetting<CompetitionPeriod[] | null>('competition_periods', null)
       if (appSettingsPeriods && Array.isArray(appSettingsPeriods) && appSettingsPeriods.length > 0) {
@@ -549,7 +549,7 @@ class ParticipantPeriodService {
         })
       }
       if (lingeringPeriodIds.length > 0 && isSupabaseConfigured()) {
-        supabase.from('competition_periods').delete().in('id', lingeringPeriodIds).then(() => {})
+        supabase.from('competition_periods').delete().in('id', lingeringPeriodIds).then(() => { })
       }
 
       if (cloudPeriods && Array.isArray(cloudPeriods) && cloudPeriods.length > 0) {
@@ -560,12 +560,12 @@ class ParticipantPeriodService {
         localStorage.setItem(PERIODS_STORAGE_KEY, JSON.stringify(merged))
         window.dispatchEvent(new CustomEvent('ogsoreg_periods_updated'))
         if (unuploaded.length > 0) {
-          this.uploadPeriodsToCloud(merged).catch(() => {})
+          this.uploadPeriodsToCloud(merged).catch(() => { })
         }
       } else {
         const localPeriods = this.getPeriods().filter((p) => !deletedPeriodSet.has(p.id) && (!p.slug || !deletedPeriodSet.has(p.slug)))
         if (localPeriods.length > 0) {
-          this.uploadPeriodsToCloud(localPeriods).catch(() => {})
+          this.uploadPeriodsToCloud(localPeriods).catch(() => { })
         }
       }
 
@@ -575,7 +575,7 @@ class ParticipantPeriodService {
         if (Array.isArray(cloudDeletedWinners) && cloudDeletedWinners.length > 0) {
           addDeletedWinnerIds(cloudDeletedWinners)
         }
-      } catch {}
+      } catch { }
 
       const deletedWinnerSet = getDeletedWinnerIds()
 
@@ -588,7 +588,7 @@ class ParticipantPeriodService {
               let extra: any = {}
               try {
                 extra = w.notes ? JSON.parse(w.notes) : {}
-              } catch {}
+              } catch { }
               return {
                 id: w.id,
                 period_id: w.period_id,
@@ -604,7 +604,7 @@ class ParticipantPeriodService {
               }
             })
           }
-        } catch {}
+        } catch { }
       }
 
       const appSettingsWinners = await cloudSyncService.getCloudSetting<PeriodWinner[] | null>('competition_winners', null)
@@ -630,7 +630,7 @@ class ParticipantPeriodService {
         })
       }
       if (lingeringWinnerIds.length > 0 && isSupabaseConfigured()) {
-        supabase.from('competition_winners').delete().in('id', lingeringWinnerIds).then(() => {})
+        supabase.from('competition_winners').delete().in('id', lingeringWinnerIds).then(() => { })
       }
 
       const localWinners = this.getWinners().filter((w) => !deletedWinnerSet.has(w.id))
@@ -641,10 +641,10 @@ class ParticipantPeriodService {
         localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(merged))
         window.dispatchEvent(new CustomEvent('ogsoreg_winners_updated'))
         if (unuploaded.length > 0) {
-          this.uploadWinnersToCloud(merged).catch(() => {})
+          this.uploadWinnersToCloud(merged).catch(() => { })
         }
       } else if (localWinners.length > 0) {
-        this.uploadWinnersToCloud(localWinners).catch(() => {})
+        this.uploadWinnersToCloud(localWinners).catch(() => { })
       }
 
       // 3. Certificates Sync
@@ -653,7 +653,7 @@ class ParticipantPeriodService {
         if (Array.isArray(cloudDeletedCerts) && cloudDeletedCerts.length > 0) {
           addDeletedCertIds(cloudDeletedCerts)
         }
-      } catch {}
+      } catch { }
 
       const deletedCertSet = getDeletedCertIds()
       let cloudCerts = await cloudSyncService.getCloudSetting<PeriodCertificate[] | null>('competition_certificates', null)
@@ -877,7 +877,7 @@ class ParticipantPeriodService {
 
     // Persist to Cloud
     cloudSyncService.saveCloudSetting('competition_periods', sorted)
-    if (isSupabaseConfigured()) {
+    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
       const pRow = {
         id: saved.id,
         name: saved.name,
@@ -893,7 +893,10 @@ class ParticipantPeriodService {
         updated_at: new Date().toISOString(),
       }
       supabase.from('competition_periods').upsert(pRow).then(({ error }) => {
-        if (error) console.warn('[ParticipantPeriodService] Direct period upsert warning:', error.message)
+        if (error) {
+          if (cloudCircuitBreaker.isQuotaRestrictionError(error)) cloudCircuitBreaker.recordError(error)
+          console.warn('[ParticipantPeriodService] Direct period upsert warning:', error.message)
+        }
       })
     }
     return saved
@@ -904,7 +907,7 @@ class ParticipantPeriodService {
     const toDeleteIds = [id]
     if (period?.slug) toDeleteIds.push(period.slug)
     addDeletedPeriodIds(toDeleteIds)
-    cloudSyncService.saveCloudSetting('deleted_period_ids', Array.from(getDeletedPeriodIds())).catch(() => {})
+    cloudSyncService.saveCloudSetting('deleted_period_ids', Array.from(getDeletedPeriodIds())).catch(() => { })
 
     const deletedSet = getDeletedPeriodIds()
     const list = this.getPeriods().filter((p) => p && !deletedSet.has(p.id) && (!p.slug || !deletedSet.has(p.slug)))
@@ -916,9 +919,12 @@ class ParticipantPeriodService {
 
     // Persist to Cloud
     cloudSyncService.saveCloudSetting('competition_periods', sorted)
-    if (isSupabaseConfigured()) {
+    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
       supabase.from('competition_periods').delete().or(`id.eq.${id},slug.eq.${id}`).then(({ error }) => {
-        if (error) console.warn('[ParticipantPeriodService] Direct period delete warning:', error.message)
+        if (error) {
+          if (cloudCircuitBreaker.isQuotaRestrictionError(error)) cloudCircuitBreaker.recordError(error)
+          console.warn('[ParticipantPeriodService] Direct period delete warning:', error.message)
+        }
       })
     }
     return true
@@ -953,7 +959,7 @@ class ParticipantPeriodService {
               }
             }
           }
-        } catch {}
+        } catch { }
       }
     }
 
@@ -1026,7 +1032,7 @@ class ParticipantPeriodService {
       try {
         localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(normalized))
         cloudSyncService.saveCloudSetting('competition_winners', normalized)
-      } catch {}
+      } catch { }
     }
 
     // Always sort winners in standard order: Juara 1, Juara 2, Juara 3, Juara Harapan 1, Juara Harapan 2
@@ -1103,9 +1109,14 @@ class ParticipantPeriodService {
         }),
         updated_at: new Date().toISOString(),
       }
-      supabase.from('competition_winners').upsert(wRow).then(({ error }) => {
-        if (error) console.warn('[ParticipantPeriodService] Direct winner upsert warning:', error.message)
-      })
+      if (cloudCircuitBreaker.canExecuteQuery()) {
+        supabase.from('competition_winners').upsert(wRow).then(({ error }) => {
+          if (error) {
+            if (cloudCircuitBreaker.isQuotaRestrictionError(error)) cloudCircuitBreaker.recordError(error)
+            console.warn('[ParticipantPeriodService] Direct winner upsert warning:', error.message)
+          }
+        })
+      }
     }
     return saved
   }
@@ -1114,15 +1125,18 @@ class ParticipantPeriodService {
     if (typeof window === 'undefined') return true
     this.ensureWinnersMigrated()
     addDeletedWinnerIds([id])
-    cloudSyncService.saveCloudSetting('deleted_winner_ids', Array.from(getDeletedWinnerIds())).catch(() => {})
+    cloudSyncService.saveCloudSetting('deleted_winner_ids', Array.from(getDeletedWinnerIds())).catch(() => { })
 
     const list = this.getWinners().filter((w) => w.id !== id)
     localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(list))
     window.dispatchEvent(new CustomEvent('ogsoreg_winners_updated'))
     cloudSyncService.saveCloudSetting('competition_winners', list)
-    if (isSupabaseConfigured()) {
+    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
       supabase.from('competition_winners').delete().eq('id', id).then(({ error }) => {
-        if (error) console.warn('[ParticipantPeriodService] Direct winner delete warning:', error.message)
+        if (error) {
+          if (cloudCircuitBreaker.isQuotaRestrictionError(error)) cloudCircuitBreaker.recordError(error)
+          console.warn('[ParticipantPeriodService] Direct winner delete warning:', error.message)
+        }
       })
     }
     return true
@@ -1132,16 +1146,19 @@ class ParticipantPeriodService {
     if (typeof window === 'undefined') return true
     this.ensureWinnersMigrated()
     addDeletedWinnerIds(ids)
-    cloudSyncService.saveCloudSetting('deleted_winner_ids', Array.from(getDeletedWinnerIds())).catch(() => {})
+    cloudSyncService.saveCloudSetting('deleted_winner_ids', Array.from(getDeletedWinnerIds())).catch(() => { })
 
     const idSet = new Set(ids)
     const list = this.getWinners().filter((w) => !idSet.has(w.id))
     localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(list))
     window.dispatchEvent(new CustomEvent('ogsoreg_winners_updated'))
     cloudSyncService.saveCloudSetting('competition_winners', list)
-    if (isSupabaseConfigured()) {
+    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
       supabase.from('competition_winners').delete().in('id', ids).then(({ error }) => {
-        if (error) console.warn('[ParticipantPeriodService] Direct bulk winner delete warning:', error.message)
+        if (error) {
+          if (cloudCircuitBreaker.isQuotaRestrictionError(error)) cloudCircuitBreaker.recordError(error)
+          console.warn('[ParticipantPeriodService] Direct bulk winner delete warning:', error.message)
+        }
       })
     }
     return true
@@ -1175,7 +1192,7 @@ class ParticipantPeriodService {
               }
             }
           }
-        } catch {}
+        } catch { }
       }
     }
 
@@ -1282,14 +1299,14 @@ class ParticipantPeriodService {
     if (typeof window === 'undefined') return true
     this.ensureCertsMigrated()
     addDeletedCertIds([id])
-    cloudSyncService.saveCloudSetting('deleted_cert_ids', Array.from(getDeletedCertIds())).catch(() => {})
+    cloudSyncService.saveCloudSetting('deleted_cert_ids', Array.from(getDeletedCertIds())).catch(() => { })
 
     const list = this.getCertificates().filter((c) => c.id !== id)
     localStorage.setItem(CERTIFICATES_STORAGE_KEY, JSON.stringify(list))
     window.dispatchEvent(new CustomEvent('ogsoreg_certificates_updated'))
     cloudSyncService.saveCloudSetting('competition_certificates', list)
     if (isSupabaseConfigured()) {
-      supabase.from('competition_certificates').delete().eq('id', id).then(() => {})
+      supabase.from('competition_certificates').delete().eq('id', id).then(() => { })
     }
     return true
   }
