@@ -8,6 +8,8 @@ import type {
   StudentWithResult,
   ResultFilterParams,
   ResultStats,
+  PublicCompetitionResult,
+  PublicPeriodAnnouncements,
 } from '../types/competitionResult'
 
 const STORAGE_KEY = 'ogsoreg_competition_results_v1'
@@ -682,6 +684,134 @@ class CompetitionResultService {
         finalistPercentage,
         championPercentage,
       },
+    }
+  }
+
+  /**
+   * Fetches public sanitized results for the landing page showcase.
+   * Strictly enforces publication state:
+   * - If period or results are unpublished/draft, returns empty arrays.
+   * - Sanitizes all sensitive data (NEVER leaks emails, usernames, passwords, or internal IDs).
+   */
+  public async getPublicResults(periodId: string): Promise<PublicPeriodAnnouncements> {
+    const period = participantPeriodService.getPeriodById(periodId)
+    const periodName = period?.name || 'OGSO'
+    const periodYear = Number(period?.year) || 2026
+
+    const isPublished = Boolean(period?.is_published)
+    const publishFinalists = isPublished && period?.publish_finalists !== false
+    const publishChampions = isPublished && period?.publish_champions !== false
+
+    // Calculate base statistics
+    const allStudents = studentRepository.getRawStore(CANONICAL_INSTITUTION_ID)
+    const periodResults = this.getResultsByPeriod(periodId)
+    const resultMap = new Map<string, CompetitionResult>()
+    periodResults.forEach((r) => resultMap.set(r.student_id, r))
+
+    const campusSet = new Set<string>()
+    allStudents.forEach((s) => {
+      if (s.kampus) campusSet.add(s.kampus)
+    })
+
+    const totalRegistered = Math.max(allStudents.length, period?.total_participants || 0)
+    const totalCampuses = campusSet.size > 0 ? campusSet.size : 20
+
+    // Gather joined records
+    const joined = allStudents.map((student) => {
+      const res = resultMap.get(student.id)
+      return {
+        student,
+        result: res,
+        is_finalist: res ? res.is_finalist : false,
+        is_champion: res ? res.is_champion : false,
+        champion_rank: res?.champion_rank ?? null,
+        award_category: res?.award_category ?? null,
+        result_notes: res?.result_notes ?? null,
+      }
+    })
+
+    const totalFinalists = joined.filter((s) => s.is_finalist).length
+    const totalChampions = joined.filter((s) => s.is_champion).length
+
+    // If publication is blocked, return empty arrays (safe server-side access control)
+    if (!isPublished) {
+      return {
+        periodId,
+        periodName,
+        periodYear,
+        isPublished: false,
+        publishFinalists: false,
+        publishChampions: false,
+        stats: {
+          totalRegistered,
+          totalFinalists: 0,
+          totalCampuses,
+          totalChampions: 0,
+        },
+        finalists: [],
+        champions: [],
+      }
+    }
+
+    // Build Sanitized Finalists (Champions MUST also appear here)
+    let finalists: PublicCompetitionResult[] = []
+    if (publishFinalists) {
+      finalists = joined
+        .filter((s) => s.is_finalist)
+        .map((s, idx) => ({
+          id: `fin-${idx + 1}`,
+          student_name: s.student.full_name,
+          campus: s.student.kampus || 'Gontor',
+          jenjang: s.student.kelas || s.student.jenjang,
+          category: (s.student.custom_fields?.bidang as string) || (s.student.custom_fields?.lomba as string) || undefined,
+          is_finalist: true,
+          is_champion: s.is_champion,
+          champion_rank: s.champion_rank,
+          award_category: s.award_category,
+          result_notes: s.result_notes,
+        }))
+        .sort((a, b) => a.student_name.localeCompare(b.student_name))
+    }
+
+    // Build Sanitized Champions (sorted by champion rank 1 -> 2 -> 3 -> 4 -> 5)
+    let champions: PublicCompetitionResult[] = []
+    if (publishChampions) {
+      champions = joined
+        .filter((s) => s.is_champion)
+        .map((s, idx) => ({
+          id: `champ-${idx + 1}`,
+          student_name: s.student.full_name,
+          campus: s.student.kampus || 'Gontor',
+          jenjang: s.student.kelas || s.student.jenjang,
+          category: (s.student.custom_fields?.bidang as string) || (s.student.custom_fields?.lomba as string) || undefined,
+          is_finalist: true,
+          is_champion: true,
+          champion_rank: s.champion_rank,
+          award_category: s.award_category,
+          result_notes: s.result_notes,
+        }))
+        .sort((a, b) => {
+          const rankA = a.champion_rank ?? 999
+          const rankB = b.champion_rank ?? 999
+          return rankA - rankB
+        })
+    }
+
+    return {
+      periodId,
+      periodName,
+      periodYear,
+      isPublished: true,
+      publishFinalists,
+      publishChampions,
+      stats: {
+        totalRegistered,
+        totalFinalists,
+        totalCampuses,
+        totalChampions,
+      },
+      finalists,
+      champions,
     }
   }
 }

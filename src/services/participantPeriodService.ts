@@ -86,6 +86,8 @@ export interface CompetitionPeriod {
   start_date: string
   end_date: string
   is_published: boolean
+  publish_finalists?: boolean
+  publish_champions?: boolean
   total_winners?: number
   total_participants?: number
   created_at: string
@@ -321,6 +323,8 @@ const INITIAL_PERIODS: CompetitionPeriod[] = [
     start_date: '2026-01-10',
     end_date: '2026-11-20',
     is_published: true,
+    publish_finalists: true,
+    publish_champions: true,
     total_winners: 0,
     total_participants: 0,
     created_at: '2026-01-01T00:00:00Z',
@@ -336,6 +340,8 @@ const INITIAL_PERIODS: CompetitionPeriod[] = [
     start_date: '2025-01-15',
     end_date: '2025-10-25',
     is_published: true,
+    publish_finalists: true,
+    publish_champions: true,
     total_winners: 15,
     total_participants: 120,
     created_at: '2025-01-01T00:00:00Z',
@@ -351,6 +357,8 @@ const INITIAL_PERIODS: CompetitionPeriod[] = [
     start_date: '2024-01-15',
     end_date: '2024-10-28',
     is_published: true,
+    publish_finalists: true,
+    publish_champions: true,
     total_winners: 12,
     total_participants: 98,
     created_at: '2024-01-01T00:00:00Z',

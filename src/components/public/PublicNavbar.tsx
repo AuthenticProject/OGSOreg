@@ -246,6 +246,19 @@ export const PublicNavbar: React.FC = () => {
 
               {participantDropdownOpen && (
                 <div className="absolute top-full left-0 mt-2 w-72 rounded-2xl bg-[#0C241B] border border-emerald-800/70 shadow-2xl p-2.5 z-50 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-150">
+                  <a
+                    href="/#pengumuman-hasil"
+                    className="flex items-start gap-3.5 p-3 rounded-xl text-xs transition-colors text-emerald-100/90 hover:text-white hover:bg-emerald-900/30 border-b border-emerald-900/50 mb-1"
+                  >
+                    <Trophy className="w-5 h-5 text-[#D5C49A] mt-0.5 shrink-0" />
+                    <div className="space-y-0.5">
+                      <div className="font-bold text-sm text-[#D5C49A]">Pengumuman Hasil Resmi</div>
+                      <div className="text-[11px] text-emerald-300/80 leading-snug">
+                        Daftar finalis & Hall of Fame per periode
+                      </div>
+                    </div>
+                  </a>
+
                   <NavLink
                     to="/participant"
                     className={({ isActive }) =>
@@ -464,6 +477,15 @@ export const PublicNavbar: React.FC = () => {
                 <Archive className="w-4 h-4 text-[#A7F3D0]" />
                 <span>Bank Soal Kompetisi</span>
               </NavLink>
+
+              <a
+                href="/#pengumuman-hasil"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors text-[#D5C49A] hover:bg-emerald-900/30"
+              >
+                <Trophy className="w-4 h-4 text-[#D5C49A]" />
+                <span>Pengumuman Hasil Resmi</span>
+              </a>
 
               <NavLink
                 to="/participant"

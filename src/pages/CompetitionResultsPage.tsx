@@ -12,12 +12,15 @@ import {
   RefreshCw,
   Lock,
   Eye,
+  Globe,
+  ExternalLink,
 } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
 import { SectionCard } from '../components/ui/SectionCard'
 import { EmptyState } from '../components/feedback/EmptyState'
 import { useAuth } from '../context/AuthContext'
+import { cn } from '../lib/utils'
 import {
   participantPeriodService,
   type CompetitionPeriod,
@@ -193,6 +196,19 @@ export const CompetitionResultsPage: React.FC = () => {
     }
   }
 
+  // Publication Toggle Handler (Super Admin Only)
+  const handleTogglePublication = (
+    field: 'is_published' | 'publish_finalists' | 'publish_champions'
+  ) => {
+    if (!selectedPeriod || !isSuperAdmin) return
+    const currentVal = selectedPeriod[field] !== false
+    participantPeriodService.savePeriod({
+      ...selectedPeriod,
+      [field]: !currentVal,
+    })
+    setPeriods(participantPeriodService.getPeriods())
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -257,6 +273,146 @@ export const CompetitionResultsPage: React.FC = () => {
           </span>
         </div>
       )}
+
+      {/* PUBLICATION CONTROLS (Editorial Prestige Landing Page Showcase) */}
+      <div className="bg-gradient-to-r from-emerald-900 via-[#102C25] to-[#0A1E17] text-white rounded-2xl border border-emerald-700/60 p-5 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-[#C6A45B]/20 border border-[#C6A45B]/40 text-[#DCC78F] flex items-center justify-center shrink-0">
+              <Globe className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <span>Kontrol Publikasi Pengumuman ({selectedPeriod?.name})</span>
+                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-emerald-950/80 text-[#A7F3D0] border border-emerald-500/40">
+                  Landing Page Showcase
+                </span>
+              </h3>
+              <p className="text-xs text-emerald-200/70">
+                Atur visibilitas kualifikasi santri finalis dan penetapan juara pada halaman depan publik (Editorial Prestige).
+              </p>
+            </div>
+          </div>
+
+          <a
+            href="/#pengumuman-hasil"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-[#102C25] bg-[#DCC78F] hover:bg-[#C6A45B] transition-colors shadow-sm self-start sm:self-auto cursor-pointer"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>Pratinjau Pengumuman Publik</span>
+            <ExternalLink className="w-3 h-3 ml-0.5 opacity-70" />
+          </a>
+        </div>
+
+        <div className="pt-2 border-t border-emerald-800/60 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* 1. Status Periode Keseluruhan */}
+          <div className="p-3 rounded-xl bg-[#183B2E]/70 border border-emerald-700/50 flex items-center justify-between">
+            <div className="space-y-0.5">
+              <span className="text-[10px] font-mono uppercase text-emerald-300/80 block">
+                Status Periode
+              </span>
+              <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                <span
+                  className={cn(
+                    'w-2 h-2 rounded-full',
+                    selectedPeriod?.is_published !== false ? 'bg-emerald-400' : 'bg-gray-400'
+                  )}
+                />
+                {selectedPeriod?.is_published !== false ? 'Terbit (Live)' : 'Draf (Ditutup)'}
+              </div>
+            </div>
+
+            {isSuperAdmin ? (
+              <button
+                type="button"
+                onClick={() => handleTogglePublication('is_published')}
+                className={cn(
+                  'px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer',
+                  selectedPeriod?.is_published !== false
+                    ? 'bg-emerald-800/80 text-emerald-100 hover:bg-emerald-800'
+                    : 'bg-emerald-600 text-white hover:bg-emerald-500'
+                )}
+              >
+                {selectedPeriod?.is_published !== false ? 'Jadikan Draf' : 'Publikasikan'}
+              </button>
+            ) : (
+              <span className="text-[10px] text-emerald-300/60 font-mono">Terkunci</span>
+            )}
+          </div>
+
+          {/* 2. Pengumuman Finalis */}
+          <div className="p-3 rounded-xl bg-[#183B2E]/70 border border-emerald-700/50 flex items-center justify-between">
+            <div className="space-y-0.5">
+              <span className="text-[10px] font-mono uppercase text-emerald-300/80 block">
+                Publikasi Finalis
+              </span>
+              <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                <span
+                  className={cn(
+                    'w-2 h-2 rounded-full',
+                    selectedPeriod?.publish_finalists !== false ? 'bg-[#C6A45B]' : 'bg-gray-400'
+                  )}
+                />
+                {selectedPeriod?.publish_finalists !== false ? 'Tampil di Web' : 'Disembunyikan'}
+              </div>
+            </div>
+
+            {isSuperAdmin ? (
+              <button
+                type="button"
+                onClick={() => handleTogglePublication('publish_finalists')}
+                className={cn(
+                  'px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer',
+                  selectedPeriod?.publish_finalists !== false
+                    ? 'bg-emerald-800/80 text-emerald-100 hover:bg-emerald-800'
+                    : 'bg-[#C6A45B] text-[#102C25] hover:bg-[#DCC78F]'
+                )}
+              >
+                {selectedPeriod?.publish_finalists !== false ? 'Sembunyikan' : 'Tampilkan'}
+              </button>
+            ) : (
+              <span className="text-[10px] text-emerald-300/60 font-mono">Terkunci</span>
+            )}
+          </div>
+
+          {/* 3. Pengumuman Juara / Hall of Fame */}
+          <div className="p-3 rounded-xl bg-[#183B2E]/70 border border-emerald-700/50 flex items-center justify-between">
+            <div className="space-y-0.5">
+              <span className="text-[10px] font-mono uppercase text-emerald-300/80 block">
+                Publikasi Juara (Hall of Fame)
+              </span>
+              <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                <span
+                  className={cn(
+                    'w-2 h-2 rounded-full',
+                    selectedPeriod?.publish_champions !== false ? 'bg-[#C6A45B]' : 'bg-gray-400'
+                  )}
+                />
+                {selectedPeriod?.publish_champions !== false ? 'Tampil di Web' : 'Disembunyikan'}
+              </div>
+            </div>
+
+            {isSuperAdmin ? (
+              <button
+                type="button"
+                onClick={() => handleTogglePublication('publish_champions')}
+                className={cn(
+                  'px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer',
+                  selectedPeriod?.publish_champions !== false
+                    ? 'bg-emerald-800/80 text-emerald-100 hover:bg-emerald-800'
+                    : 'bg-[#C6A45B] text-[#102C25] hover:bg-[#DCC78F]'
+                )}
+              >
+                {selectedPeriod?.publish_champions !== false ? 'Sembunyikan' : 'Tampilkan'}
+              </button>
+            ) : (
+              <span className="text-[10px] text-emerald-300/60 font-mono">Terkunci</span>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* DASHBOARD: Result Metrics Cards (Phase 5) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

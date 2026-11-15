@@ -88,3 +88,34 @@ export interface ResultStats {
   finalistPercentage: number
   championPercentage: number
 }
+
+export interface PublicCompetitionResult {
+  id: string
+  student_name: string
+  campus: string
+  jenjang: string
+  category?: string
+  is_finalist: boolean
+  is_champion: boolean
+  champion_rank: number | null
+  award_category: string | null
+  result_notes?: string | null
+}
+
+export interface PublicPeriodAnnouncements {
+  periodId: string
+  periodName: string
+  periodYear: number
+  isPublished: boolean
+  publishFinalists: boolean
+  publishChampions: boolean
+  stats: {
+    totalRegistered: number
+    totalFinalists: number
+    totalCampuses: number
+    totalChampions: number
+  }
+  finalists: PublicCompetitionResult[]
+  champions: PublicCompetitionResult[]
+}
+

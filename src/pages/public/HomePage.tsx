@@ -30,6 +30,7 @@ import { hallOfFameService } from '../../services/hallOfFameService'
 import { materiService } from '../../services/materiService'
 import { PhotoMarqueeGallery } from '../../components/public/PhotoMarqueeGallery'
 import { MonthlyCalendarView } from '../../components/calendar/MonthlyCalendarView'
+import { EditorialResultsShowcase } from '../../components/public/EditorialResultsShowcase'
 import { ScrollReveal } from '../../components/ui/ScrollReveal'
 import { ScrollToTopButton } from '../../components/ui/ScrollToTopButton'
 import { cn } from '../../lib/utils'
@@ -225,6 +226,14 @@ export const HomePage: React.FC = () => {
               >
                 <Download className="w-4 h-4" />
                 <span>Unduh JUKLAK 2026</span>
+              </a>
+
+              <a
+                href="#pengumuman-hasil"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl font-bold text-xs text-[#102C25] bg-gradient-to-r from-[#DCC78F] to-[#C6A45B] hover:from-[#C6A45B] hover:to-[#DCC78F] border border-[#C6A45B] hover:-translate-y-0.5 transition-all duration-300 shadow-md backdrop-blur-md group"
+              >
+                <Trophy className="w-4 h-4 text-[#102C25] group-hover:rotate-12 transition-transform" />
+                <span>Pengumuman Hasil & Finalis</span>
               </a>
 
               <a
@@ -1025,6 +1034,11 @@ export const HomePage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* ========================================================================= */}
+      {/* SECTION 06.2 — OFFICIAL FINALISTS ANNOUNCEMENT & HALL OF FAME (EDITORIAL) */}
+      {/* ========================================================================= */}
+      <EditorialResultsShowcase />
 
       {/* ========================================================================= */}
       {/* SECTION 06.5 — HALL OF FAME PREVIEW (Compact Executive Standings)         */}
