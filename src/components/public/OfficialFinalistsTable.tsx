@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react'
-import { Search, Trophy, ExternalLink, Filter } from 'lucide-react'
 
 // Official Finalists Dataset from Petunjuk & Rekapitulasi Babak Penyisihan OGSO 2026
 // Format: [jenjang, no urut dalam jenjang, nama, kelas, kampus, nilai]
@@ -107,104 +106,95 @@ export const OFFICIAL_FINALISTS_2026: [number, number, string, string, string, n
   [5, 20, 'Muhammad Adly Ridwan', '5-B', 'Gontor 3', 35],
 ]
 
-export const OfficialFinalistsTable: React.FC<{ showHeader?: boolean }> = ({
-  showHeader = true,
-}) => {
+export interface OfficialFinalistsTableProps {
+  showHeader?: boolean
+}
+
+export const OfficialFinalistsTable: React.FC<OfficialFinalistsTableProps> = ({ showHeader = true }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCampus, setSelectedCampus] = useState('')
   const [selectedJenjang, setSelectedJenjang] = useState<number>(0) // 0 = Semua
 
-  // Distinct campuses sorted alphabetically with numbers properly ordered
+  // Distinct campuses sorted alphabetically
   const campuses = useMemo(() => {
     const set = new Set<string>()
     OFFICIAL_FINALISTS_2026.forEach((r) => set.add(r[4]))
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'id', { numeric: true }))
   }, [])
 
-  // Filtered dataset
+  // Filtered dataset matching index (1).html logic
   const filteredData = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
     return OFFICIAL_FINALISTS_2026.filter((r) => {
       const matchJenjang = !selectedJenjang || r[0] === selectedJenjang
       const matchCampus = !selectedCampus || r[4] === selectedCampus
-      const matchQuery = !q || (r[2] + ' ' + r[4] + ' ' + r[3]).toLowerCase().includes(q)
+      const matchQuery = !q || (r[2] + ' ' + r[4]).toLowerCase().includes(q)
       return matchJenjang && matchCampus && matchQuery
     })
   }, [searchQuery, selectedCampus, selectedJenjang])
 
   return (
-    <section id="pengumuman-hasil" className="py-12 sm:py-16 bg-[#0B1E17] text-white relative">
+    <section id="pengumuman-hasil" className="w-full bg-[#f6f8f5] dark:bg-[#0d1511] text-[#14231c] dark:text-[#e8f0eb] transition-colors pb-16">
+      {/* Hero Header matching index (1).html */}
       {showHeader && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4 mb-8">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-xs font-bold tracking-wider text-emerald-300 uppercase">
-            <Trophy className="w-3.5 h-3.5 text-amber-400" />
-            BABAK FINAL · OGSO 2026
-          </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
-            Selamat kepada <span className="text-amber-300">Para Finalis</span> OGSO 2026
-          </h2>
-          <p className="max-w-2xl mx-auto text-emerald-100/80 text-sm sm:text-base leading-relaxed">
-            Online Gontor Science Olympiad — berikut daftar resmi peserta yang berhasil lolos ke
-            babak final berdasarkan hasil rekapitulasi nilai seleksi penyisihan.
+        <div className="bg-gradient-to-br from-[#0a4f37] via-[#0f6b4a] to-[#1a8a60] text-white pt-14 pb-20 px-5 text-center">
+          <span className="inline-block tracking-widest font-bold text-xs bg-white/15 px-3.5 py-1.5 rounded-full mb-4 uppercase">
+            BABAK FINAL · 2026
+          </span>
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight mb-3">
+            Selamat kepada <span className="text-[#f3d27a]">Para Finalis</span> OGSO 2026
+          </h1>
+          <p className="max-w-xl mx-auto text-sm sm:text-base opacity-90 leading-relaxed font-normal">
+            Online Gontor Science Olympiad — berikut peserta yang berhasil lolos ke babak final.
           </p>
-
-          <div className="pt-2">
-            <a
-              href="/finalis.html"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-800/80 hover:bg-emerald-700 text-white text-xs font-bold border border-emerald-600/50 transition-colors shadow-md"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span>Buka Tampilan Penuh (Standalone HTML)</span>
-            </a>
-          </div>
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        {/* Metric Summary Cards */}
-        <div className="grid grid-cols-3 gap-3 sm:gap-4">
-          <div className="bg-[#122A21] border border-emerald-800/60 rounded-2xl p-3 sm:p-4 text-center shadow-lg">
-            <span className="block text-2xl sm:text-3xl font-extrabold text-emerald-400">
+      <div className={`max-w-[1000px] mx-auto px-4 ${!showHeader ? 'pt-8' : ''}`}>
+        {/* Metric Summary Cards (-40px negative margin matching index (1).html) */}
+        <div className="grid grid-cols-3 gap-3 -mt-10 mb-6">
+          <div className="bg-white dark:bg-[#14201a] border border-[#dfe7e1] dark:border-[#233229] rounded-2xl p-3.5 text-center shadow-lg">
+            <b className="block text-2xl sm:text-3xl font-extrabold text-[#0f6b4a] dark:text-[#4fc08f]">
               {OFFICIAL_FINALISTS_2026.length}
-            </span>
-            <span className="text-[11px] sm:text-xs text-emerald-200/70 font-medium">Total Finalis</span>
+            </b>
+            <span className="text-xs sm:text-sm text-[#5b6b62] dark:text-[#93a69b]">Finalis</span>
           </div>
-          <div className="bg-[#122A21] border border-emerald-800/60 rounded-2xl p-3 sm:p-4 text-center shadow-lg">
-            <span className="block text-2xl sm:text-3xl font-extrabold text-amber-400">5</span>
-            <span className="text-[11px] sm:text-xs text-emerald-200/70 font-medium">Jenjang Lomba</span>
+          <div className="bg-white dark:bg-[#14201a] border border-[#dfe7e1] dark:border-[#233229] rounded-2xl p-3.5 text-center shadow-lg">
+            <b className="block text-2xl sm:text-3xl font-extrabold text-[#0f6b4a] dark:text-[#4fc08f]">
+              5
+            </b>
+            <span className="text-xs sm:text-sm text-[#5b6b62] dark:text-[#93a69b]">Jenjang</span>
           </div>
-          <div className="bg-[#122A21] border border-emerald-800/60 rounded-2xl p-3 sm:p-4 text-center shadow-lg">
-            <span className="block text-2xl sm:text-3xl font-extrabold text-emerald-400">
+          <div className="bg-white dark:bg-[#14201a] border border-[#dfe7e1] dark:border-[#233229] rounded-2xl p-3.5 text-center shadow-lg">
+            <b className="block text-2xl sm:text-3xl font-extrabold text-[#0f6b4a] dark:text-[#4fc08f]">
               {campuses.length}
-            </span>
-            <span className="text-[11px] sm:text-xs text-emerald-200/70 font-medium">Kampus Terwakili</span>
+            </b>
+            <span className="text-xs sm:text-sm text-[#5b6b62] dark:text-[#93a69b]">Kampus</span>
           </div>
         </div>
 
-        {/* Filter & Search Bar */}
-        <div className="bg-[#10251D] border border-emerald-800/70 rounded-2xl p-4 space-y-3.5 shadow-md">
+        {/* Tools: Input Search & Campus Select matching index (1).html */}
+        <div className="flex flex-col gap-3 my-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="sm:col-span-2 relative">
-              <Search className="w-4 h-4 text-emerald-400/60 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <div className="sm:col-span-2">
               <input
-                type="text"
+                type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari nama santri, kelas, atau kampus..."
-                className="w-full bg-[#163228] border border-emerald-700/60 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-emerald-300/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                placeholder="Cari nama atau kampus…"
+                autoComplete="off"
+                className="w-full bg-white dark:bg-[#14201a] text-[#14231c] dark:text-[#e8f0eb] border border-[#dfe7e1] dark:border-[#233229] rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#0f6b4a] dark:focus:ring-[#4fc08f] transition-all"
               />
             </div>
-            <div className="relative">
+            <div>
               <select
                 value={selectedCampus}
                 onChange={(e) => setSelectedCampus(e.target.value)}
-                className="w-full bg-[#163228] border border-emerald-700/60 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer"
+                className="w-full bg-white dark:bg-[#14201a] text-[#14231c] dark:text-[#e8f0eb] border border-[#dfe7e1] dark:border-[#233229] rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#0f6b4a] dark:focus:ring-[#4fc08f] transition-all cursor-pointer"
               >
-                <option value="">Semua Kampus ({campuses.length})</option>
+                <option value="">Semua kampus</option>
                 {campuses.map((c) => (
-                  <option key={c} value={c} className="bg-[#10251D]">
+                  <option key={c} value={c}>
                     {c}
                   </option>
                 ))}
@@ -212,63 +202,44 @@ export const OfficialFinalistsTable: React.FC<{ showHeader?: boolean }> = ({
             </div>
           </div>
 
-          {/* Jenjang Chips */}
-          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-emerald-800/50">
-            <span className="text-xs text-emerald-300/70 font-semibold mr-1 flex items-center gap-1">
-              <Filter className="w-3 h-3" /> Jenjang:
-            </span>
+          {/* Chips: Semua, Jenjang 1 - 5 matching index (1).html */}
+          <div className="flex flex-wrap gap-2 pt-1">
             {[0, 1, 2, 3, 4, 5].map((lvl) => (
               <button
                 key={lvl}
                 type="button"
                 onClick={() => setSelectedJenjang(lvl)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                className={`text-sm font-semibold cursor-pointer border rounded-full px-3.5 py-1.5 transition-all ${
                   selectedJenjang === lvl
-                    ? 'bg-emerald-500 text-[#0B1E17] font-bold shadow-md'
-                    : 'bg-[#163228] text-emerald-100/80 hover:bg-emerald-800/60 border border-emerald-700/50'
+                    ? 'bg-[#0f6b4a] dark:bg-[#4fc08f] text-white dark:text-[#0d1511] border-[#0f6b4a] dark:border-[#4fc08f]'
+                    : 'bg-white dark:bg-[#14201a] text-[#14231c] dark:text-[#e8f0eb] border-[#dfe7e1] dark:border-[#233229] hover:bg-[#eef4f0] dark:hover:bg-[#192a21]'
                 }`}
               >
-                {lvl === 0 ? 'Semua Jenjang' : `Jenjang ${lvl}`}
+                {lvl === 0 ? 'Semua' : `Jenjang ${lvl}`}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Counter Summary */}
-        <div className="flex items-center justify-between text-xs text-emerald-300/80 px-1">
-          <span>
-            Menampilkan <strong className="text-emerald-200">{filteredData.length}</strong> dari{' '}
-            {OFFICIAL_FINALISTS_2026.length} finalis
-          </span>
-          {(searchQuery || selectedCampus || selectedJenjang !== 0) && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery('')
-                setSelectedCampus('')
-                setSelectedJenjang(0)
-              }}
-              className="text-emerald-400 hover:text-emerald-300 underline cursor-pointer"
-            >
-              Reset Filter
-            </button>
-          )}
+        {/* Counter matching index (1).html */}
+        <div className="text-sm text-[#5b6b62] dark:text-[#93a69b] my-2">
+          Menampilkan {filteredData.length} dari {OFFICIAL_FINALISTS_2026.length} finalis
         </div>
 
-        {/* Table View */}
-        <div className="overflow-x-auto bg-[#10251D] border border-emerald-800/70 rounded-2xl shadow-xl">
-          <table className="w-full text-left text-sm border-collapse min-w-[560px]">
+        {/* Table View matching index (1).html */}
+        <div className="overflow-x-auto bg-white dark:bg-[#14201a] border border-[#dfe7e1] dark:border-[#233229] rounded-2xl shadow-sm mb-12">
+          <table className="w-full border-collapse text-sm min-w-[560px]">
             <thead>
-              <tr className="bg-[#142F24] text-emerald-300/90 text-xs uppercase tracking-wider border-b border-emerald-800/70">
-                <th className="py-3 px-4 w-14 text-center font-bold">No</th>
-                <th className="py-3 px-4 font-bold">Nama Finalis</th>
-                <th className="py-3 px-4 font-bold">Jenjang</th>
-                <th className="py-3 px-4 font-bold">Kelas</th>
-                <th className="py-3 px-4 font-bold">Kampus</th>
-                <th className="py-3 px-4 text-right font-bold w-20">Nilai</th>
+              <tr className="bg-[#eef4f0] dark:bg-[#192a21] text-xs uppercase tracking-wider text-[#5b6b62] dark:text-[#93a69b] sticky top-0">
+                <th className="py-3 px-3.5 w-14 text-center border-b border-[#dfe7e1] dark:border-[#233229]">No</th>
+                <th className="py-3 px-3.5 text-left border-b border-[#dfe7e1] dark:border-[#233229]">Nama</th>
+                <th className="py-3 px-3.5 text-left border-b border-[#dfe7e1] dark:border-[#233229]">Jenjang</th>
+                <th className="py-3 px-3.5 text-left border-b border-[#dfe7e1] dark:border-[#233229]">Kelas</th>
+                <th className="py-3 px-3.5 text-left border-b border-[#dfe7e1] dark:border-[#233229]">Kampus</th>
+                <th className="py-3 px-3.5 text-right font-extrabold text-[#0f6b4a] dark:text-[#4fc08f] border-b border-[#dfe7e1] dark:border-[#233229]">Nilai</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-emerald-800/40 text-emerald-100">
+            <tbody>
               {filteredData.length > 0 ? (
                 filteredData.map((row, idx) => {
                   const [jenjang, noInJenjang, nama, kelas, kampus, nilai] = row
@@ -276,25 +247,28 @@ export const OfficialFinalistsTable: React.FC<{ showHeader?: boolean }> = ({
                     selectedJenjang && !selectedCampus && !searchQuery ? noInJenjang : idx + 1
 
                   return (
-                    <tr key={`${jenjang}-${nama}-${kampus}`} className="hover:bg-emerald-900/30 transition-colors">
-                      <td className="py-3 px-4 text-center text-xs font-mono text-emerald-300/80">
+                    <tr
+                      key={`${jenjang}-${nama}-${kampus}`}
+                      className="border-b border-[#dfe7e1] dark:border-[#233229] hover:bg-[#e6f3ec] dark:hover:bg-[#173126] transition-colors"
+                    >
+                      <td className="py-2.5 px-3.5 text-center text-xs text-[#5b6b62] dark:text-[#93a69b]">
                         {displayNo}
                       </td>
-                      <td className="py-3 px-4 font-semibold text-white">
+                      <td className="py-2.5 px-3.5 font-semibold text-[#14231c] dark:text-[#e8f0eb] min-w-[180px]">
                         {nama}
                       </td>
-                      <td className="py-3 px-4">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      <td className="py-2.5 px-3.5">
+                        <span className="inline-block text-xs font-bold text-[#0f6b4a] dark:text-[#4fc08f] bg-[#e6f3ec] dark:bg-[#173126] px-2.5 py-0.5 rounded-full">
                           Jenjang {jenjang}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-emerald-200/90 text-xs">
+                      <td className="py-2.5 px-3.5 text-[#14231c] dark:text-[#e8f0eb]">
                         {kelas}
                       </td>
-                      <td className="py-3 px-4 text-emerald-100 font-medium text-xs">
+                      <td className="py-2.5 px-3.5 text-[#14231c] dark:text-[#e8f0eb]">
                         {kampus}
                       </td>
-                      <td className="py-3 px-4 text-right font-extrabold text-amber-300 font-mono">
+                      <td className="py-2.5 px-3.5 text-right font-extrabold text-[#0f6b4a] dark:text-[#4fc08f]">
                         {nilai}
                       </td>
                     </tr>
@@ -302,13 +276,21 @@ export const OfficialFinalistsTable: React.FC<{ showHeader?: boolean }> = ({
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-emerald-300/60 text-sm">
-                    Tidak ada finalis yang cocok dengan kriteria pencarian.
+                  <td colSpan={6} className="text-center text-[#5b6b62] dark:text-[#93a69b] py-9">
+                    Tidak ada finalis yang cocok.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Footer matching index (1).html */}
+        <div className="text-center text-xs text-[#5b6b62] dark:text-[#93a69b] pt-6 pb-10 border-t border-[#dfe7e1] dark:border-[#233229]">
+          Daftar finalis OGSO 2026 · Informasi lengkap di{' '}
+          <a href="https://ogsoreg.vercel.app/" className="text-[#0f6b4a] dark:text-[#4fc08f] font-bold hover:underline">
+            ogsoreg.vercel.app
+          </a>
         </div>
       </div>
     </section>
