@@ -1,7 +1,7 @@
-import { isSupabaseConfigured } from '../lib/supabase'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { cloudSyncService } from './supabase/cloudSyncService'
 import { studentRepository, CANONICAL_INSTITUTION_ID } from './studentRepository'
-import { participantPeriodService, type PeriodWinner } from './participantPeriodService'
+import { participantPeriodService, getAwardRank, type PeriodWinner } from './participantPeriodService'
 import type {
   CompetitionResult,
   ResultStatus,
@@ -103,6 +103,16 @@ class CompetitionResultService {
 
     if (isSupabaseConfigured()) {
       try {
+        supabase
+          .channel('realtime:competition_results')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_results' }, () => {
+            this.syncFromCloud().catch(() => {})
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_winners' }, () => {
+            this.syncFromCloud().catch(() => {})
+          })
+          .subscribe()
+
         cloudSyncService.subscribeCloudSetting('competition_results', () => {
           this.syncFromCloud().catch(() => {})
         })
@@ -116,24 +126,117 @@ class CompetitionResultService {
     if (!isSupabaseConfigured() || this.isCloudSyncing) return
     this.isCloudSyncing = true
     try {
-      // 1. Fetch deleted IDs
-      const cloudDeleted = await cloudSyncService.getCloudSetting<string[]>('deleted_result_ids', [])
-      if (Array.isArray(cloudDeleted) && cloudDeleted.length > 0) {
-        cloudDeleted.forEach((id) => this.deletedResultIds.add(id))
-      }
+      // 1. Fetch deleted IDs from cloud setting
+      try {
+        const cloudDeleted = await cloudSyncService.getCloudSetting<string[]>('deleted_result_ids', [])
+        if (Array.isArray(cloudDeleted) && cloudDeleted.length > 0) {
+          cloudDeleted.forEach((id) => this.deletedResultIds.add(id))
+        }
+      } catch {}
 
-      // 2. Fetch results from app_settings
-      const cloudResults = await cloudSyncService.getCloudSetting<CompetitionResult[] | null>('competition_results', null)
-      if (cloudResults && Array.isArray(cloudResults)) {
-        cloudResults.forEach((r) => {
-          if (r && r.id && !this.deletedResultIds.has(r.id)) {
-            const existing = this.inMemoryResults.get(r.id)
-            if (!existing || new Date(r.updated_at).getTime() >= new Date(existing.updated_at).getTime()) {
-              this.inMemoryResults.set(r.id, r)
+      // 2. Fetch directly from Supabase 'competition_results' table
+      try {
+        const { data: dbResults, error: dbErr } = await supabase.from('competition_results').select('*')
+        if (!dbErr && Array.isArray(dbResults) && dbResults.length > 0) {
+          dbResults.forEach((r: any) => {
+            if (r && r.id && !this.deletedResultIds.has(r.id)) {
+              const existing = this.inMemoryResults.get(r.id)
+              if (!existing || new Date(r.updated_at).getTime() >= new Date(existing.updated_at).getTime()) {
+                this.inMemoryResults.set(r.id, r as CompetitionResult)
+              }
+            }
+          })
+        }
+      } catch {}
+
+      // 3. Fetch from Supabase 'competition_winners' (syncs winners AND finalists across devices)
+      try {
+        const allWinners = participantPeriodService.getWinners()
+        const allStudents = studentRepository.getRawStore(CANONICAL_INSTITUTION_ID)
+        const studentByUsername = new Map<string, string>()
+        allStudents.forEach((s) => {
+          if (s.username) studentByUsername.set(s.username.toLowerCase().trim(), s.id)
+        })
+
+        allWinners.forEach((w) => {
+          const studentId = w.nisn_username && studentByUsername.get(w.nisn_username.toLowerCase().trim())
+          if (!studentId || !w.period_id) return
+
+          const isFinalistOnly = (w.award || '').trim().toLowerCase() === 'lolos final'
+          const resultStatus: ResultStatus = isFinalistOnly ? 'finalis' : 'juara'
+          const isChampion = !isFinalistOnly
+          const isFinalist = true
+          const rank = isChampion ? getAwardRank(w.award) : null
+          const awardCategory = isChampion ? w.award : null
+
+          const resId = `res-${w.period_id}-${studentId}`
+          if (!this.deletedResultIds.has(resId)) {
+            const existing = this.getResult(studentId, w.period_id)
+            if (!existing) {
+              this.inMemoryResults.set(resId, {
+                id: resId,
+                student_id: studentId,
+                period_id: w.period_id,
+                result_status: resultStatus,
+                is_finalist: isFinalist,
+                is_champion: isChampion,
+                champion_rank: rank !== 100 && rank !== 999 ? rank : inferChampionRank(awardCategory),
+                award_category: awardCategory,
+                result_notes: null,
+                created_at: w.created_at || new Date().toISOString(),
+                updated_at: w.created_at || new Date().toISOString(),
+                updated_by: 'cloud-sync',
+              })
             }
           }
         })
-      }
+      } catch {}
+
+      // 4. Fetch results from student custom_fields (synced via Supabase students table)
+      try {
+        const allStudents = studentRepository.getRawStore(CANONICAL_INSTITUTION_ID)
+        allStudents.forEach((s) => {
+          const crMap = s.custom_fields?.competition_results
+          if (crMap && typeof crMap === 'object') {
+            Object.entries(crMap).forEach(([pId, r]: [string, any]) => {
+              if (r && pId && !this.deletedResultIds.has(r.id)) {
+                const existing = this.getResult(s.id, pId)
+                if (!existing) {
+                  this.inMemoryResults.set(r.id || `res-${pId}-${s.id}`, {
+                    id: r.id || `res-${pId}-${s.id}`,
+                    student_id: s.id,
+                    period_id: pId,
+                    result_status: r.result_status || (r.is_champion ? 'juara' : r.is_finalist ? 'finalis' : 'peserta'),
+                    is_finalist: Boolean(r.is_finalist),
+                    is_champion: Boolean(r.is_champion),
+                    champion_rank: r.champion_rank ?? null,
+                    award_category: r.award_category ?? null,
+                    result_notes: r.result_notes ?? null,
+                    created_at: r.updated_at || new Date().toISOString(),
+                    updated_at: r.updated_at || new Date().toISOString(),
+                    updated_by: r.updated_by || 'cloud-sync',
+                  })
+                }
+              }
+            })
+          }
+        })
+      } catch {}
+
+      // 5. Fetch results from app_settings
+      try {
+        const cloudResults = await cloudSyncService.getCloudSetting<CompetitionResult[] | null>('competition_results', null)
+        if (cloudResults && Array.isArray(cloudResults)) {
+          cloudResults.forEach((r) => {
+            if (r && r.id && !this.deletedResultIds.has(r.id)) {
+              const existing = this.inMemoryResults.get(r.id)
+              if (!existing || new Date(r.updated_at).getTime() >= new Date(existing.updated_at).getTime()) {
+                this.inMemoryResults.set(r.id, r)
+              }
+            }
+          })
+        }
+      } catch {}
 
       this.persistLocalStorage()
       if (typeof window !== 'undefined') {
@@ -149,8 +252,37 @@ class CompetitionResultService {
   private async uploadToCloud(): Promise<void> {
     const list = Array.from(this.inMemoryResults.values())
     try {
+      // 1. Save to app_settings key
       await cloudSyncService.saveCloudSetting('competition_results', list)
       await cloudSyncService.saveCloudSetting('deleted_result_ids', Array.from(this.deletedResultIds))
+
+      // 2. Direct upsert to Supabase 'competition_results' table
+      if (isSupabaseConfigured() && list.length > 0) {
+        const rows = list.map((r) => ({
+          id: r.id,
+          student_id: r.student_id,
+          period_id: r.period_id,
+          result_status: r.result_status,
+          is_finalist: r.is_finalist,
+          is_champion: r.is_champion,
+          champion_rank: r.champion_rank ?? null,
+          award_category: r.award_category ?? null,
+          result_notes: r.result_notes ?? null,
+          updated_by: r.updated_by || 'admin',
+          updated_at: r.updated_at || new Date().toISOString(),
+        }))
+
+        // Upsert in chunks of 50
+        for (let i = 0; i < rows.length; i += 50) {
+          const chunk = rows.slice(i, i + 50)
+          supabase.from('competition_results').upsert(chunk).then(() => {})
+        }
+      }
+
+      // 3. Direct delete of purged records in Supabase
+      if (isSupabaseConfigured() && this.deletedResultIds.size > 0) {
+        supabase.from('competition_results').delete().in('id', Array.from(this.deletedResultIds)).then(() => {})
+      }
     } catch {
       // Ignore
     }
@@ -335,12 +467,29 @@ class CompetitionResultService {
     this.persistLocalStorage()
     this.uploadToCloud().catch(() => {})
 
-    // Backward-compat cleanup
+    // Backward-compat cleanup from competition_winners & student custom_fields
     try {
       const allWinners = participantPeriodService.getWinners(existing.period_id)
-      const matchingWinner = allWinners.find((w) => w.id === `win-${existing.id}` || w.nisn_username === existing.student_id)
-      if (matchingWinner) {
-        participantPeriodService.deleteWinner(matchingWinner.id)
+      const toDelete = allWinners.filter(
+        (w) =>
+          w.id === `win-${existing.id}` ||
+          w.id === `finalist-${existing.id}` ||
+          w.nisn_username === existing.student_id
+      )
+      toDelete.forEach((w) => participantPeriodService.deleteWinner(w.id))
+
+      const allStudents = studentRepository.getRawStore(CANONICAL_INSTITUTION_ID)
+      const student = allStudents.find((s) => s.id === existing.student_id)
+      if (student && student.custom_fields?.competition_results) {
+        const nextResults = { ...student.custom_fields.competition_results }
+        delete nextResults[existing.period_id]
+        studentRepository
+          .updateStudent(
+            student.id,
+            { custom_fields: { ...student.custom_fields, competition_results: nextResults } },
+            CANONICAL_INSTITUTION_ID
+          )
+          .catch(() => {})
       }
     } catch {
       // Ignore
@@ -355,7 +504,8 @@ class CompetitionResultService {
 
   /**
    * Backward-compatibility helper:
-   * Keeps existing PeriodWinner (Hall of Fame & Certificate) in sync when champions are updated.
+   * Keeps existing PeriodWinner (Hall of Fame & Certificate) in sync when champions and finalists are updated.
+   * Also syncs into student's custom_fields in the primary students table.
    */
   private async syncWinnerBackwardCompat(result: CompetitionResult): Promise<void> {
     try {
@@ -364,8 +514,10 @@ class CompetitionResultService {
       if (!student) return
 
       const winnerId = `win-${result.id}`
+      const finalistId = `finalist-${result.id}`
 
       if (result.is_champion && result.award_category) {
+        // 1. Save Champion to competition_winners table
         const winnerPayload: PeriodWinner = {
           id: winnerId,
           period_id: result.period_id,
@@ -378,14 +530,63 @@ class CompetitionResultService {
           created_at: result.updated_at,
         }
         await participantPeriodService.saveWinner(winnerPayload)
-      } else {
-        // If no longer a champion, remove from legacy winners
+
+        // Remove any old finalist placeholder
         const winners = participantPeriodService.getWinners(result.period_id)
-        const match = winners.find((w) => w.id === winnerId || w.nisn_username === student.username)
-        if (match) {
-          await participantPeriodService.deleteWinner(match.id)
+        const oldFinalist = winners.find((w) => w.id === finalistId)
+        if (oldFinalist) {
+          participantPeriodService.deleteWinner(oldFinalist.id)
         }
+      } else if (result.is_finalist) {
+        // 2. Save Finalist to competition_winners table
+        const finalistPayload: PeriodWinner = {
+          id: finalistId,
+          period_id: result.period_id,
+          student_name: student.full_name,
+          nisn_username: student.username,
+          campus: student.kampus || 'Gontor 1',
+          jenjang: student.jenjang,
+          award: 'Lolos Final',
+          category: (student.custom_fields?.bidang as string) || (student.custom_fields?.lomba as string) || 'Umum',
+          created_at: result.updated_at,
+        }
+        await participantPeriodService.saveWinner(finalistPayload)
+
+        // Remove any old champion entry
+        const winners = participantPeriodService.getWinners(result.period_id)
+        const oldWinner = winners.find((w) => w.id === winnerId)
+        if (oldWinner) {
+          participantPeriodService.deleteWinner(oldWinner.id)
+        }
+      } else {
+        // 3. Peserta: Remove both champion and finalist entries
+        const winners = participantPeriodService.getWinners(result.period_id)
+        const toDelete = winners.filter(
+          (w) => w.id === winnerId || w.id === finalistId || w.nisn_username === student.username
+        )
+        toDelete.forEach((w) => participantPeriodService.deleteWinner(w.id))
       }
+
+      // 4. Save into student's custom_fields in primary students table
+      const updatedCustom = {
+        ...(student.custom_fields || {}),
+        competition_results: {
+          ...(student.custom_fields?.competition_results || {}),
+          [result.period_id]: {
+            id: result.id,
+            result_status: result.result_status,
+            is_finalist: result.is_finalist,
+            is_champion: result.is_champion,
+            champion_rank: result.champion_rank,
+            award_category: result.award_category,
+            result_notes: result.result_notes,
+            updated_at: result.updated_at,
+          },
+        },
+      }
+      studentRepository
+        .updateStudent(student.id, { custom_fields: updatedCustom }, CANONICAL_INSTITUTION_ID)
+        .catch(() => {})
     } catch {
       // Non-blocking
     }

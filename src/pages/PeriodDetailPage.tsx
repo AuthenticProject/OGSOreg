@@ -444,7 +444,7 @@ export const PeriodDetailPage: React.FC = () => {
               leftIcon={<Trophy className="w-4 h-4 mr-1 text-amber-600" />}
               className="bg-amber-50/60 hover:bg-amber-100/70 border-amber-300 text-amber-900 font-semibold"
             >
-              Kelola Hasil & Kelulusan
+              {isSuperAdmin ? 'Kelola Hasil & Kelulusan' : 'Lihat Hasil & Kelulusan'}
             </Button>
             <Button
               variant="outline"

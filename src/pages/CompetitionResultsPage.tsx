@@ -10,7 +10,8 @@ import {
   CheckSquare,
   Edit2,
   RefreshCw,
-  ShieldAlert,
+  Lock,
+  Eye,
 } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
@@ -231,19 +232,31 @@ export const CompetitionResultsPage: React.FC = () => {
               Unduh Rekap Excel (3-Sheet)
             </Button>
 
-            {/* Import Excel Modal */}
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setIsImportModalOpen(true)}
-              className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold shadow-sm"
-            >
-              <Upload className="w-3.5 h-3.5" />
-              Impor Hasil Excel
-            </Button>
+            {/* Import Excel Modal — Strictly Super Admin Only */}
+            {isSuperAdmin && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setIsImportModalOpen(true)}
+                className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold shadow-sm"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                Impor Hasil Excel
+              </Button>
+            )}
           </div>
         }
       />
+
+      {/* Campus Admin Read-Only Notice Banner */}
+      {!isSuperAdmin && (
+        <div className="flex items-center gap-2.5 p-3.5 bg-blue-50/80 border border-blue-200 rounded-2xl text-blue-900 text-xs font-medium shadow-xs animate-fade-in">
+          <Eye className="w-4 h-4 text-blue-600 shrink-0" />
+          <span>
+            <strong>Mode Hanya Lihat:</strong> Anda masuk sebagai Admin Kampus <strong>{assignedCampus}</strong>. Pengelolaan kelulusan babak final, penetapan juara, dan impor berkas hasil dikelola secara terpusat oleh Super Admin.
+          </span>
+        </div>
+      )}
 
       {/* DASHBOARD: Result Metrics Cards (Phase 5) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -319,8 +332,8 @@ export const CompetitionResultsPage: React.FC = () => {
             />
           </div>
 
-          {/* Bulk Action Trigger */}
-          {selectedIds.length > 0 && (
+          {/* Bulk Action Trigger — Super Admin Only */}
+          {isSuperAdmin && selectedIds.length > 0 && (
             <div className="flex items-center gap-2 animate-fade-in">
               <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg">
                 {selectedIds.length} santri dipilih
@@ -437,20 +450,19 @@ export const CompetitionResultsPage: React.FC = () => {
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-gray-50/80 text-gray-600 font-bold border-b border-gray-100 uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="py-3 px-4 w-10 text-center">
-                    <input
-                      type="checkbox"
-                      checked={
-                        studentsWithResults.length > 0 &&
-                        selectedIds.length ===
-                          (isSuperAdmin
-                            ? studentsWithResults.length
-                            : studentsWithResults.filter((s) => s.student.kampus === assignedCampus).length)
-                      }
-                      onChange={handleSelectAll}
-                      className="rounded text-emerald-600 focus:ring-emerald-500"
-                    />
-                  </th>
+                  {isSuperAdmin && (
+                    <th className="py-3 px-4 w-10 text-center">
+                      <input
+                        type="checkbox"
+                        checked={
+                          studentsWithResults.length > 0 &&
+                          selectedIds.length === studentsWithResults.length
+                        }
+                        onChange={handleSelectAll}
+                        className="rounded text-emerald-600 focus:ring-emerald-500"
+                      />
+                    </th>
+                  )}
                   <th className="py-3 px-3 w-12 text-center">No.</th>
                   <th className="py-3 px-4">Nama Santri</th>
                   <th className="py-3 px-4">Username / ID</th>
@@ -460,13 +472,12 @@ export const CompetitionResultsPage: React.FC = () => {
                   <th className="py-3 px-4 text-center">Status Hasil</th>
                   <th className="py-3 px-4">Penghargaan / Juara</th>
                   <th className="py-3 px-4">Catatan</th>
-                  <th className="py-3 px-4 text-center">Aksi</th>
+                  <th className="py-3 px-4 text-center">Aksi / Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {studentsWithResults.map((item, idx) => {
                   const isSelected = selectedIds.includes(item.student.id)
-                  const canEdit = isSuperAdmin || item.student.kampus === assignedCampus
                   const daerah =
                     (item.student.custom_fields?.daerah as string) ||
                     (item.student.custom_fields?.konsulat as string) ||
@@ -479,15 +490,16 @@ export const CompetitionResultsPage: React.FC = () => {
                         isSelected ? 'bg-emerald-50/30' : ''
                       }`}
                     >
-                      <td className="py-3 px-4 text-center">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          disabled={!canEdit}
-                          onChange={() => toggleSelect(item.student.id)}
-                          className="rounded text-emerald-600 focus:ring-emerald-500"
-                        />
-                      </td>
+                      {isSuperAdmin && (
+                        <td className="py-3 px-4 text-center">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelect(item.student.id)}
+                            className="rounded text-emerald-600 focus:ring-emerald-500"
+                          />
+                        </td>
+                      )}
 
                       <td className="py-3 px-3 text-center text-gray-400 font-mono">
                         {idx + 1}
@@ -556,7 +568,7 @@ export const CompetitionResultsPage: React.FC = () => {
                       </td>
 
                       <td className="py-3 px-4 text-center">
-                        {canEdit ? (
+                        {isSuperAdmin ? (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -568,10 +580,10 @@ export const CompetitionResultsPage: React.FC = () => {
                           </Button>
                         ) : (
                           <span
-                            title="Hanya dapat dikelola oleh Admin Kampus bersangkutan atau Super Admin"
-                            className="text-gray-300 cursor-not-allowed text-[11px] flex items-center justify-center gap-1"
+                            title="Hanya Super Admin yang berwenang mengubah hasil kompetisi"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium text-gray-400 bg-gray-50 border border-gray-200"
                           >
-                            <ShieldAlert className="w-3 h-3" /> Terkunci
+                            <Lock className="w-3 h-3 text-gray-400" /> Hanya Lihat
                           </span>
                         )}
                       </td>
@@ -584,41 +596,47 @@ export const CompetitionResultsPage: React.FC = () => {
         )}
       </div>
 
-      {/* Edit Single Result Modal */}
-      <ResultEditModal
-        isOpen={Boolean(editingStudent)}
-        onClose={() => setEditingStudent(null)}
-        studentWithResult={editingStudent}
-        periodId={selectedPeriodId}
-        periodName={selectedPeriod?.name || 'OGSO'}
-        adminUsername={adminUsername}
-        onSaved={loadData}
-      />
+      {/* Edit Single Result Modal — Super Admin Only */}
+      {isSuperAdmin && (
+        <ResultEditModal
+          isOpen={Boolean(editingStudent)}
+          onClose={() => setEditingStudent(null)}
+          studentWithResult={editingStudent}
+          periodId={selectedPeriodId}
+          periodName={selectedPeriod?.name || 'OGSO'}
+          adminUsername={adminUsername}
+          onSaved={loadData}
+        />
+      )}
 
-      {/* Bulk Update Modal */}
-      <BulkResultModal
-        isOpen={isBulkModalOpen}
-        onClose={() => setIsBulkModalOpen(false)}
-        selectedStudents={selectedStudentsForBulk}
-        periodId={selectedPeriodId}
-        periodName={selectedPeriod?.name || 'OGSO'}
-        adminUsername={adminUsername}
-        onSaved={() => {
-          setSelectedIds([])
-          loadData()
-        }}
-      />
+      {/* Bulk Update Modal — Super Admin Only */}
+      {isSuperAdmin && (
+        <BulkResultModal
+          isOpen={isBulkModalOpen}
+          onClose={() => setIsBulkModalOpen(false)}
+          selectedStudents={selectedStudentsForBulk}
+          periodId={selectedPeriodId}
+          periodName={selectedPeriod?.name || 'OGSO'}
+          adminUsername={adminUsername}
+          onSaved={() => {
+            setSelectedIds([])
+            loadData()
+          }}
+        />
+      )}
 
-      {/* Excel Result Import Modal */}
-      <ResultExcelImportModal
-        isOpen={isImportModalOpen}
-        onClose={() => setIsImportModalOpen(false)}
-        periodId={selectedPeriodId}
-        periodName={selectedPeriod?.name || 'OGSO'}
-        accessCampus={isSuperAdmin ? null : assignedCampus}
-        adminUsername={adminUsername}
-        onImportComplete={loadData}
-      />
+      {/* Excel Result Import Modal — Super Admin Only */}
+      {isSuperAdmin && (
+        <ResultExcelImportModal
+          isOpen={isImportModalOpen}
+          onClose={() => setIsImportModalOpen(false)}
+          periodId={selectedPeriodId}
+          periodName={selectedPeriod?.name || 'OGSO'}
+          accessCampus={isSuperAdmin ? null : assignedCampus}
+          adminUsername={adminUsername}
+          onImportComplete={loadData}
+        />
+      )}
     </div>
   )
 }
