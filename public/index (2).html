@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finalis OGSO 2026 — Online Gontor Science Olympiad</title>
+<meta name="description" content="Daftar peserta yang lolos ke babak final Online Gontor Science Olympiad (OGSO) 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f8f5;--card:#fff;--ink:#14231c;--mut:#5b6b62;--line:#dfe7e1;--pri:#0f6b4a;--pri2:#e6f3ec;--head:#eef4f0}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1511;--card:#14201a;--ink:#e8f0eb;--mut:#93a69b;--line:#233229;--pri:#4fc08f;--pri2:#173126;--head:#192a21}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,-apple-system,Segoe UI,sans-serif;line-height:1.5}
+.hero{background:linear-gradient(135deg,#0a4f37,#0f6b4a 60%,#1a8a60);color:#fff;padding:56px 20px 72px;text-align:center}
+.hero small{display:inline-block;letter-spacing:.18em;font-weight:700;font-size:12px;background:rgba(255,255,255,.15);padding:6px 14px;border-radius:99px}
+.hero h1{font-size:clamp(30px,6vw,52px);line-height:1.1;margin:18px 0 10px;font-weight:800}
+.hero h1 span{color:#f3d27a}
+.hero p{max-width:560px;margin:0 auto;opacity:.9}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:-40px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+.stat b{display:block;font-size:26px;color:var(--pri);font-weight:800}
+.stat span{font-size:13px;color:var(--mut)}
+.tools{margin:26px 0 10px;display:flex;flex-direction:column;gap:12px}
+input,select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 14px;width:100%}
+input:focus,select:focus{outline:2px solid var(--pri);border-color:transparent}
+.row{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:700px){.row{grid-template-columns:2fr 1fr}}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-size:14px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:99px}
+.chip.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.count{color:var(--mut);font-size:14px;margin:8px 0 10px}
+.tw{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:48px}
+table{width:100%;border-collapse:collapse;font-size:14.5px;min-width:560px}
+th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:var(--head);font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--mut);position:sticky;top:0}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--pri2)}
+td.n,th.n{width:52px;text-align:center}
+td.s,th.s{text-align:right;font-weight:800;color:var(--pri)}
+.jb{display:inline-block;font-size:12px;font-weight:700;color:var(--pri);background:var(--pri2);padding:2px 10px;border-radius:99px}
+td.nm{font-weight:600;white-space:normal;min-width:180px}
+.empty{text-align:center;color:var(--mut);padding:36px}
+footer{text-align:center;color:var(--mut);font-size:13px;padding:26px 16px 40px;border-top:1px solid var(--line)}
+footer a{color:var(--pri);font-weight:700}
+</style></head><body>
+<header class="hero">
+<small>BABAK FINAL · 2026</small>
+<h1>Selamat kepada <span>Para Finalis</span> OGSO 2026</h1>
+<p>Online Gontor Science Olympiad — berikut peserta yang berhasil lolos ke babak final.</p>
+</header>
+<main class="wrap">
+<div class="stats" id="stats"></div>
+<div class="tools">
+<div class="row"><input id="q" type="search" placeholder="Cari nama atau kampus…" autocomplete="off"><select id="k"><option value="">Semua kampus</option></select></div>
+<div class="chips" id="chips"></div>
+</div>
+<div class="count" id="count"></div>
+<div class="tw"><table><thead><tr><th class="n">No</th><th>Nama</th><th>Jenjang</th><th>Kelas</th><th>Kampus</th><th class="s">Nilai</th></tr></thead><tbody id="tb"></tbody></table></div>
+</main>
+<footer>Daftar finalis OGSO 2026 · Informasi lengkap di <a href="https://ogsoreg.vercel.app/">ogsoreg.vercel.app</a></footer>
+<script>
+// [jenjang, no urut dalam jenjang, nama, kelas, kampus, nilai]
+const D=[[1,1,"Fathimah Mutiara Harida","1-H","Gontor Putri 1",56],[1,2,"Azel Karunia","1","Gontor Putri 2",56],[1,3,"Nagita Aisha","1","Gontor Putri 2",54],[1,4,"Hafidh Hamizan","1","Gontor 2",54],[1,5,"Rania Arnetta","1","Gontor Putri 2",53],[1,6,"Muhammad Umar","1-C","Gontor 4",52],[1,7,"Muhammad Fatih Nuruddin","1-C","Gontor 1",51],[1,8,"Revalya Nurul Maulida","1-C","Gontor Putri 1",50],[1,9,"Azka Rahardino","1","Gontor 2",50],[1,10,"Candra Wahyu","1-B","Gontor Putri 8",49],[1,11,"Najwa Raihanah","1-B","Gontor Putri 8",49],[1,12,"Brilliant Surya","1","Gontor 2",49],[1,13,"Resa Asyukur","1","Gontor 2",48],[1,14,"Ravif Budiono","1-C","Gontor 4",47],[1,15,"Moh Robby","1-C","Gontor 4",46],[1,16,"Naufal Ma'arif","1","Gontor 7",46],[1,17,"Adeeva Ghaitsa Kurnia","1-H","Gontor Putri 1",46],[1,18,"Fikri Nakhla","1","Gontor 7",45],[1,19,"Masya Fadiya","1-B","Gontor Putri 8",44],[1,20,"Luthfi Arzana","1-B","Gontor Putri 8",43],[2,1,"Rayya Almahyra","2-E","Gontor Putri 1",62],[2,2,"Achmad Haikal Kurniawan","2-B","Gontor 10",62],[2,3,"Usman Habibur Rahman","2-E","Gontor 3",60],[2,4,"Nada Nisrina Hasna Nadhifa","2-E","Gontor Putri 1",58],[2,5,"Muhammad Alfathih","2-G","Gontor 1",56],[2,6,"Raisya Azka","2-H","Gontor Putri 4",55],[2,7,"Annisa Aini","2-F","Gontor Putri 4",54],[2,8,"Ahmad Farhan","2-B","Gontor 4",52],[2,9,"Muhammad Cedric","2-C","Gontor 4",49],[2,10,"Farah Sidqiya","2-B","Gontor Putri 8",49],[2,11,"Shafira Linggasatya","2-F","Gontor Putri 4",48],[2,12,"Nufail Jinan","2-C","Gontor 5",48],[2,13,"Abdullah Faqih Rahman","2-B","Gontor 10",47],[2,14,"Naia Salsabila","2-B","Gontor Putri 8",44],[2,15,"Dzakiyul Baahir Al Majid","2-G","Gontor 1",44],[2,16,"Rafif Ahmad Maulana","2-B","Gontor 11",44],[2,17,"Bening Cahaya Firdausi","2-G","Gontor Putri 1",44],[2,18,"Khalwa Mafaza Qonita","2-E","Gontor Putri 1",44],[2,19,"Zidna Rohmah Laila","2-I","Gontor Putri 3",44],[2,20,"Muhammad Rafif","2-E","Gontor 4",43],[2,21,"Muhammad Arqian Karim","2-D","Gontor 1",42],[2,22,"Muhammad Arif Cahyanda","2-B","Gontor 10",42],[2,23,"Airah Fitrah","2-B","Gontor Putri 7",42],[3,1,"Neutral Sakka Fudianto","3-B","Gontor 1",55],[3,2,"Ridwan Abqary Noor Ahmad","3-B","Gontor 1",54],[3,3,"Vania Mustari","3-B","Gontor Putri 4",52],[3,4,"Safaraz Akma","1 int","Gontor 2",52],[3,5,"Aulya Widjayati Nugroho","3-B","Gontor Putri 1",52],[3,6,"Elfachry Nuswantoro","3-B","Gontor 4",50],[3,7,"Hasni Aulia","1 int B","Gontor Putri 1",50],[3,8,"Kadiza Queena Reaji Putri","3-B","Gontor Putri 3",48],[3,9,"Theona Afifah Elysia","3-B","Gontor Putri 1",48],[3,10,"Izzatunnisa El-Mahira","3-B","Gontor Putri 1",48],[3,11,"Syaca Faiz","1 int","Gontor 2",46],[3,12,"Bella Niisa","3-B","Gontor Putri 4",46],[3,13,"Haura Qulbi","3-B","Gontor Putri 4",45],[3,14,"Zaskia Riena","1 int","Gontor Putri 2",45],[3,15,"Sofiya Anjuna","1 int","Gontor Putri 2",44],[3,16,"Novan Azzam","1 int","Gontor 2",44],[3,17,"Omar Jahran Sarwoaji","3-K","Gontor 1",43],[3,18,"Hafiz Arsyad","3-B","Gontor 4",43],[3,19,"Arsya Zivanka","3-B","Gontor Putri 6",42],[3,20,"Rizky Aulia","3-B","Gontor Putri 7",42],[3,21,"Alya Carissa","3-B","Gontor Putri 8",42],[4,1,"Aiesha Valerie Cahyana Putri","3 int C","Gontor Putri 3",49],[4,2,"Reynard Ality","4-C","Gontor 7",46],[4,3,"Athiyyah Meiogyne","4-B","Gontor Putri 8",45],[4,4,"Fahri Zafran","3 int B","Gontor 7",45],[4,5,"Raifal Sugiono","3 int B","Gontor 1",44],[4,6,"Zahira Aqila","4-B","Gontor Putri 8",44],[4,7,"Rahmania Nazla","4-B","Gontor Putri 6",44],[4,8,"Marwah Naila","4-B","Gontor Putri 8",43],[4,9,"Shafa Azzahra Chusnul Khotim","4-B","Gontor Putri 1",42],[4,10,"Salsabila Auliyannisa Giyatmoko","3 int C","Gontor Putri 3",41],[4,11,"Fikri Al-fadhil","4-B","Gontor 5",40],[4,12,"Delima Izanagi Khalesa","3 int B","Gontor Putri 1",40],[4,13,"Alfi Syabil","4-D","Gontor 4",40],[4,14,"Naufal Mufid","3 int B","Gontor 1",39],[4,15,"Muhammad Khawarizmi Avicena","3 int F","Gontor 1",39],[4,16,"Umar Hasan","4-D","Gontor 4",38],[4,17,"Noer Huda","4-B","Gontor 5",38],[4,18,"Lalitya Suherman","4-B","Gontor Putri 6",38],[4,19,"Sania Mareta Putri","3 int B","Gontor Putri 7",37],[4,20,"Kanugrahan Prasetya Jati","4-B","Gontor 3",37],[5,1,"Luqmanul Hakim Rahmatulloh","5-B","Gontor 3",49],[5,2,"Saniya Ayu Safira","5-B","Gontor Putri 1",46],[5,3,"Ossie Aliandra","5-B","Gontor Putri 1",45],[5,4,"Fanisha Hasbi Ataya","5-B","Gontor Putri 7",43],[5,5,"Lakeisha Nadhifa Khansa","5-B","Gontor Putri 7",43],[5,6,"Faridus Shidqi","5-B","Gontor 4",42],[5,7,"Mumtaz Taruna","5-B","Gontor Putri 6",42],[5,8,"Aufa Nuha","5-D","Gontor 4",41],[5,9,"Arroyan Alam","5-C","Gontor 4",40],[5,10,"Chalisa Safira Putri","5-B","Gontor Putri 1",40],[5,11,"Salsabila Nadhifa Aqila","5-B","Gontor Putri 1",39],[5,12,"Muhammad Safa Azzam Al-wathon","5-Q","Gontor 1",38],[5,13,"Dwizia Elzafira","5-B","Gontor Putri 8",37],[5,14,"Nakhwah Nisaul Jinan","5-B","Gontor Putri 3",37],[5,15,"Zaid Bahrul","5-B","Gontor 7",37],[5,16,"Syifa Ramadhani","5-B","Gontor Putri 7",37],[5,17,"Khalila Maziyaturrohmah","5-C","Gontor Putri 3",36],[5,18,"Jauza Dzakiyah","5-C","Gontor Putri 8",36],[5,19,"Farhan Elrasyid","5-B","Gontor 7",35],[5,20,"Muhammad Adly Ridwan","5-B","Gontor 3",35]];
+const $=id=>document.getElementById(id);
+const kampus=[...new Set(D.map(r=>r[4]))].sort((a,b)=>a.localeCompare(b,'id',{numeric:true}));
+let cat=0;
+$('stats').innerHTML=[['Finalis',D.length],['Jenjang',5],['Kampus',kampus.length]].map(s=>`<div class="stat"><b>${s[1]}</b><span>${s[0]}</span></div>`).join('');
+kampus.forEach(k=>$('k').insertAdjacentHTML('beforeend',`<option>${k}</option>`));
+$('chips').innerHTML=['Semua',1,2,3,4,5].map((c,i)=>`<button class="chip${i?'':' on'}" data-c="${i}">${i?'Jenjang '+c:c}</button>`).join('');
+$('chips').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;cat=+b.dataset.c;document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===b));render()};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function render(){
+const q=$('q').value.trim().toLowerCase(),k=$('k').value;
+const f=D.filter(r=>(!cat||r[0]===cat)&&(!k||r[4]===k)&&(!q||(r[2]+' '+r[4]).toLowerCase().includes(q)));
+$('count').textContent=`Menampilkan ${f.length} dari ${D.length} finalis`;
+$('tb').innerHTML=f.length?f.map((r,i)=>`<tr><td class="n">${cat&&!k&&!q?r[1]:i+1}</td><td class="nm">${esc(r[2])}</td><td><span class="jb">Jenjang ${r[0]}</span></td><td>${esc(r[3])}</td><td>${esc(r[4])}</td><td class="s">${r[5]}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">Tidak ada finalis yang cocok.</td></tr>';
+}
+$('q').oninput=render;$('k').onchange=render;render();
+</script></body></html>
