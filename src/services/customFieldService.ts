@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { cloudSyncService } from './supabase/cloudSyncService'
+import { cloudCircuitBreaker } from './supabase/cloudCircuitBreaker'
 import {
   type CustomFieldDefinition,
   validateMoodleDestinationHeader,
@@ -140,12 +141,16 @@ class CustomFieldService {
       return [...this.cache]
     }
 
-    if (isSupabaseConfigured()) {
+    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
       try {
         const { data, error } = await supabase
           .from('custom_field_definitions')
           .select('*')
           .order('display_order', { ascending: true })
+
+        if (error && cloudCircuitBreaker.isQuotaRestrictionError(error)) {
+          cloudCircuitBreaker.recordError(error)
+        }
 
         if (!error && data && Array.isArray(data)) {
           if (data.length > 0) {

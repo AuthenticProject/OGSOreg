@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { cloudCircuitBreaker } from '../services/supabase/cloudCircuitBreaker'
 
 export const DEFAULT_SUPABASE_URL = 'https://cuunipngguedqttuutaa.supabase.co'
 export const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_QndVljA4Ne4Zodc-zlYH9A_r688lNuF'
@@ -35,4 +36,19 @@ export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKe
     autoRefreshToken: true,
     detectSessionInUrl: true,
   },
+  realtime: {
+    params: {
+      eventsPerSecond: 2,
+    },
+    timeout: 10000,
+  },
+})
+
+// Wire Realtime teardown callback to circuit breaker to kill reconnect storms when quota is hit
+cloudCircuitBreaker.registerRealtimeTeardown(() => {
+  try {
+    supabase.removeAllChannels()
+  } catch (err) {
+    console.warn('[Supabase] removeAllChannels warning:', err)
+  }
 })

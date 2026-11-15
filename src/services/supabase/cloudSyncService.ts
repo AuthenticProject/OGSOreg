@@ -1,13 +1,12 @@
 import { supabase, isSupabaseConfigured } from '../../lib/supabase'
+import { cloudCircuitBreaker } from './cloudCircuitBreaker'
 
-export type CloudSyncState = 'idle' | 'syncing' | 'synced' | 'error' | 'offline'
+export type CloudSyncState = 'idle' | 'syncing' | 'synced' | 'error'
 
 export interface CloudSyncInfo {
-  isConfigured: boolean
-  isOnline: boolean
   state: CloudSyncState
   lastSyncedAt: string | null
-  activeTables: string[]
+  isConfigured: boolean
   error?: string
 }
 
@@ -16,34 +15,14 @@ class CloudSyncService {
   private lastSyncedAt: string | null = null
   private verifiedTables: Set<string> = new Set()
   private checkedTableSupport: boolean = false
-
-  constructor() {
-    this.initEventListeners()
-  }
-
-  private initEventListeners() {
-    if (typeof window !== 'undefined') {
-      window.addEventListener('online', () => {
-        this.emitStateChange('idle')
-        this.checkAvailableTables(true)
-      })
-      window.addEventListener('focus', () => {
-        this.checkAvailableTables(true)
-      })
-      window.addEventListener('offline', () => {
-        this.emitStateChange('offline')
-      })
-    }
-  }
+  private lastTableCheckTime: number = 0
+  private readonly TABLE_CHECK_COOLDOWN_MS = 10 * 60 * 1000 // 10 minutes cache TTL
 
   public getSyncInfo(): CloudSyncInfo {
-    const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true
     return {
-      isConfigured: isSupabaseConfigured(),
-      isOnline,
-      state: !isOnline ? 'offline' : this.syncState,
+      state: this.syncState,
       lastSyncedAt: this.lastSyncedAt,
-      activeTables: Array.from(this.verifiedTables),
+      isConfigured: isSupabaseConfigured(),
     }
   }
 
@@ -61,52 +40,64 @@ class CloudSyncService {
   private checkTablePromise: Promise<Set<string>> | null = null
 
   /**
-   * Verifies which cloud tables exist in Supabase schema cache
+   * Verifies which cloud tables exist in Supabase schema cache.
+   * Cached with a 10-minute TTL to prevent request flooding.
+   * Completely eliminates aggressive candidate HEAD loops.
    */
   public async checkAvailableTables(force: boolean = false): Promise<Set<string>> {
     if (!isSupabaseConfigured()) return this.verifiedTables
-    if (!force && this.checkedTableSupport && this.verifiedTables.has('app_settings')) {
+    if (!cloudCircuitBreaker.canExecuteQuery()) return this.verifiedTables
+
+    const now = Date.now()
+    if (!force && this.checkedTableSupport && now - this.lastTableCheckTime < this.TABLE_CHECK_COOLDOWN_MS) {
       return this.verifiedTables
     }
+
     if (this.checkTablePromise) {
       return this.checkTablePromise
     }
 
     this.checkTablePromise = (async () => {
       try {
-        const candidates = [
+        this.lastTableCheckTime = Date.now()
+        this.checkedTableSupport = true
+
+        // Check app_settings existence with a single minimal query
+        const { error: appSettingsErr } = await supabase
+          .from('app_settings')
+          .select('key')
+          .limit(1)
+
+        if (!appSettingsErr) {
+          this.verifiedTables.add('app_settings')
+        } else {
+          this.verifiedTables.delete('app_settings')
+          if (cloudCircuitBreaker.isQuotaRestrictionError(appSettingsErr)) {
+            cloudCircuitBreaker.recordError(appSettingsErr)
+            return this.verifiedTables
+          }
+        }
+
+        // Standard tables known in schema (assume active if app_settings or basic query succeeds)
+        const coreTables = [
           'students',
           'institutions',
           'user_profiles',
           'operation_logs',
-          'app_settings',
           'competition_periods',
           'competition_winners',
           'competition_certificates',
           'competition_historical_aggregates',
+          'competition_results',
           'website_content',
           'syllabuses',
           'bank_soal',
         ]
-
-        await Promise.all(
-          candidates.map(async (tbl) => {
-            try {
-              const { error } = await supabase.from(tbl).select('*', { count: 'exact', head: true })
-              if (!error) {
-                this.verifiedTables.add(tbl)
-              } else {
-                this.verifiedTables.delete(tbl)
-              }
-            } catch {
-              // Ignore missing table
-            }
-          })
-        )
-
-        this.checkedTableSupport = true
-      } catch {
-        // Ignore
+        coreTables.forEach((t) => this.verifiedTables.add(t))
+      } catch (err) {
+        if (cloudCircuitBreaker.isQuotaRestrictionError(err)) {
+          cloudCircuitBreaker.recordError(err)
+        }
       } finally {
         this.checkTablePromise = null
       }
@@ -123,7 +114,7 @@ class CloudSyncService {
 
   /**
    * Universal cloud key-value getter
-   * Tries Supabase `app_settings` table. Falls back to localStorage if table not found or offline.
+   * Tries Supabase `app_settings` table. Falls back to localStorage if table not found, offline, or restricted.
    */
   public async getCloudSetting<T>(key: string, fallbackDefault: T): Promise<T> {
     const localRaw = typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem(key) : null
@@ -136,7 +127,7 @@ class CloudSyncService {
       }
     }
 
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !cloudCircuitBreaker.canExecuteQuery()) {
       return cachedVal
     }
 
@@ -149,7 +140,14 @@ class CloudSyncService {
           .eq('key', key)
           .maybeSingle()
 
-        if (!error && data && data.value !== undefined && data.value !== null) {
+        if (error) {
+          if (cloudCircuitBreaker.isQuotaRestrictionError(error)) {
+            cloudCircuitBreaker.recordError(error)
+          }
+          return cachedVal
+        }
+
+        if (data && data.value !== undefined && data.value !== null) {
           // Update local cache
           if (typeof window !== 'undefined' && window.localStorage) {
             try {
@@ -163,7 +161,9 @@ class CloudSyncService {
         }
       }
     } catch (err) {
-      console.warn(`[CloudSync] Could not read ${key} from Supabase:`, err)
+      if (cloudCircuitBreaker.isQuotaRestrictionError(err)) {
+        cloudCircuitBreaker.recordError(err)
+      }
     }
 
     return cachedVal
@@ -172,9 +172,10 @@ class CloudSyncService {
   /**
    * Universal cloud key-value setter
    * Writes to localStorage and asynchronously persists to Supabase `app_settings` table.
+   * Completely avoids recursive check loops.
    */
   public async saveCloudSetting<T>(key: string, value: T): Promise<boolean> {
-    // 1. Local Persistence immediately
+    // 1. Local Persistence immediately (guaranteed safety)
     if (typeof window !== 'undefined' && window.localStorage) {
       try {
         window.localStorage.setItem(key, JSON.stringify(value))
@@ -183,16 +184,13 @@ class CloudSyncService {
       }
     }
 
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !cloudCircuitBreaker.canExecuteQuery()) {
       return false
     }
 
     this.emitStateChange('syncing')
     try {
       await this.checkAvailableTables()
-      if (!this.verifiedTables.has('app_settings')) {
-        await this.checkAvailableTables(true)
-      }
 
       if (this.verifiedTables.has('app_settings')) {
         const now = new Date().toISOString()
@@ -207,18 +205,20 @@ class CloudSyncService {
           this.emitStateChange('synced')
           return true
         } else {
-          console.warn(`[CloudSync] Upsert ${key} error:`, error.message)
+          if (cloudCircuitBreaker.isQuotaRestrictionError(error)) {
+            cloudCircuitBreaker.recordError(error)
+          }
           this.emitStateChange('error', error.message)
           return false
         }
       } else {
-        console.warn(
-          `[CloudSync] Tabel app_settings belum ada di Supabase. Data '${key}' baru tersimpan lokal. Harap jalankan skrip supabase/fix_multi_device_sync.sql di Supabase SQL Editor agar bisa diakses semua device.`
-        )
         this.emitStateChange('idle')
         return false
       }
     } catch (err: any) {
+      if (cloudCircuitBreaker.isQuotaRestrictionError(err)) {
+        cloudCircuitBreaker.recordError(err)
+      }
       this.emitStateChange('error', err?.message)
       return false
     }
@@ -228,36 +228,44 @@ class CloudSyncService {
    * Subscribes to real-time changes on a specific app_settings key
    */
   public subscribeCloudSetting<T>(key: string, onUpdate: (value: T) => void): () => void {
-    if (!isSupabaseConfigured()) return () => {}
+    if (!isSupabaseConfigured() || !cloudCircuitBreaker.canExecuteQuery()) return () => {}
 
-    const channel = supabase
-      .channel(`sync-key-${key}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'app_settings',
-          filter: `key=eq.${key}`,
-        },
-        (payload: any) => {
-          if (payload.new && payload.new.value !== undefined) {
-            const newVal = payload.new.value as T
-            if (typeof window !== 'undefined' && window.localStorage) {
-              try {
-                window.localStorage.setItem(key, JSON.stringify(newVal))
-              } catch {
-                // Ignore
+    try {
+      const channel = supabase
+        .channel(`sync-key-${key}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'app_settings',
+            filter: `key=eq.${key}`,
+          },
+          (payload: any) => {
+            if (payload.new && payload.new.value !== undefined) {
+              const newVal = payload.new.value as T
+              if (typeof window !== 'undefined' && window.localStorage) {
+                try {
+                  window.localStorage.setItem(key, JSON.stringify(newVal))
+                } catch {
+                  // Ignore
+                }
               }
+              onUpdate(newVal)
             }
-            onUpdate(newVal)
           }
-        }
-      )
-      .subscribe()
+        )
+        .subscribe()
 
-    return () => {
-      supabase.removeChannel(channel)
+      return () => {
+        try {
+          supabase.removeChannel(channel)
+        } catch {
+          // Ignore
+        }
+      }
+    } catch {
+      return () => {}
     }
   }
 }

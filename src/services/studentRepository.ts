@@ -12,6 +12,7 @@ import type {
 } from '../types/student'
 import { normalizeJenjang } from './dataNormalizer'
 import { cloudSyncService } from './supabase/cloudSyncService'
+import { cloudCircuitBreaker } from './supabase/cloudCircuitBreaker'
 
 export const CANONICAL_INSTITUTION_ID = 'a0000000-0000-0000-0000-000000000001'
 const LOCAL_STORAGE_KEY = 'ogsoreg_students_directory_v1'
@@ -189,23 +190,37 @@ class StudentRepository {
     this.initRealtimeAndAutoSync()
   }
 
+  private lastFocusSyncTime: number = 0
+  private lastFullSyncTime: number = 0
+  private readonly FOCUS_SYNC_COOLDOWN_MS = 10 * 60 * 1000 // 10 minutes throttle
+  private readonly FULL_SYNC_COOLDOWN_MS = 5 * 60 * 1000 // 5 minutes throttle
+
   private initRealtimeAndAutoSync() {
     if (typeof window !== 'undefined') {
-      // 1. Initial sync immediately in background
+      // 1. Initial sync in background (only if circuit breaker allows)
       setTimeout(() => {
-        this.syncWithSupabase().catch(() => {})
-      }, 100)
+        if (cloudCircuitBreaker.canExecuteQuery()) {
+          this.syncWithSupabase().catch(() => {})
+        }
+      }, 500)
 
-      // 2. Re-sync on focus & online
-      window.addEventListener('focus', () => {
-        this.syncWithSupabase().catch(() => {})
-      })
-      window.addEventListener('online', () => {
-        this.syncWithSupabase().catch(() => {})
-      })
+      // 2. Throttled re-sync on focus & online
+      const throttledSync = () => {
+        const now = Date.now()
+        if (
+          now - this.lastFocusSyncTime > this.FOCUS_SYNC_COOLDOWN_MS &&
+          cloudCircuitBreaker.canExecuteQuery()
+        ) {
+          this.lastFocusSyncTime = now
+          this.syncWithSupabase().catch(() => {})
+        }
+      }
 
-      // 3. Supabase Realtime channel for instant cross-device updates
-      if (isSupabaseConfigured()) {
+      window.addEventListener('focus', throttledSync)
+      window.addEventListener('online', throttledSync)
+
+      // 3. Supabase Realtime channel for instant cross-device updates (only if circuit breaker allows)
+      if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
         try {
           supabase
             .channel('realtime:students')
@@ -213,7 +228,9 @@ class StudentRepository {
               'postgres_changes',
               { event: '*', schema: 'public', table: 'students' },
               () => {
-                this.syncWithSupabase().catch(() => {})
+                if (cloudCircuitBreaker.canExecuteQuery()) {
+                  this.syncWithSupabase().catch(() => {})
+                }
               }
             )
             .subscribe()
@@ -295,8 +312,16 @@ class StudentRepository {
   }
 
   private async executeSupabaseInsert(payload: any): Promise<{ data: any; error: any }> {
+    if (!cloudCircuitBreaker.canExecuteQuery()) {
+      return { data: null, error: new Error('Cloud sync suspended by circuit breaker (egress limit).') }
+    }
     let currentPayload = { ...payload }
     let { data, error } = await supabase.from('students').insert(currentPayload).select().single()
+
+    if (error && cloudCircuitBreaker.isQuotaRestrictionError(error)) {
+      cloudCircuitBreaker.recordError(error)
+      return { data: null, error }
+    }
 
     // 1. Check if 'kelas' column missing in Supabase
     if (error && isMissingColumnError(error, 'kelas')) {
@@ -334,8 +359,16 @@ class StudentRepository {
 
   private async executeSupabaseBulkInsert(payloads: any[]): Promise<{ data: any; error: any }> {
     if (payloads.length === 0) return { data: [], error: null }
+    if (!cloudCircuitBreaker.canExecuteQuery()) {
+      return { data: [], error: new Error('Cloud sync suspended by circuit breaker (egress limit).') }
+    }
     let currentPayloads = payloads.map((p) => ({ ...p }))
     let { data, error } = await supabase.from('students').insert(currentPayloads).select()
+
+    if (error && cloudCircuitBreaker.isQuotaRestrictionError(error)) {
+      cloudCircuitBreaker.recordError(error)
+      return { data: [], error }
+    }
 
     if (error && isMissingColumnError(error, 'kelas')) {
       isKelasSupportedInSupabase = false
@@ -422,8 +455,14 @@ class StudentRepository {
   /**
    * Otomatis melakukan sinkronisasi dua arah antara data lokal dan Supabase Cloud
    */
-  public async syncWithSupabase(): Promise<void> {
-    if (!isSupabaseConfigured() || this.isSyncing) return
+  public async syncWithSupabase(force: boolean = false): Promise<void> {
+    if (!isSupabaseConfigured() || !cloudCircuitBreaker.canExecuteQuery() || this.isSyncing) return
+
+    const now = Date.now()
+    if (!force && now - this.lastFullSyncTime < this.FULL_SYNC_COOLDOWN_MS) {
+      return
+    }
+    this.lastFullSyncTime = now
     this.isSyncing = true
     try {
       const canonicalId = CANONICAL_INSTITUTION_ID
@@ -449,6 +488,9 @@ class StudentRepository {
         .eq('institution_id', canonicalId)
 
       if (error) {
+        if (cloudCircuitBreaker.isQuotaRestrictionError(error)) {
+          cloudCircuitBreaker.recordError(error)
+        }
         return
       }
 
@@ -742,13 +784,10 @@ class StudentRepository {
     const page = Number(rawParams.page) || 1
     const pageSize = Number(rawParams.pageSize) || 25
 
-    // Jalankan auto-sync lokal <-> cloud di background
-    this.syncWithSupabase().catch(() => {})
-
     let list: Student[] = []
 
-    // Try Supabase first if configured
-    if (isSupabaseConfigured()) {
+    // Try Supabase first if configured and cloud circuit breaker allows
+    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
       try {
         let query = supabase
           .from('students')
@@ -857,8 +896,15 @@ class StudentRepository {
             totalAll: stats.total,
             stats,
           }
+        } else if (error) {
+          if (cloudCircuitBreaker.isQuotaRestrictionError(error)) {
+            cloudCircuitBreaker.recordError(error)
+          }
         }
-      } catch {
+      } catch (err) {
+        if (cloudCircuitBreaker.isQuotaRestrictionError(err)) {
+          cloudCircuitBreaker.recordError(err)
+        }
         // Fall back to local store
       }
     }

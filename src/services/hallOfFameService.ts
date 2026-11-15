@@ -20,6 +20,7 @@ import {
 } from '../types/hallOfFame'
 import { cloudSyncService } from './supabase/cloudSyncService'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { cloudCircuitBreaker } from './supabase/cloudCircuitBreaker'
 
 const HOF_SETTINGS_KEY = 'ogsoreg_hall_of_fame_settings_v1'
 const HOF_HISTORICAL_AGGREGATES_KEY = 'ogsoreg_hof_historical_aggregates_v1'
@@ -255,33 +256,47 @@ class HallOfFameService {
     this.initCloudSync()
   }
 
+  private lastFocusSyncTime: number = 0
+  private lastCloudSyncTime: number = 0
+  private readonly FOCUS_SYNC_COOLDOWN_MS = 10 * 60 * 1000 // 10 minutes throttle
+  private readonly FULL_SYNC_COOLDOWN_MS = 5 * 60 * 1000 // 5 minutes throttle
+
   private initCloudSync() {
     if (this.hasInitializedCloud || typeof window === 'undefined') return
     this.hasInitializedCloud = true
 
     setTimeout(() => {
-      this.syncFromCloud().catch(() => {})
-    }, 150)
+      if (cloudCircuitBreaker.canExecuteQuery()) {
+        this.syncFromCloud().catch(() => {})
+      }
+    }, 500)
 
-    window.addEventListener('focus', () => {
-      this.syncFromCloud().catch(() => {})
-    })
-    window.addEventListener('online', () => {
-      this.syncFromCloud().catch(() => {})
-    })
+    const throttledFocusSync = () => {
+      const now = Date.now()
+      if (
+        now - this.lastFocusSyncTime > this.FOCUS_SYNC_COOLDOWN_MS &&
+        cloudCircuitBreaker.canExecuteQuery()
+      ) {
+        this.lastFocusSyncTime = now
+        this.syncFromCloud().catch(() => {})
+      }
+    }
 
-    if (isSupabaseConfigured()) {
+    window.addEventListener('focus', throttledFocusSync)
+    window.addEventListener('online', throttledFocusSync)
+
+    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
       try {
         supabase
           .channel('realtime:hall_of_fame_data')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_winners' }, () => {
-            this.syncFromCloud().catch(() => {})
+            if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_periods' }, () => {
-            this.syncFromCloud().catch(() => {})
+            if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_historical_aggregates' }, () => {
-            this.syncFromCloud().catch(() => {})
+            if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
           })
           .subscribe()
 
@@ -301,8 +316,13 @@ class HallOfFameService {
     }
   }
 
-  async syncFromCloud(): Promise<void> {
-    if (!isSupabaseConfigured()) return
+  async syncFromCloud(force: boolean = false): Promise<void> {
+    if (!isSupabaseConfigured() || !cloudCircuitBreaker.canExecuteQuery()) return
+    const now = Date.now()
+    if (!force && now - this.lastCloudSyncTime < this.FULL_SYNC_COOLDOWN_MS) {
+      return
+    }
+    this.lastCloudSyncTime = now
     try {
       // 1. Scoring & Settings Sync
       const cloudSettings = await cloudSyncService.getCloudSetting('hall_of_fame_settings', null)

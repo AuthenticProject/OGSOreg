@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { cloudSyncService } from './supabase/cloudSyncService'
+import { cloudCircuitBreaker } from './supabase/cloudCircuitBreaker'
 import { studentRepository, CANONICAL_INSTITUTION_ID } from './studentRepository'
 import { participantPeriodService, getAwardRank, type PeriodWinner } from './participantPeriodService'
 import type {
@@ -88,35 +89,49 @@ class CompetitionResultService {
     }
   }
 
+  private lastFocusSyncTime: number = 0
+  private lastCloudSyncTime: number = 0
+  private readonly FOCUS_SYNC_COOLDOWN_MS = 10 * 60 * 1000 // 10 minutes throttle
+  private readonly FULL_SYNC_COOLDOWN_MS = 5 * 60 * 1000 // 5 minutes throttle
+
   private initCloudSync() {
     if (this.hasInitializedCloud || typeof window === 'undefined') return
     this.hasInitializedCloud = true
 
     setTimeout(() => {
-      this.syncFromCloud().catch(() => {})
-    }, 250)
+      if (cloudCircuitBreaker.canExecuteQuery()) {
+        this.syncFromCloud().catch(() => {})
+      }
+    }, 500)
 
-    window.addEventListener('focus', () => {
-      this.syncFromCloud().catch(() => {})
-    })
-    window.addEventListener('online', () => {
-      this.syncFromCloud().catch(() => {})
-    })
+    const throttledFocusSync = () => {
+      const now = Date.now()
+      if (
+        now - this.lastFocusSyncTime > this.FOCUS_SYNC_COOLDOWN_MS &&
+        cloudCircuitBreaker.canExecuteQuery()
+      ) {
+        this.lastFocusSyncTime = now
+        this.syncFromCloud().catch(() => {})
+      }
+    }
 
-    if (isSupabaseConfigured()) {
+    window.addEventListener('focus', throttledFocusSync)
+    window.addEventListener('online', throttledFocusSync)
+
+    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
       try {
         supabase
           .channel('realtime:competition_results')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_results' }, () => {
-            this.syncFromCloud().catch(() => {})
+            if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_winners' }, () => {
-            this.syncFromCloud().catch(() => {})
+            if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
           })
           .subscribe()
 
         cloudSyncService.subscribeCloudSetting('competition_results', () => {
-          this.syncFromCloud().catch(() => {})
+          if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
         })
       } catch {
         // Ignore
@@ -124,8 +139,13 @@ class CompetitionResultService {
     }
   }
 
-  public async syncFromCloud(): Promise<void> {
-    if (!isSupabaseConfigured() || this.isCloudSyncing) return
+  public async syncFromCloud(force: boolean = false): Promise<void> {
+    if (!isSupabaseConfigured() || !cloudCircuitBreaker.canExecuteQuery() || this.isCloudSyncing) return
+    const now = Date.now()
+    if (!force && now - this.lastCloudSyncTime < this.FULL_SYNC_COOLDOWN_MS) {
+      return
+    }
+    this.lastCloudSyncTime = now
     this.isCloudSyncing = true
     try {
       // 1. Fetch deleted IDs from cloud setting
@@ -252,6 +272,7 @@ class CompetitionResultService {
   }
 
   private async uploadToCloud(): Promise<void> {
+    if (!cloudCircuitBreaker.canExecuteQuery()) return
     const list = Array.from(this.inMemoryResults.values())
     try {
       // 1. Save to app_settings key
@@ -259,7 +280,7 @@ class CompetitionResultService {
       await cloudSyncService.saveCloudSetting('deleted_result_ids', Array.from(this.deletedResultIds))
 
       // 2. Direct upsert to Supabase 'competition_results' table
-      if (isSupabaseConfigured() && list.length > 0) {
+      if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery() && list.length > 0) {
         const rows = list.map((r) => ({
           id: r.id,
           student_id: r.student_id,
@@ -277,16 +298,22 @@ class CompetitionResultService {
         // Upsert in chunks of 50
         for (let i = 0; i < rows.length; i += 50) {
           const chunk = rows.slice(i, i + 50)
-          supabase.from('competition_results').upsert(chunk).then(() => {})
+          const { error } = await supabase.from('competition_results').upsert(chunk)
+          if (error && cloudCircuitBreaker.isQuotaRestrictionError(error)) {
+            cloudCircuitBreaker.recordError(error)
+            break
+          }
         }
       }
 
       // 3. Direct delete of purged records in Supabase
-      if (isSupabaseConfigured() && this.deletedResultIds.size > 0) {
+      if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery() && this.deletedResultIds.size > 0) {
         supabase.from('competition_results').delete().in('id', Array.from(this.deletedResultIds)).then(() => {})
       }
-    } catch {
-      // Ignore
+    } catch (err) {
+      if (cloudCircuitBreaker.isQuotaRestrictionError(err)) {
+        cloudCircuitBreaker.recordError(err)
+      }
     }
   }
 

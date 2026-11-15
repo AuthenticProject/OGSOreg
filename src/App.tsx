@@ -6,7 +6,8 @@ import { PublicLayout } from './components/public/PublicLayout'
 import { ErrorBoundary } from './components/feedback/ErrorBoundary'
 
 // Cross-Device Synchronization Services
-import { cloudSyncService } from './services/supabase/cloudSyncService'
+import { cloudCircuitBreaker } from './services/supabase/cloudCircuitBreaker'
+import { CloudQuotaBanner } from './components/ui/CloudQuotaBanner'
 import { studentRepository } from './services/studentRepository'
 import { websiteContentService } from './services/websiteContentService'
 import { participantPeriodService } from './services/participantPeriodService'
@@ -58,10 +59,10 @@ const PublicContentWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
 
 export function App() {
   useEffect(() => {
-    // Initial global multi-device synchronization
+    // Initial global multi-device synchronization (safe guarded)
     const initSync = async () => {
+      if (!cloudCircuitBreaker.canExecuteQuery()) return
       try {
-        await cloudSyncService.checkAvailableTables(true)
         await Promise.allSettled([
           studentRepository.syncWithSupabase(),
           websiteContentService.syncFromCloud(),
@@ -78,6 +79,7 @@ export function App() {
 
   return (
     <AuthProvider>
+      <CloudQuotaBanner />
       <BrowserRouter>
         <Routes>
           {/* ============================================================== */}

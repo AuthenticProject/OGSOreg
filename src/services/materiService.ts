@@ -1,6 +1,7 @@
 import type { StudentJenjang } from '../types/student'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { cloudSyncService } from './supabase/cloudSyncService'
+import { cloudCircuitBreaker } from './supabase/cloudCircuitBreaker'
 
 export interface SyllabusTopic {
   title: string
@@ -719,38 +720,52 @@ class MateriService {
     this.initCloudSync()
   }
 
+  private lastFocusSyncTime: number = 0
+  private lastCloudSyncTime: number = 0
+  private readonly FOCUS_SYNC_COOLDOWN_MS = 10 * 60 * 1000 // 10 minutes throttle
+  private readonly FULL_SYNC_COOLDOWN_MS = 5 * 60 * 1000 // 5 minutes throttle
+
   private initCloudSync() {
     if (this.hasInitializedCloud || typeof window === 'undefined') return
     this.hasInitializedCloud = true
 
     setTimeout(() => {
-      this.syncFromCloud().catch(() => {})
-    }, 250)
+      if (cloudCircuitBreaker.canExecuteQuery()) {
+        this.syncFromCloud().catch(() => {})
+      }
+    }, 500)
 
-    window.addEventListener('focus', () => {
-      this.syncFromCloud().catch(() => {})
-    })
-    window.addEventListener('online', () => {
-      this.syncFromCloud().catch(() => {})
-    })
+    const throttledFocusSync = () => {
+      const now = Date.now()
+      if (
+        now - this.lastFocusSyncTime > this.FOCUS_SYNC_COOLDOWN_MS &&
+        cloudCircuitBreaker.canExecuteQuery()
+      ) {
+        this.lastFocusSyncTime = now
+        this.syncFromCloud().catch(() => {})
+      }
+    }
 
-    if (isSupabaseConfigured()) {
+    window.addEventListener('focus', throttledFocusSync)
+    window.addEventListener('online', throttledFocusSync)
+
+    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
       try {
         supabase
           .channel('realtime:materi')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'syllabuses' }, () => {
-            this.syncFromCloud().catch(() => {})
+            if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'bank_soal' }, () => {
-            this.syncFromCloud().catch(() => {})
+            if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
           })
           .subscribe()
 
         cloudSyncService.subscribeCloudSetting('materi_silabus', () => {
-          this.syncFromCloud().catch(() => {})
+          if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
         })
         cloudSyncService.subscribeCloudSetting('materi_bank_soal', () => {
-          this.syncFromCloud().catch(() => {})
+          if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
         })
       } catch {
         // Ignore
@@ -758,8 +773,13 @@ class MateriService {
     }
   }
 
-  async syncFromCloud(): Promise<void> {
-    if (!isSupabaseConfigured() || this.isCloudSyncing) return
+  async syncFromCloud(force: boolean = false): Promise<void> {
+    if (!isSupabaseConfigured() || !cloudCircuitBreaker.canExecuteQuery() || this.isCloudSyncing) return
+    const now = Date.now()
+    if (!force && now - this.lastCloudSyncTime < this.FULL_SYNC_COOLDOWN_MS) {
+      return
+    }
+    this.lastCloudSyncTime = now
     this.isCloudSyncing = true
     try {
       // 1. Silabus Sync

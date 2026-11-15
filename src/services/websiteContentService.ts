@@ -326,28 +326,42 @@ const STORAGE_KEY = 'ogsoreg_public_website_content_v1'
 
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { cloudSyncService } from './supabase/cloudSyncService'
+import { cloudCircuitBreaker } from './supabase/cloudCircuitBreaker'
 
 let isCloudSyncInitialized = false
+let lastWebsiteFocusSyncTime = 0
+let lastWebsiteCloudSyncTime = 0
+const FOCUS_SYNC_COOLDOWN_MS = 10 * 60 * 1000 // 10 minutes throttle
+const FULL_SYNC_COOLDOWN_MS = 5 * 60 * 1000 // 5 minutes throttle
 
 function initRealtimeWebsiteSync() {
   if (isCloudSyncInitialized || typeof window === 'undefined') return
   isCloudSyncInitialized = true
 
-  // Initial cloud fetch in background
+  // Initial cloud fetch in background (only if circuit breaker allows)
   setTimeout(() => {
-    websiteContentService.syncFromCloud().catch(() => {})
-  }, 150)
+    if (cloudCircuitBreaker.canExecuteQuery()) {
+      websiteContentService.syncFromCloud().catch(() => {})
+    }
+  }, 500)
 
-  // Auto re-sync on window focus & online
-  window.addEventListener('focus', () => {
-    websiteContentService.syncFromCloud().catch(() => {})
-  })
-  window.addEventListener('online', () => {
-    websiteContentService.syncFromCloud().catch(() => {})
-  })
+  // Throttled auto re-sync on window focus & online
+  const throttledWebsiteSync = () => {
+    const now = Date.now()
+    if (
+      now - lastWebsiteFocusSyncTime > FOCUS_SYNC_COOLDOWN_MS &&
+      cloudCircuitBreaker.canExecuteQuery()
+    ) {
+      lastWebsiteFocusSyncTime = now
+      websiteContentService.syncFromCloud().catch(() => {})
+    }
+  }
+
+  window.addEventListener('focus', throttledWebsiteSync)
+  window.addEventListener('online', throttledWebsiteSync)
 
   // Realtime channel
-  if (isSupabaseConfigured()) {
+  if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
     try {
       supabase
         .channel('realtime:website_content')
@@ -355,7 +369,9 @@ function initRealtimeWebsiteSync() {
           'postgres_changes',
           { event: '*', schema: 'public', table: 'website_content' },
           () => {
-            websiteContentService.syncFromCloud().catch(() => {})
+            if (cloudCircuitBreaker.canExecuteQuery()) {
+              websiteContentService.syncFromCloud().catch(() => {})
+            }
           }
         )
         .subscribe()
@@ -405,8 +421,13 @@ export const websiteContentService = {
     }
   },
 
-  async syncFromCloud(): Promise<WebsiteContentConfig> {
-    if (!isSupabaseConfigured()) return this.getContent()
+  async syncFromCloud(force: boolean = false): Promise<WebsiteContentConfig> {
+    if (!isSupabaseConfigured() || !cloudCircuitBreaker.canExecuteQuery()) return this.getContent()
+    const now = Date.now()
+    if (!force && now - lastWebsiteCloudSyncTime < FULL_SYNC_COOLDOWN_MS) {
+      return this.getContent()
+    }
+    lastWebsiteCloudSyncTime = now
 
     try {
       // 1. Try dedicated website_content table
@@ -415,6 +436,10 @@ export const websiteContentService = {
         .select('*')
         .eq('id', 'current')
         .maybeSingle()
+
+      if (dbErr && cloudCircuitBreaker.isQuotaRestrictionError(dbErr)) {
+        cloudCircuitBreaker.recordError(dbErr)
+      }
 
       if (!dbErr && dbData) {
         const hero = { ...DEFAULT_WEBSITE_CONTENT.hero, ...(dbData.hero || {}) }

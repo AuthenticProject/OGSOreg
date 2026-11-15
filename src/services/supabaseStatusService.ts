@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured, supabaseUrl } from '../lib/supabase'
+import { cloudCircuitBreaker } from './supabase/cloudCircuitBreaker'
 
 export interface SupabaseHealthStatus {
   isConfigured: boolean
@@ -30,6 +31,19 @@ export async function checkSupabaseHealth(): Promise<SupabaseHealthStatus> {
     const { error: studentErr } = await supabase.from('students').select('id').limit(1)
 
     if (studentErr) {
+      if (cloudCircuitBreaker.isQuotaRestrictionError(studentErr)) {
+        cloudCircuitBreaker.recordError(studentErr)
+        return {
+          isConfigured: true,
+          url: supabaseUrl,
+          connectionOk: false,
+          tablesExist: false,
+          missingTables: ['students'],
+          details:
+            'Layanan cloud Supabase mencapai batas kuota egress (HTTP 402 exceed_egress_quota). Sistem OGSOreg secara otomatis berjalan penuh dalam mode penyimpanan lokal yang aman.',
+        }
+      }
+
       // PGRST205 = Table not found in schema cache
       if (studentErr.code === 'PGRST205' || studentErr.message?.includes('schema cache')) {
         return {

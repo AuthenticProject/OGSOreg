@@ -1,6 +1,7 @@
 import type { StudentJenjang } from '../types/student'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { cloudSyncService } from './supabase/cloudSyncService'
+import { cloudCircuitBreaker } from './supabase/cloudCircuitBreaker'
 
 export const LEGACY_LOMBA_OPTIONS = [
   'IPA Shigor',
@@ -452,44 +453,58 @@ class ParticipantPeriodService {
     this.initCloudSync()
   }
 
+  private lastFocusSyncTime: number = 0
+  private lastCloudSyncTime: number = 0
+  private readonly FOCUS_SYNC_COOLDOWN_MS = 10 * 60 * 1000 // 10 minutes throttle
+  private readonly FULL_SYNC_COOLDOWN_MS = 5 * 60 * 1000 // 5 minutes throttle
+
   private initCloudSync() {
     if (this.hasInitializedCloud || typeof window === 'undefined') return
     this.hasInitializedCloud = true
 
     setTimeout(() => {
-      this.syncFromCloud().catch(() => {})
-    }, 200)
+      if (cloudCircuitBreaker.canExecuteQuery()) {
+        this.syncFromCloud().catch(() => {})
+      }
+    }, 500)
 
-    window.addEventListener('focus', () => {
-      this.syncFromCloud().catch(() => {})
-    })
-    window.addEventListener('online', () => {
-      this.syncFromCloud().catch(() => {})
-    })
+    const throttledFocusSync = () => {
+      const now = Date.now()
+      if (
+        now - this.lastFocusSyncTime > this.FOCUS_SYNC_COOLDOWN_MS &&
+        cloudCircuitBreaker.canExecuteQuery()
+      ) {
+        this.lastFocusSyncTime = now
+        this.syncFromCloud().catch(() => {})
+      }
+    }
 
-    if (isSupabaseConfigured()) {
+    window.addEventListener('focus', throttledFocusSync)
+    window.addEventListener('online', throttledFocusSync)
+
+    if (isSupabaseConfigured() && cloudCircuitBreaker.canExecuteQuery()) {
       try {
         supabase
           .channel('realtime:periods_winners')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_periods' }, () => {
-            this.syncFromCloud().catch(() => {})
+            if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_winners' }, () => {
-            this.syncFromCloud().catch(() => {})
+            if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'competition_certificates' }, () => {
-            this.syncFromCloud().catch(() => {})
+            if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
           })
           .subscribe()
 
         cloudSyncService.subscribeCloudSetting('competition_periods', () => {
-          this.syncFromCloud().catch(() => {})
+          if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
         })
         cloudSyncService.subscribeCloudSetting('competition_winners', () => {
-          this.syncFromCloud().catch(() => {})
+          if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
         })
         cloudSyncService.subscribeCloudSetting('competition_certificates', () => {
-          this.syncFromCloud().catch(() => {})
+          if (cloudCircuitBreaker.canExecuteQuery()) this.syncFromCloud().catch(() => {})
         })
       } catch {
         // Ignore
@@ -497,8 +512,13 @@ class ParticipantPeriodService {
     }
   }
 
-  async syncFromCloud(): Promise<void> {
-    if (!isSupabaseConfigured() || this.isCloudSyncing) return
+  async syncFromCloud(force: boolean = false): Promise<void> {
+    if (!isSupabaseConfigured() || !cloudCircuitBreaker.canExecuteQuery() || this.isCloudSyncing) return
+    const now = Date.now()
+    if (!force && now - this.lastCloudSyncTime < this.FULL_SYNC_COOLDOWN_MS) {
+      return
+    }
+    this.lastCloudSyncTime = now
     this.isCloudSyncing = true
     try {
       // 1. Periods Sync
@@ -676,7 +696,7 @@ class ParticipantPeriodService {
   }
 
   async uploadWinnersToCloud(winners: PeriodWinner[]): Promise<void> {
-    if (!isSupabaseConfigured() || winners.length === 0) return
+    if (!isSupabaseConfigured() || !cloudCircuitBreaker.canExecuteQuery() || winners.length === 0) return
     try {
       await cloudSyncService.saveCloudSetting('competition_winners', winners)
 
@@ -701,15 +721,22 @@ class ParticipantPeriodService {
       // Batch in chunks of 50
       for (let i = 0; i < rows.length; i += 50) {
         const chunk = rows.slice(i, i + 50)
-        await supabase.from('competition_winners').upsert(chunk)
+        const { error } = await supabase.from('competition_winners').upsert(chunk)
+        if (error && cloudCircuitBreaker.isQuotaRestrictionError(error)) {
+          cloudCircuitBreaker.recordError(error)
+          break
+        }
       }
     } catch (err) {
+      if (cloudCircuitBreaker.isQuotaRestrictionError(err)) {
+        cloudCircuitBreaker.recordError(err)
+      }
       console.warn('[ParticipantPeriodService] Upload winners to cloud failed:', err)
     }
   }
 
   async uploadPeriodsToCloud(periods: CompetitionPeriod[]): Promise<void> {
-    if (!isSupabaseConfigured() || periods.length === 0) return
+    if (!isSupabaseConfigured() || !cloudCircuitBreaker.canExecuteQuery() || periods.length === 0) return
     try {
       await cloudSyncService.saveCloudSetting('competition_periods', periods)
       const rows = periods.map((p) => ({
@@ -726,8 +753,14 @@ class ParticipantPeriodService {
         total_participants: p.total_participants || 0,
         updated_at: new Date().toISOString(),
       }))
-      await supabase.from('competition_periods').upsert(rows)
+      const { error } = await supabase.from('competition_periods').upsert(rows)
+      if (error && cloudCircuitBreaker.isQuotaRestrictionError(error)) {
+        cloudCircuitBreaker.recordError(error)
+      }
     } catch (err) {
+      if (cloudCircuitBreaker.isQuotaRestrictionError(err)) {
+        cloudCircuitBreaker.recordError(err)
+      }
       console.warn('[ParticipantPeriodService] Upload periods to cloud failed:', err)
     }
   }
