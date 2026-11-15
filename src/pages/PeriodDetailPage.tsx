@@ -440,6 +440,15 @@ export const PeriodDetailPage: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => navigate(`/participant/results?periodId=${period.id}`)}
+              leftIcon={<Trophy className="w-4 h-4 mr-1 text-amber-600" />}
+              className="bg-amber-50/60 hover:bg-amber-100/70 border-amber-300 text-amber-900 font-semibold"
+            >
+              Kelola Hasil & Kelulusan
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               disabled={isCloudSyncing}
               onClick={handleManualSync}
               leftIcon={<RefreshCw className={`w-4 h-4 mr-1 ${isCloudSyncing ? 'animate-spin text-emerald-600' : 'text-slate-600'}`} />}

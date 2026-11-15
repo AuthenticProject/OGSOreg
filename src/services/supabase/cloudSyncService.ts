@@ -126,7 +126,7 @@ class CloudSyncService {
    * Tries Supabase `app_settings` table. Falls back to localStorage if table not found or offline.
    */
   public async getCloudSetting<T>(key: string, fallbackDefault: T): Promise<T> {
-    const localRaw = typeof window !== 'undefined' ? localStorage.getItem(key) : null
+    const localRaw = typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem(key) : null
     let cachedVal: T = fallbackDefault
     if (localRaw) {
       try {
@@ -151,9 +151,9 @@ class CloudSyncService {
 
         if (!error && data && data.value !== undefined && data.value !== null) {
           // Update local cache
-          if (typeof window !== 'undefined') {
+          if (typeof window !== 'undefined' && window.localStorage) {
             try {
-              localStorage.setItem(key, JSON.stringify(data.value))
+              window.localStorage.setItem(key, JSON.stringify(data.value))
             } catch {
               // Ignore quota
             }
@@ -175,9 +175,9 @@ class CloudSyncService {
    */
   public async saveCloudSetting<T>(key: string, value: T): Promise<boolean> {
     // 1. Local Persistence immediately
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && window.localStorage) {
       try {
-        localStorage.setItem(key, JSON.stringify(value))
+        window.localStorage.setItem(key, JSON.stringify(value))
       } catch (err) {
         console.warn(`[CloudSync] localStorage quota hit for ${key}:`, err)
       }
@@ -243,9 +243,9 @@ class CloudSyncService {
         (payload: any) => {
           if (payload.new && payload.new.value !== undefined) {
             const newVal = payload.new.value as T
-            if (typeof window !== 'undefined') {
+            if (typeof window !== 'undefined' && window.localStorage) {
               try {
-                localStorage.setItem(key, JSON.stringify(newVal))
+                window.localStorage.setItem(key, JSON.stringify(newVal))
               } catch {
                 // Ignore
               }

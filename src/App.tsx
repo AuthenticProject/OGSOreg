@@ -43,6 +43,7 @@ import { CalendarManagementPage } from './pages/CalendarManagementPage'
 import { IncomingRegistrationsPage } from './pages/IncomingRegistrationsPage'
 import { PeriodListPage } from './pages/PeriodListPage'
 import { PeriodDetailPage } from './pages/PeriodDetailPage'
+import { CompetitionResultsPage } from './pages/CompetitionResultsPage'
 import { SilabusPage } from './pages/SilabusPage'
 import { BankSoalPage } from './pages/BankSoalPage'
 import { AccountSettingsPage } from './pages/AccountSettingsPage'
@@ -170,6 +171,8 @@ export function App() {
             <Route path="/participants" element={<Navigate to="/students" replace />} />
 
             {/* 2. PARTICIPANT MANAGEMENT (ADMIN DASHBOARD) */}
+            <Route path="/participant/results" element={<CompetitionResultsPage />} />
+            <Route path="/results" element={<Navigate to="/participant/results" replace />} />
             <Route path="/participant/periode" element={<PeriodListPage />} />
             <Route path="/participant/hall-of-fame" element={<HallOfFameManagementPage />} />
             <Route
